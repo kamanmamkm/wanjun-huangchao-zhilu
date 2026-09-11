@@ -1,0 +1,599 @@
+/**
+ * 盛世國風 × 熱血角色 RPG
+ * 暖白／晴空藍大底，朱紅焦點，暖金點綴；氣勢靠構圖，唔靠壓黑
+ */
+:root {
+  --warm: #fff8ec;
+  --sky: #dceef5;
+  --cyan: #246b87;
+  --cinnabar: #c84436;
+  --cinnabar-deep: #a3342a;
+  --gold: #d7aa50;
+  --ink: #243746;
+  --ink-soft: #3d5260;
+
+  --paper: var(--warm);
+  --paper-warm: #fffdf7;
+  --paper-soft: #fff8ec;
+  --jade: var(--cyan);
+  --gold-deep: #b8923f;
+  --court: #243746;
+  --shadow: 0 14px 36px rgba(36, 55, 70, 0.12);
+  --radius: 8px;
+
+  --font-display: "Noto Serif TC", "Songti TC", serif;
+  --font-ui: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+}
+
+html,
+body {
+  background: var(--warm);
+  color: var(--ink);
+}
+
+body {
+  background:
+    radial-gradient(ellipse 80% 55% at 78% 18%, rgba(215, 170, 80, 0.22), transparent 55%),
+    radial-gradient(ellipse 60% 45% at 12% 70%, rgba(200, 68, 54, 0.06), transparent 50%),
+    linear-gradient(180deg, var(--sky) 0%, #e8f4f8 28%, var(--warm) 62%, #f5ead8 100%);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.45;
+  display: block !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='160' viewBox='0 0 280 160'%3E%3Cpath d='M0 120 Q40 90 80 105 T160 95 T280 110 V160 H0Z' fill='%23246B87' opacity='.08'/%3E%3Cpath d='M0 135 Q70 115 140 128 T280 120 V160 H0Z' fill='%23C84436' opacity='.05'/%3E%3C/svg%3E");
+  background-size: 280px 160px;
+  background-position: bottom;
+  background-repeat: repeat-x;
+}
+
+body::after {
+  content: none !important;
+  display: none !important;
+}
+
+body.theme-court {
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 20%, rgba(215, 170, 80, 0.2), transparent 55%),
+    linear-gradient(180deg, #3a5566 0%, #243746 100%);
+  color: var(--warm);
+}
+
+#app {
+  position: relative;
+  z-index: 1;
+}
+
+.brand-top,
+.brand-block h1,
+.brand-mini {
+  font-family: var(--font-display);
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  color: var(--cinnabar) !important;
+  text-shadow: none;
+}
+
+.brand-block {
+  color: var(--ink) !important;
+}
+.brand-block .subtitle,
+.brand-block .eyebrow,
+.hero-caption,
+.hero-idle-note {
+  color: var(--ink-soft) !important;
+}
+.brand-block::before {
+  background: var(--cinnabar);
+  border: 1px solid rgba(215, 170, 80, 0.55);
+  color: #fff8ec;
+  box-shadow: 0 8px 18px rgba(200, 68, 54, 0.25);
+}
+
+.tag {
+  background: rgba(255, 253, 247, 0.9);
+  border: 1px solid rgba(36, 107, 135, 0.2);
+  color: var(--cyan);
+}
+
+.topbar,
+.panel-paper,
+.panel,
+.auth-panel,
+.question-box,
+.thin-card {
+  background: linear-gradient(180deg, #fffdf8, #fff6e8);
+  border: 1px solid rgba(36, 55, 70, 0.1);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+.topbar::before {
+  border-color: rgba(215, 170, 80, 0.28);
+}
+.player-meta strong {
+  color: var(--ink) !important;
+}
+.brand-top {
+  color: var(--cinnabar) !important;
+}
+.muted,
+.side-note {
+  color: var(--ink-soft) !important;
+  opacity: 1;
+}
+
+.btn {
+  background: linear-gradient(180deg, #d95545, var(--cinnabar));
+  color: #fff8ec;
+  border: 1px solid rgba(215, 170, 80, 0.35);
+  box-shadow: 0 8px 18px rgba(200, 68, 54, 0.22);
+  letter-spacing: 0.1em;
+}
+.btn.ghost {
+  background: rgba(255, 253, 247, 0.85);
+  color: var(--cyan);
+  border: 1px solid rgba(36, 107, 135, 0.28);
+  box-shadow: none;
+}
+.btn.gold {
+  background: linear-gradient(180deg, #e4c06a, var(--gold));
+  color: var(--ink);
+}
+
+.nav.mobile-nav button {
+  background: rgba(255, 253, 247, 0.9);
+  color: var(--ink-soft);
+  border-color: rgba(36, 55, 70, 0.12);
+}
+.nav.mobile-nav button.active {
+  background: var(--cinnabar);
+  color: #fff8ec;
+  border-color: var(--cinnabar);
+}
+
+.chip,
+.home-quick .chip {
+  background: rgba(255, 253, 247, 0.95);
+  border-color: rgba(36, 107, 135, 0.2);
+  color: var(--cyan);
+}
+.option {
+  background: #fffdf7;
+  border-color: rgba(36, 55, 70, 0.12);
+  color: var(--ink);
+}
+.option:hover {
+  border-color: var(--cinnabar);
+  background: #fff5ef;
+}
+
+.ink-red { color: var(--cinnabar) !important; }
+.ink-gold { color: var(--gold-deep) !important; }
+
+.xp-bar { background: rgba(36, 55, 70, 0.08); }
+.xp-bar > i {
+  background: linear-gradient(90deg, var(--cyan), var(--gold));
+}
+
+/* ========== 明亮海報主頁 ========== */
+.poster-home {
+  position: relative;
+  min-height: min(78vh, 720px);
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(215, 170, 80, 0.35);
+  background: transparent;
+  display: grid;
+  grid-template-columns: minmax(240px, 0.85fr) minmax(320px, 1.65fr);
+  grid-template-rows: 1fr auto;
+  grid-template-areas:
+    "copy art"
+    "rail rail";
+  box-shadow: var(--shadow);
+}
+
+.poster-art {
+  grid-area: art;
+  position: relative;
+  min-height: 420px;
+}
+
+.poster-copy {
+  grid-area: copy;
+  position: relative;
+  z-index: 3;
+  padding: 1.7rem 1.2rem 1.2rem 1.6rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.75rem;
+  background: linear-gradient(90deg, rgba(255, 248, 236, 0.94) 50%, rgba(255, 248, 236, 0.2) 100%);
+}
+
+.poster-rail {
+  grid-area: rail;
+  position: relative;
+  z-index: 4;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.75rem 1.1rem;
+  border-top: 1px solid rgba(215, 170, 80, 0.3);
+  background: rgba(255, 253, 247, 0.92);
+}
+
+.realm-kicker {
+  margin: 0;
+  font-size: 0.85rem;
+  letter-spacing: 0.2em;
+  color: var(--cyan);
+}
+.realm-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(2.1rem, 4.8vw, 3.2rem);
+  margin: 0;
+  letter-spacing: 0.1em;
+  color: var(--ink);
+  line-height: 1.12;
+}
+.realm-rule {
+  width: 4.5rem;
+  height: 3px;
+  background: linear-gradient(90deg, var(--cinnabar), var(--gold));
+  border: 0;
+  margin: 0.1rem 0 0.25rem;
+}
+.realm-quote {
+  font-family: var(--font-display);
+  font-size: clamp(1.05rem, 2vw, 1.3rem);
+  line-height: 1.7;
+  margin: 0;
+  max-width: 16em;
+  color: var(--ink-soft);
+}
+.poster-char {
+  font-size: 0.88rem;
+  color: var(--cyan);
+  margin: 0;
+  font-weight: 600;
+}
+.poster-skills {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0.2rem 0;
+  max-width: 220px;
+}
+.poster-skills .skill-row {
+  color: var(--ink-soft);
+  font-size: 0.86rem;
+}
+.poster-skills .skill-pips i {
+  background: rgba(36, 55, 70, 0.12);
+}
+.poster-skills .skill-pips i.on {
+  background: var(--cyan);
+}
+.poster-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 0.25rem;
+}
+
+/* 人物融入明亮場景，唔困方框 */
+.poster-art .hero-stage-frame {
+  position: absolute;
+  inset: 0;
+  max-width: none;
+  min-height: 100%;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: hidden;
+}
+.poster-art .stage-sky {
+  background:
+    radial-gradient(ellipse 55% 45% at 70% 28%, rgba(255, 248, 220, 0.85), transparent 55%),
+    linear-gradient(180deg, #b9dff0 0%, var(--sky) 38%, #e8f0e8 72%, #efe4d0 100%);
+}
+.poster-art .stage-ground {
+  height: 38%;
+  background: linear-gradient(180deg, transparent, rgba(215, 190, 150, 0.35));
+}
+.poster-art .stage-figure {
+  position: absolute;
+  inset: 0;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 0 3% 0 10%;
+  transform: none;
+  min-height: 100%;
+  animation: sleeveSway 6s ease-in-out infinite;
+}
+.poster-art .stage-figure::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background: linear-gradient(115deg, transparent 48%, rgba(255, 248, 220, 0.25) 72%, transparent 90%);
+  mix-blend-mode: soft-light;
+}
+.poster-art .stage-figure .avatar-art,
+.poster-art .stage-figure .avatar-svg {
+  position: relative;
+  z-index: 2;
+  max-width: min(80%, 460px);
+  width: min(80%, 460px);
+  height: auto !important;
+  filter:
+    drop-shadow(0 16px 28px rgba(36, 55, 70, 0.22))
+    contrast(1.04)
+    saturate(1.05)
+    brightness(1.03);
+}
+.poster-art .avatar-art img {
+  object-fit: cover;
+  object-position: center 12%;
+  mask-image: linear-gradient(180deg, #000 72%, transparent 98%);
+  -webkit-mask-image: linear-gradient(180deg, #000 72%, transparent 98%);
+}
+.poster-art .stage-caption { display: none; }
+.poster-art .stage-prop-badge {
+  top: 1rem;
+  right: 1rem;
+  background: rgba(255, 253, 247, 0.9);
+  border: 1px solid rgba(215, 170, 80, 0.45);
+  color: var(--gold-deep);
+}
+.poster-art .stage-relic {
+  left: 1rem;
+  bottom: 1rem;
+  background: rgba(36, 55, 70, 0.72);
+  color: var(--warm);
+}
+
+/* 階段：愈高愈開闊明亮 */
+.poster-art .scene-courtyard .stage-sky,
+.poster-art .scene-street .stage-sky {
+  background:
+    radial-gradient(ellipse 50% 40% at 75% 30%, rgba(255, 220, 140, 0.55), transparent 55%),
+    linear-gradient(180deg, #9fd0e8, #dceef5 40%, #f0e2c4);
+}
+.poster-art .scene-academy .stage-sky {
+  background:
+    radial-gradient(ellipse 45% 40% at 70% 25%, rgba(255, 255, 255, 0.5), transparent 50%),
+    linear-gradient(180deg, #a8d8c8, #d5ebe3 45%, #e8f0e4);
+}
+.poster-art .scene-study .stage-sky {
+  background:
+    radial-gradient(ellipse 60% 45% at 65% 20%, rgba(255, 255, 255, 0.65), transparent 55%),
+    linear-gradient(180deg, #8ec4e0, #dceef5 50%, #e8eef2);
+}
+.poster-art .scene-yamen .stage-sky {
+  background:
+    radial-gradient(ellipse 40% 35% at 78% 35%, rgba(255, 230, 180, 0.5), transparent 50%),
+    linear-gradient(180deg, #b8d8e8, #e8eef2 40%, #f2e4d4);
+}
+.poster-art .scene-hall .stage-sky,
+.poster-art .scene-court .stage-sky {
+  background:
+    radial-gradient(ellipse 50% 40% at 55% 18%, rgba(255, 248, 220, 0.7), transparent 55%),
+    linear-gradient(180deg, #9ec8dc, #dceef5 45%, #efe8da);
+}
+.poster-art .scene-tower .stage-sky,
+.poster-art .scene-palace .stage-sky {
+  background:
+    radial-gradient(ellipse 70% 50% at 55% 15%, rgba(255, 240, 180, 0.75), transparent 55%),
+    linear-gradient(180deg, #7eb8d8 0%, #c5e4f2 35%, #e8f2f6 70%, #f5e6c8 100%);
+}
+
+.poster-art .outfit-0 img,
+.poster-art .outfit-1 img {
+  filter: saturate(0.95) contrast(1.02) brightness(1.05);
+}
+.poster-art .outfit-2 img,
+.poster-art .outfit-3 img {
+  filter: saturate(1.08) contrast(1.04) brightness(1.04);
+}
+.poster-art .outfit-4 img,
+.poster-art .outfit-5 img {
+  filter: saturate(1.1) contrast(1.05) brightness(1.04);
+}
+.poster-art .outfit-7 img,
+.poster-art .outfit-8 img {
+  filter: saturate(1.12) contrast(1.06) brightness(1.05) drop-shadow(0 0 10px rgba(215, 170, 80, 0.25));
+}
+
+@keyframes sleeveSway {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .poster-art .stage-figure { animation: none; }
+}
+
+.growth-ladder { color: var(--ink-soft); }
+.grow-step.current { color: var(--cinnabar); font-weight: 800; }
+.grow-step.done { color: var(--cyan); }
+.grow-step.next { color: var(--gold-deep); }
+.grow-step.locked { color: #9aafb8; }
+
+.growth-avatars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+.growth-av {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid rgba(36, 107, 135, 0.25);
+  background: #fff;
+  padding: 0;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.growth-av .avatar-art,
+.growth-av .avatar-svg {
+  width: 40px !important;
+  height: 40px !important;
+  transform: scale(1.35);
+  transform-origin: center 20%;
+}
+.growth-av.current {
+  border-color: var(--cinnabar);
+  box-shadow: 0 0 0 2px rgba(200, 68, 54, 0.2);
+}
+.growth-av.locked {
+  filter: grayscale(1) opacity(0.45);
+  cursor: default;
+}
+.growth-av.next {
+  border-style: dashed;
+  border-color: var(--gold);
+}
+
+/* 一般舞台亦跟明亮 */
+.hero-stage-frame {
+  background: linear-gradient(180deg, #e8f4f8, #fff8ec);
+  border-color: rgba(215, 170, 80, 0.35);
+}
+.hero-stage-frame .stage-sky {
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 20%, rgba(255, 248, 220, 0.55), transparent 60%),
+    linear-gradient(180deg, var(--sky), #fff8ec);
+}
+.hero-stage-frame .stage-quote,
+.hero-stage-frame .stage-scene {
+  color: var(--ink-soft);
+}
+.stage-prop-badge {
+  background: rgba(255, 253, 247, 0.95);
+  color: var(--gold-deep);
+  border-color: rgba(215, 170, 80, 0.4);
+}
+
+.study-mode,
+.stage-play,
+.question-box,
+.trial-q {
+  background: #fffdf7 !important;
+  border-color: rgba(36, 55, 70, 0.1);
+  color: var(--ink);
+}
+.study-bubble {
+  background: rgba(255, 253, 247, 0.96);
+  border-color: rgba(36, 55, 70, 0.12);
+  color: var(--ink);
+}
+
+.growth-card,
+.chapter-card,
+.stage-card,
+.note-card,
+.book-page,
+.edict {
+  background: rgba(255, 253, 247, 0.95);
+  border-color: rgba(36, 55, 70, 0.1);
+  color: var(--ink);
+}
+.edict h3,
+.edict h4,
+.next-shadow {
+  color: var(--cinnabar) !important;
+}
+.story-box {
+  background: rgba(220, 238, 245, 0.45);
+  border-left-color: var(--cinnabar);
+  color: var(--ink);
+}
+
+.theme-court .panel-paper,
+.theme-court .promote-view,
+.theme-court .topbar,
+.theme-court .auth-panel {
+  background: linear-gradient(180deg, #2f4654, #243746);
+  border-color: rgba(215, 170, 80, 0.4);
+  color: var(--warm);
+}
+.theme-court .nav button {
+  background: rgba(255, 248, 236, 0.08);
+  color: var(--warm);
+}
+.theme-court .nav button.active {
+  background: var(--gold);
+  color: var(--ink);
+}
+.theme-court .btn.ghost {
+  background: rgba(255, 248, 236, 0.08);
+  color: var(--warm);
+  border-color: rgba(215, 170, 80, 0.35);
+}
+
+.auth-panel label,
+.form-grid input,
+.form-grid select,
+#ta-input {
+  color: var(--ink);
+}
+.form-grid input,
+.form-grid select,
+#ta-input {
+  background: #fff;
+  border: 1px solid rgba(36, 55, 70, 0.15);
+}
+
+.side-link { color: var(--ink-soft); }
+.side-link:hover,
+.side-link.active {
+  background: rgba(200, 68, 54, 0.08);
+  color: var(--cinnabar);
+}
+
+.toast {
+  background: var(--ink);
+  border-color: rgba(215, 170, 80, 0.4);
+  color: var(--warm);
+}
+
+.promote-reveal .reveal-inner {
+  background: linear-gradient(180deg, #fff8ec, #dceef5);
+  color: var(--ink);
+  border-color: rgba(215, 170, 80, 0.5);
+}
+.reveal-title { color: var(--cinnabar) !important; }
+.reveal-arrow { color: var(--gold-deep) !important; }
+
+@media (max-width: 960px) {
+  .poster-home {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "art"
+      "copy"
+      "rail";
+    min-height: 0;
+  }
+  .poster-art { min-height: 320px; }
+  .poster-copy {
+    background: linear-gradient(180deg, rgba(255, 248, 236, 0.15), rgba(255, 248, 236, 0.96));
+  }
+  .poster-art .stage-figure {
+    justify-content: center;
+    padding: 0;
+  }
+  .poster-art .stage-figure .avatar-art,
+  .poster-art .stage-figure .avatar-svg {
+    max-width: min(72%, 300px);
+  }
+}

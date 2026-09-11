@@ -5,55 +5,50 @@ let avatarSeq = 0;
 
 const GLOW = [0, 0.02, 0.06, 0.1, 0.16, 0.24, 0.34, 0.46, 0.58];
 
-/** 低階改為粗布色；學子青綠、縣令朱紅細節；高階保留角色本色 */
+/** 低階米白／青綠；官員朱紅細節；高階保留本色並略提亮 */
 function dressLook(L, rank) {
   if (!L) return L;
   const r = Math.min(8, Math.max(0, rank));
-  if (r >= 5) return { ...L };
+  if (r >= 6) return { ...L, accent: mixHex(L.accent, "#d7aa50", 0.25) };
   if (r <= 0) {
-    return {
-      ...L,
-      robe: "#9a8b72",
-      robe2: "#6e6250",
-      accent: "#8a7a60",
-    };
+    return { ...L, robe: "#e8dcc8", robe2: "#c4b496", accent: "#c84436" };
   }
   if (r === 1) {
-    return {
-      ...L,
-      robe: "#c4b496",
-      robe2: "#8a7a60",
-      accent: "#7a8f4a",
-    };
+    return { ...L, robe: "#fff4e4", robe2: "#e8d4b0", accent: "#c84436" };
   }
   if (r === 2) {
     return {
       ...L,
-      robe: mixHex(L.robe || "#d8e4dc", "#5a8a7a", 0.35),
-      robe2: "#35665b",
-      accent: "#35665b",
+      robe: mixHex(L.robe || "#d8ebe4", "#3d8a7a", 0.25),
+      robe2: "#246b87",
+      accent: "#246b87",
     };
   }
   if (r === 3) {
     return {
       ...L,
-      robe: mixHex(L.robe, "#6a8a9a", 0.25),
-      robe2: mixHex(L.robe2, "#4a6a7a", 0.3),
-      accent: mixHex(L.accent, "#4a7a6e", 0.4),
+      robe: "#f4f7f8",
+      robe2: "#246b87",
+      accent: "#d7aa50",
     };
   }
   if (r === 4) {
     return {
       ...L,
-      robe: mixHex(L.robe, "#a3312b", 0.22),
-      robe2: mixHex(L.robe2, "#7e2418", 0.25),
-      accent: "#a3312b",
+      robe: mixHex(L.robe, "#c84436", 0.2),
+      robe2: "#fff8ec",
+      accent: "#d7aa50",
     };
   }
-  return {
-    ...L,
-    accent: mixHex(L.accent, "#b0a080", 0.15),
-  };
+  if (r === 5) {
+    return {
+      ...L,
+      robe: mixHex(L.robe, "#246b87", 0.3),
+      robe2: mixHex(L.robe2, "#1a4a5c", 0.2),
+      accent: "#d7aa50",
+    };
+  }
+  return { ...L };
 }
 
 function mixHex(a, b, t) {

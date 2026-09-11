@@ -67,20 +67,42 @@ export function renderJourneyHome(user, char) {
     .filter(Boolean)
     .join('<span class="grow-sep">──</span>');
 
+  const avatars = IDENTITIES.map((idn) => {
+    const unlocked = user.identityId >= idn.id;
+    const current = user.identityId === idn.id;
+    const next = idn.id === user.identityId + 1;
+    if (!unlocked && !next && idn.id > user.identityId + 1) {
+      if (idn.id === 8)
+        return `<button type="button" class="growth-av locked" disabled title="？">？</button>`;
+      return "";
+    }
+    if (next && !unlocked) {
+      return `<button type="button" class="growth-av next" data-nav="growth" title="下一階">
+        ${renderAvatar(char, idn.id, "sm")}
+      </button>`;
+    }
+    if (!unlocked) return "";
+    return `<button type="button" class="growth-av ${current ? "current" : ""}" data-growth-pick="${idn.id}" title="${identityDisplayName(idn, user.gender)}">
+      ${renderAvatar(char, idn.id, "sm")}
+    </button>`;
+  })
+    .filter(Boolean)
+    .join("");
+
   return `
   <section class="poster-home scene-poster-${vis.sceneKey}">
     <div class="poster-copy">
-      <p class="realm-kicker">${realm}</p>
+      <p class="realm-kicker">${realm} · ${ch.arc || ""}</p>
       <h2 class="realm-title">${snap.identityName}</h2>
       <hr class="realm-rule" />
       <p class="realm-quote">${vis.quote}</p>
       <p class="poster-char">${char?.name || "行者"} · Lv.${snap.level.level} · ${vis.vibe}</p>
       <div class="poster-skills">${skillBars}</div>
       <div class="poster-actions">
-        <button type="button" class="btn" data-goto="scroll">${chProg.done ? "重溫長卷" : "繼續征程"}</button>
+        <button type="button" class="btn" data-goto="scroll">${chProg.done ? "重溫長卷" : "繼續旅程"}</button>
         <button type="button" class="btn ghost" data-goto="promote">晉升試煉</button>
       </div>
-      <p class="muted" style="font-size:.8rem;margin:0">當前任務：${nextStage?.title || "—"} · ${order.canChallenge ? "試煉已解鎖" : "完成條件後挑戰晉升"}</p>
+      <p class="muted" style="font-size:.8rem;margin:0">當前任務：${nextStage?.title || "—"}</p>
     </div>
     <div class="poster-art" aria-label="${char?.name} 立繪">
       ${renderHeroStage(char, snap.identity.id, "hero", {
@@ -90,10 +112,9 @@ export function renderJourneyHome(user, char) {
       })}
     </div>
     <footer class="poster-rail">
+      <div class="growth-avatars" aria-label="已解鎖造型">${avatars}</div>
       <div class="growth-ladder">${ladder}</div>
       <button type="button" class="btn ghost" data-nav="growth">成長長卷</button>
-      <button type="button" class="chip" data-nav="notes">札記</button>
-      <button type="button" class="chip" data-nav="practice">藏書閣</button>
     </footer>
   </section>`;
 }
@@ -266,14 +287,14 @@ export function renderGrowthScroll(user, char, growthFocus) {
   return `
   <section class="panel-paper growth-scroll-view">
     <p class="eyebrow ink-gold">人物成長長卷</p>
-    <h2>同一人物 · 由孤身求存到坐鎮天下</h2>
-    <p class="lead">面貌不變；場景、氣勢與道具隨身份解鎖。${STAGE_RELIC.note}</p>
+    <h2>同一人物 · 由少年出發到盛世登場</h2>
+    <p class="lead">面貌不變；場景愈開闊、姿態愈從容。${STAGE_RELIC.note}</p>
     <p class="muted">${IDENTITY_DISCLAIMER}</p>
     <div class="growth-rail">${cards}</div>
     <div class="growth-focus thin-card">
       ${renderHeroStage(char, focusId, "hero", { gender: user.gender, priorityBoost: true })}
-      <div class="growth-focus-meta">
-        <p class="realm-kicker">${realmLabel(focusId)}</p>
+    <div class="growth-focus-meta">
+        <p class="realm-kicker">${realmLabel(focusId)} · ${focusVis.vibe}</p>
         <h3>${identityDisplayName(focusIdn, user.gender)}</h3>
         <p>${focusVis.pose} · ${focusVis.prop}</p>
         <p>背景：${focusVis.scene}（${focusVis.bgHint}）</p>
@@ -693,8 +714,8 @@ function bindPromote(user, ctx) {
 
 export function bindGrowth(user, ctx) {
   appClick("[data-growth-pick]", (btn) => {
-    const id = Number(btn.dataset.growthPick);
-    ctx.state.growthFocus = id;
+    ctx.state.growthFocus = Number(btn.dataset.growthPick);
+    ctx.state.view = "growth";
     ctx.render();
   });
 }

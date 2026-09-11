@@ -1,11 +1,11 @@
-import { CHARACTERS, getCharacter } from "./data/characters.js?v=rad4";
-import { QUESTIONS, checkFill } from "./data/questions.js?v=rad4";
-import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad4";
-import { levelFromXp } from "./data/levels.js?v=rad4";
-import { DIALOGUES } from "./data/dialogues.js?v=rad4";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad4";
-import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=rad4";
-import { renderAvatar } from "./avatar.js?v=rad4";
+import { CHARACTERS, getCharacter } from "./data/characters.js?v=rad5";
+import { QUESTIONS, checkFill } from "./data/questions.js?v=rad5";
+import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad5";
+import { levelFromXp } from "./data/levels.js?v=rad5";
+import { DIALOGUES } from "./data/dialogues.js?v=rad5";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad5";
+import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=rad5";
+import { renderAvatar } from "./avatar.js?v=rad5";
 import {
   CARD_TYPES,
   createBattle,
@@ -15,7 +15,7 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=rad4";
+} from "./data/shizhan.js?v=rad5";
 import {
   getCurrentUser,
   registerUser,
@@ -23,7 +23,7 @@ import {
   clearSession,
   addXp,
   updateUser,
-} from "./storage.js?v=rad4";
+} from "./storage.js?v=rad5";
 import {
   userSnapshot,
   buildPromotionOrder,
@@ -31,7 +31,7 @@ import {
   IDENTITY_DISCLAIMER,
   identityDisplayName,
   getIdentity,
-} from "./progress.js?v=rad4";
+} from "./progress.js?v=rad5";
 import {
   renderJourneyHome,
   renderScroll,
@@ -42,10 +42,10 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad4";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad4";
-import { renderPromoteReveal } from "./heroStage.js?v=rad4";
-import { getStageVisual } from "./data/stageVisuals.js?v=rad4";
+} from "./journey.js?v=rad5";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad5";
+import { renderPromoteReveal } from "./heroStage.js?v=rad5";
+import { getStageVisual } from "./data/stageVisuals.js?v=rad5";
 
 const app = document.getElementById("app");
 let toastTimer = null;
@@ -224,7 +224,7 @@ function renderAuth() {
               : `<div class="parade-row" id="parade-row">
                   ${parade.map((c) => `<div class="parade-item" title="${c.name} · ${c.era}">${renderAvatar(c, 0, "sm")}<span>${c.name}</span></div>`).join("")}
                 </div>
-                <p class="hero-idle-note">共 ${parade.length} 位人物 · 起步為粗布簡樸，升級後衣裝漸華麗</p>`
+                <p class="hero-idle-note">共 ${parade.length} 位人物 · 開局為庶民，考核晉升後衣裝與場景漸開闊</p>`
           }
         </div>
       </div>
@@ -248,8 +248,8 @@ function renderAuth() {
             ? `
         <label>性別
           <select name="gender" id="gender-select">
-            <option value="male" ${state.gender === "male" ? "selected" : ""}>男（開局：奴隸困境 → 考核晉升）</option>
-            <option value="female" ${state.gender === "female" ? "selected" : ""}>女（開局：婢女困境 → 考核晉升）</option>
+            <option value="male" ${state.gender === "male" ? "selected" : ""}>男（開局：庶民 · Lv.1 起步）</option>
+            <option value="female" ${state.gender === "female" ? "selected" : ""}>女（開局：庶民 · Lv.1 起步）</option>
           </select>
         </label>
         <div>

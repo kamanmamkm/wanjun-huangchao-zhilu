@@ -42,7 +42,7 @@ export function outfitOf(gender, identityId) {
 export function rankFromXp(gender, xp) {
   const lv = levelFromXp(xp);
   const fake = {
-    id: Math.min(8, Math.max(0, lv.level - 1)),
+    id: Math.min(7, Math.max(0, lv.level - 1)),
     name: `Lv.${lv.level}`,
     xp: lv.curXp,
     color: "#6b5b4a",

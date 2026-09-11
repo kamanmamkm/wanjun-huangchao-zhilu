@@ -5,18 +5,15 @@ let avatarSeq = 0;
 
 const GLOW = [0, 0.02, 0.06, 0.1, 0.16, 0.24, 0.34, 0.46, 0.58];
 
-/** 低階米白／青綠；官員朱紅細節；高階保留本色並略提亮 */
+/** 庶民起步提亮；官員朱紅；高階保留本色 */
 function dressLook(L, rank) {
   if (!L) return L;
-  const r = Math.min(8, Math.max(0, rank));
-  if (r >= 6) return { ...L, accent: mixHex(L.accent, "#d7aa50", 0.25) };
-  if (r <= 0) {
-    return { ...L, robe: "#e8dcc8", robe2: "#c4b496", accent: "#c84436" };
-  }
-  if (r === 1) {
+  const r = Math.min(7, Math.max(0, rank));
+  if (r >= 5) return { ...L, accent: mixHex(L.accent, "#d7aa50", 0.25) };
+  if (r === 0) {
     return { ...L, robe: "#fff4e4", robe2: "#e8d4b0", accent: "#c84436" };
   }
-  if (r === 2) {
+  if (r === 1) {
     return {
       ...L,
       robe: mixHex(L.robe || "#d8ebe4", "#3d8a7a", 0.25),
@@ -24,7 +21,7 @@ function dressLook(L, rank) {
       accent: "#246b87",
     };
   }
-  if (r === 3) {
+  if (r === 2) {
     return {
       ...L,
       robe: "#f4f7f8",
@@ -32,7 +29,7 @@ function dressLook(L, rank) {
       accent: "#d7aa50",
     };
   }
-  if (r === 4) {
+  if (r === 3) {
     return {
       ...L,
       robe: mixHex(L.robe, "#c84436", 0.2),
@@ -40,7 +37,7 @@ function dressLook(L, rank) {
       accent: "#d7aa50",
     };
   }
-  if (r === 5) {
+  if (r === 4) {
     return {
       ...L,
       robe: mixHex(L.robe, "#246b87", 0.3),
@@ -72,7 +69,7 @@ function isFemale(L) {
   return L.gender === "female";
 }
 
-/** 奴隸／婢女級：簡樸粗布，無華飾兵器 */
+/** 奴隸／婢女級：簡樸粗布，無華飾兵器（已停用開局；保留函式供兼容） */
 function drawPlain(uid, L) {
   const female = isFemale(L);
   return `
@@ -503,7 +500,7 @@ export function renderAvatar(character, rankId = 0, size = "md", opts = {}) {
   if (!character) {
     return `<div class="avatar-fallback">?</div>`;
   }
-  const rank = Math.min(8, Math.max(0, rankId));
+  const rank = Math.min(7, Math.max(0, rankId));
   const dims =
     size === "hero" ? 320 : size === "lg" ? 248 : size === "sm" ? 104 : 148;
   const h = Math.round(dims * (size === "hero" ? 1.35 : 1.24));
@@ -511,15 +508,15 @@ export function renderAvatar(character, rankId = 0, size = "md", opts = {}) {
   const outfit =
     opts.outfitLabel ||
     (gender === "female"
-      ? ["粗布襖裙", "布裙短襖", "青衿布裙", "羅衫青裙", "青衫束帶", "緋袍佩印", "錦裙珠釵", "翟衣華飾", "鳳袍珠冠"][rank]
-      : ["粗布短褐", "布衣短褐", "青衿布袍", "青衫儒服", "官袍束帶", "緋袍佩印", "錦衣玉帶", "蟒袍華冠", "龍袍冕旒"][rank]);
+      ? ["米白短襖", "青綠長衫", "白衣青袍", "青衫束帶", "緋袍佩印", "錦裙珠釵", "翟衣華飾", "鳳袍珠冠"][rank]
+      : ["米白短衣", "青綠長衫", "白衣青袍", "官袍束帶", "緋袍佩印", "錦衣玉帶", "蟒袍華冠", "龍袍冕旒"][rank]);
   const baseAccent = character.look?.accent || character.color || "#c6a35a";
-  const accent = rank <= 1 ? "#8a7a60" : rank <= 3 ? "#a09070" : baseAccent;
+  const accent = rank <= 0 ? "#c84436" : rank <= 2 ? "#246b87" : baseAccent;
 
   if (character.portrait) {
     return `
-    <div class="avatar-art avatar-${size} outfit-${rank}" style="--accent:${accent};--glow:${GLOW[rank]};width:${dims}px;height:${h}px" role="img" aria-label="${character.name} · ${outfit}">
-      <img src="${character.portrait}?v=ink2" alt="${character.name}" width="${dims}" height="${h}" loading="lazy" />
+    <div class="avatar-art avatar-${size} outfit-${rank}" style="--accent:${accent};--glow:${GLOW[Math.min(rank, GLOW.length - 1)]};width:${dims}px;height:${h}px" role="img" aria-label="${character.name} · ${outfit}">
+      <img src="${character.portrait}?v=rad5" alt="${character.name}" width="${dims}" height="${h}" loading="lazy" />
       <span class="avatar-art-outfit">${outfit}</span>
       <span class="avatar-art-era">${character.era || ""}</span>
     </div>`;
@@ -530,8 +527,7 @@ export function renderAvatar(character, rankId = 0, size = "md", opts = {}) {
   }
   const L = dressLook(character.look, rank);
   const uid = `av-${character.id}-${++avatarSeq}`;
-  const drawFn =
-    rank <= 0 ? drawPlain : rank === 1 ? drawPlain : DRAW[character.id] || drawHanxin;
+  const drawFn = DRAW[character.id] || drawHanxin;
   return `
   <svg class="avatar-svg avatar-${size} outfit-${rank}" viewBox="0 -10 120 156" width="${dims}" height="${h}" aria-label="${character.name} · ${outfit}" role="img">
     ${frame(uid, L, outfit, GLOW[rank], drawFn(uid, L))}

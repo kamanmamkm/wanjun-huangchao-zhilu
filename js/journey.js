@@ -51,19 +51,18 @@ export function renderJourneyHome(user, char) {
     })
     .join("");
 
-  const ladder = IDENTITIES.filter((idn) => idn.id !== 0 || user.identityId === 0)
-    .map((idn) => {
-      const unlocked = user.identityId >= idn.id;
-      const current = user.identityId === idn.id;
-      const label = identityDisplayName(idn, user.gender);
-      if (current) return `<span class="grow-step current">【${label}】</span>`;
-      if (unlocked) return `<span class="grow-step done">${label}</span>`;
-      if (idn.id === user.identityId + 1) return `<span class="grow-step next">${label}</span>`;
-      if (idn.id > user.identityId + 1 && idn.id <= user.identityId + 3)
-        return `<span class="grow-step locked">${label}</span>`;
-      if (idn.id === 8) return `<span class="grow-step locked">？</span>`;
-      return "";
-    })
+  const ladder = IDENTITIES.map((idn) => {
+    const unlocked = user.identityId >= idn.id;
+    const current = user.identityId === idn.id;
+    const label = identityDisplayName(idn, user.gender);
+    if (current) return `<span class="grow-step current">【${label}】</span>`;
+    if (unlocked) return `<span class="grow-step done">${label}</span>`;
+    if (idn.id === user.identityId + 1) return `<span class="grow-step next">${label}</span>`;
+    if (idn.id > user.identityId + 1 && idn.id <= user.identityId + 3)
+      return `<span class="grow-step locked">${label}</span>`;
+    if (idn.id === IDENTITIES.length - 1) return `<span class="grow-step locked">？</span>`;
+    return "";
+  })
     .filter(Boolean)
     .join('<span class="grow-sep">──</span>');
 
@@ -72,7 +71,7 @@ export function renderJourneyHome(user, char) {
     const current = user.identityId === idn.id;
     const next = idn.id === user.identityId + 1;
     if (!unlocked && !next && idn.id > user.identityId + 1) {
-      if (idn.id === 8)
+      if (idn.id === IDENTITIES.length - 1)
         return `<button type="button" class="growth-av locked" disabled title="？">？</button>`;
       return "";
     }
@@ -593,10 +592,10 @@ export function renderPromote(user, char) {
     .join("");
   const rem = openWeakRemedials(user);
   const isFinale = order.gate?.isFinale || order.gate?.trialId === "trial_ascension";
-  const finale = isFinale || user.identityId >= 7 ? getFinaleState(user) : null;
+  const finale = isFinale || user.identityId >= 6 ? getFinaleState(user) : null;
 
   const finaleBlock =
-    finale && (order.canChallenge || order.trialPassed || user.identityId >= 7)
+    finale && (order.canChallenge || order.trialPassed || user.identityId >= 6)
       ? `
     <div class="finale-board">
       <h3>終章任務：天下待定</h3>
@@ -610,7 +609,7 @@ export function renderPromote(user, char) {
             <p>${s.blurb}</p>
             <p class="muted">${s.done ? `已通過（${Math.round(s.saved.avg)} 分）` : "尚未完成"}</p>
             <button type="button" class="btn ${s.done ? "ghost" : ""}" data-finale-seg="${s.id}"
-              ${order.canChallenge || order.trialPassed || user.identityId >= 7 ? "" : "disabled"}>
+              ${order.canChallenge || order.trialPassed || user.identityId >= 6 ? "" : "disabled"}>
               ${s.done ? "重溫本段" : "開始本段"}
             </button>
           </article>`
@@ -875,7 +874,7 @@ export function renderChronicle(user, char) {
       </div>
       <div class="book-page">
         <h3>晉升紀錄</h3>
-        <ul>${(c.promotions || []).map((p) => `<li>${new Date(p.at).toLocaleDateString()} → ${identityDisplayName(getIdentity(p.to), user.gender)}</li>`).join("") || "<li>尚未晉升——先完成脫籍之路</li>"}</ul>
+        <ul>${(c.promotions || []).map((p) => `<li>${new Date(p.at).toLocaleDateString()} → ${identityDisplayName(getIdentity(p.to), user.gender)}</li>`).join("") || "<li>尚未晉升——先完成啟程之路</li>"}</ul>
       </div>
       <div class="book-page">
         <h3>修復篇章</h3>

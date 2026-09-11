@@ -9,11 +9,21 @@ import {
   gateFor,
   outfitForIdentity,
   IDENTITY_DISCLAIMER,
+  migrateIdentityId,
+  STARTING_IDENTITY_ID,
+  IDENTITIES,
 } from "./data/identities.js";
 import { CHAPTERS, REMEDIALS } from "./data/chapters.js";
 import { getTrial } from "./data/trials.js";
 
-export { IDENTITY_DISCLAIMER, outfitForIdentity, getIdentity, identityDisplayName };
+export {
+  IDENTITY_DISCLAIMER,
+  outfitForIdentity,
+  getIdentity,
+  identityDisplayName,
+  STARTING_IDENTITY_ID,
+  IDENTITIES,
+};
 
 function clamp01(n) {
   return Math.min(1, Math.max(0, n));
@@ -33,7 +43,7 @@ export function ensureProgress(user) {
       recent: [],
     };
   }
-  if (typeof user.identityId !== "number") user.identityId = 0;
+  if (typeof user.identityId !== "number") user.identityId = STARTING_IDENTITY_ID;
   return user.progress;
 }
 
@@ -330,7 +340,7 @@ export function applyPromotion(user) {
   const p = ensureProgress(user);
   const gate = order.gate;
   if (!p.trials[gate.trialId]?.passed) return { ok: false, reason: "尚未通過晉升試煉" };
-  if (user.identityId >= 8) return { ok: false, reason: "已是最高身份" };
+  if (user.identityId >= IDENTITIES.length - 1) return { ok: false, reason: "已是最高身份" };
   user.identityId += 1;
   p.chronicle = p.chronicle || { promotions: [], restored: [], quotes: [] };
   p.chronicle.promotions.push({

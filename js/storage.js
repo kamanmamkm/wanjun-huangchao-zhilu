@@ -2,8 +2,11 @@
  * 用戶資料：經驗升等級；身份靠考核晉升。
  * 舊帳號自動遷移，唔會因為舊 XP 直接登基。
  */
+import { migrateIdentityId, STARTING_IDENTITY_ID } from "./data/identities.js";
+
 const USERS_KEY = "huangchao_users_v1";
 const SESSION_KEY = "huangchao_session_v1";
+const IDENTITY_SCHEMA = 2; // 取消奴隸／婢女後：0=庶民…7=帝王
 
 function readUsers() {
   try {
@@ -19,7 +22,7 @@ function writeUsers(users) {
 
 function blankProgress() {
   return {
-    identityId: 0,
+    identityId: STARTING_IDENTITY_ID,
     chapters: {},
     mastery: {},
     skills: {},
@@ -35,18 +38,45 @@ function blankProgress() {
   };
 }
 
-/** 舊用戶：xp 保留作等級；身份重置為 0（避免刷分即登基） */
+function remapIdentityRefs(u, mapFn) {
+  const p = u.progress;
+  if (!p) return;
+  if (p.chronicle?.promotions) {
+    p.chronicle.promotions = p.chronicle.promotions.map((pr) => ({
+      ...pr,
+      to: mapFn(pr.to),
+      from: pr.from != null ? mapFn(pr.from) : pr.from,
+    }));
+  }
+  // 舊「脫籍考核」進度作廢；其他試煉 id 不變
+  if (p.trials?.trial_to_commoner) delete p.trials.trial_to_commoner;
+}
+
+/** 遷移身份階梯＋補齊 progress */
 export function migrateUser(u) {
   if (!u) return u;
-  if (u.progress && typeof u.identityId === "number") return u;
-  const p = blankProgress();
-  // 若舊系統已有高 XP，可略增等級感，但身份仍由考核決定
-  u.identityId = 0;
-  u.progress = p;
-  u.stats = u.stats || { correct: 0, wrong: 0, games: 0 };
-  u.answered = u.answered || {};
-  u.streak = u.streak || 0;
-  u.xp = u.xp || 0;
+  if (!u.progress || typeof u.identityId !== "number") {
+    const p = blankProgress();
+    u.identityId = STARTING_IDENTITY_ID;
+    u.progress = p;
+    u.stats = u.stats || { correct: 0, wrong: 0, games: 0 };
+    u.answered = u.answered || {};
+    u.streak = u.streak || 0;
+    u.xp = u.xp || 0;
+    u.identitySchema = IDENTITY_SCHEMA;
+    return u;
+  }
+
+  if (u.identitySchema !== IDENTITY_SCHEMA) {
+    const oldId = u.identityId;
+    u.identityId = migrateIdentityId(oldId);
+    remapIdentityRefs(u, migrateIdentityId);
+    u.identitySchema = IDENTITY_SCHEMA;
+  }
+
+  if (typeof u.identityId !== "number" || u.identityId < 0) {
+    u.identityId = STARTING_IDENTITY_ID;
+  }
   return u;
 }
 
@@ -80,10 +110,11 @@ export function registerUser({ username, password, gender, characterId }) {
     xp: 0,
     streak: 0,
     answered: {},
-    identityId: 0,
+    identityId: STARTING_IDENTITY_ID,
     progress: blankProgress(),
     createdAt: Date.now(),
     stats: { correct: 0, wrong: 0, games: 0 },
+    identitySchema: IDENTITY_SCHEMA,
   };
   writeUsers(users);
   setSession(name);
@@ -108,12 +139,14 @@ export function getCurrentUser() {
   const users = readUsers();
   let u = users[s.username];
   if (!u) return null;
-  const migrated = migrateUser(u);
-  if (migrated !== u || !u.progress) {
-    users[s.username] = migrated;
+  const schemaBefore = u.identitySchema;
+  const idBefore = u.identityId;
+  u = migrateUser(u);
+  if (u.identitySchema !== schemaBefore || u.identityId !== idBefore || !u.progress) {
+    users[s.username] = u;
     writeUsers(users);
   }
-  return users[s.username];
+  return u;
 }
 
 export function updateUser(mutator) {

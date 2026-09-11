@@ -13,7 +13,7 @@ import { identityDisplayName, getIdentity, outfitForIdentity } from "./data/iden
  * @param {object} [opts]
  */
 export function renderHeroStage(char, identityId, size = "hero", opts = {}) {
-  const id = Math.min(8, Math.max(0, identityId ?? 0));
+  const id = Math.min(7, Math.max(0, identityId ?? 0));
   const vis = getStageVisual(id);
   const idn = getIdentity(id);
   const gender = opts.gender || char?.look?.gender || char?.gender || "male";
@@ -34,7 +34,7 @@ export function renderHeroStage(char, identityId, size = "hero", opts = {}) {
       </div>`;
   } else if (usePoster) {
     body = `<div class="stage-poster" role="img" aria-label="${name} · ${art.badge || outfit}">
-      <img src="${art.src}?v=rad4" alt="${name} · ${art.badge || "階段立繪"}" loading="lazy" />
+      <img src="${art.src}?v=rad5" alt="${name} · ${art.badge || "階段立繪"}" loading="lazy" />
       ${art.badge ? `<span class="stage-art-badge">${art.badge}</span>` : ""}
     </div>`;
   } else {

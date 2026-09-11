@@ -5,9 +5,9 @@
 export const CHAPTERS = {
   ch1_escape: {
     id: "ch1_escape",
-    title: "第一章：脫籍之路",
-    arc: "底層篇",
-    blurb: "掌握基礎史識，完成脫籍劇情。奴隸／婢女是開局困境，不是能力標籤。",
+    title: "第一章：啟程之路",
+    arc: "啟程篇",
+    blurb: "以庶民身分出發，掌握基礎史識，展開求學征程。",
     topics: ["foundation"],
     requiredCorrect: 6,
     stages: [
@@ -17,8 +17,8 @@ export const CHAPTERS = {
         icon: "📖",
         title: "入境故事",
         minutes: "2",
-        goal: "明白：勤學是出路，身份是劇情而非能力標籤。",
-        body: "你流落底層，世人稱你為奴隸／婢女。這不是對成績的評價，而是故事的起點。《任平生》要你用史識一步步脫困——先識基礎，再談晉升。",
+        goal: "明白：勤學是出路，身份靠考核晉升。",
+        body: "你是一名庶民少年／少女，站在城門外，肩上只有行囊與志向。《任平生》由 Lv.1 起步——先打穩基礎史識，再以考核一步步晉升。",
       },
       {
         id: "basic",

@@ -1,11 +1,11 @@
-import { CHARACTERS, getCharacter } from "./data/characters.js?v=ink1";
-import { QUESTIONS, checkFill } from "./data/questions.js?v=ink1";
-import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=ink1";
-import { levelFromXp } from "./data/levels.js?v=ink1";
-import { DIALOGUES } from "./data/dialogues.js?v=ink1";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=ink1";
-import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=ink1";
-import { renderAvatar } from "./avatar.js?v=ink1";
+import { CHARACTERS, getCharacter } from "./data/characters.js?v=ink2";
+import { QUESTIONS, checkFill } from "./data/questions.js?v=ink2";
+import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=ink2";
+import { levelFromXp } from "./data/levels.js?v=ink2";
+import { DIALOGUES } from "./data/dialogues.js?v=ink2";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=ink2";
+import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=ink2";
+import { renderAvatar } from "./avatar.js?v=ink2";
 import {
   CARD_TYPES,
   createBattle,
@@ -15,7 +15,7 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=ink1";
+} from "./data/shizhan.js?v=ink2";
 import {
   getCurrentUser,
   registerUser,
@@ -23,13 +23,15 @@ import {
   clearSession,
   addXp,
   updateUser,
-} from "./storage.js?v=ink1";
+} from "./storage.js?v=ink2";
 import {
   userSnapshot,
   buildPromotionOrder,
   recordLearning,
   IDENTITY_DISCLAIMER,
-} from "./progress.js?v=ink1";
+  identityDisplayName,
+  getIdentity,
+} from "./progress.js?v=ink2";
 import {
   renderJourneyHome,
   renderScroll,
@@ -38,9 +40,12 @@ import {
   renderNotes,
   renderChronicle,
   renderCuoshi,
+  renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=ink1";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=ink1";
+} from "./journey.js?v=ink2";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=ink2";
+import { renderPromoteReveal } from "./heroStage.js?v=ink2";
+import { getStageVisual } from "./data/stageVisuals.js?v=ink2";
 
 const app = document.getElementById("app");
 let toastTimer = null;
@@ -61,6 +66,8 @@ let state = {
   bossStep: 0,
   trial: null,
   cuoshi: null,
+  promoteReveal: null,
+  growthFocus: null,
 };
 
 function toast(msg) {
@@ -149,6 +156,10 @@ function journeyCtx() {
     toast,
     reward,
     getUser: getCurrentUser,
+    getCharacter: () => {
+      const u = getCurrentUser();
+      return u ? getCharacter(u.gender, u.characterId) : null;
+    },
   };
 }
 
@@ -170,6 +181,26 @@ function render() {
   document.body.className = `stage-visual-${id}${isCourt ? " theme-court" : ""}`;
   app.innerHTML = renderShell(user);
   bindShell(user);
+  if (state.promoteReveal) {
+    const { fromId, toId } = state.promoteReveal;
+    const char = getCharacter(user.gender, user.characterId);
+    const quote = getStageVisual(toId).quote;
+    app.insertAdjacentHTML(
+      "beforeend",
+      renderPromoteReveal({ char, fromId, toId, gender: user.gender, quote })
+    );
+    const close = () => {
+      state.promoteReveal = null;
+      toast(`晉升成功：${identityDisplayName(getIdentity(toId), user.gender)}`);
+      render();
+    };
+    document.getElementById("reveal-continue")?.addEventListener("click", close);
+    document.getElementById("reveal-skip")?.addEventListener("click", close);
+    document.getElementById("reveal-reduce-motion")?.addEventListener("click", () => {
+      document.body.classList.add("reduce-motion");
+      toast("已減少動態");
+    });
+  }
 }
 
 /* ========== Auth ========== */
@@ -314,30 +345,33 @@ function renderShell(user) {
                 ? renderChronicle(user, char)
                 : state.view === "cuoshi"
                   ? renderCuoshi(user)
-                  : state.view === "teacher"
-                    ? renderTeacherPage()
-                    : state.view === "practice"
-                      ? renderPractice()
-                      : state.view === "games"
-                        ? renderGamesHub()
-                        : state.view === "videos"
-                          ? renderVideos()
-                          : state.view === "profile"
-                            ? renderProfile(user, char, snap)
-                            : state.view === "wordwall"
-                              ? renderWordwall()
-                              : state.view === "timeline"
-                                ? renderTimeline()
-                                : state.view === "dialogue"
-                                  ? renderDialogue()
-                                  : state.view === "shizhan"
-                                    ? renderShizhan(user, char, idn)
-                                    : "";
+                  : state.view === "growth"
+                    ? renderGrowthScroll(user, char, state.growthFocus)
+                    : state.view === "teacher"
+                      ? renderTeacherPage()
+                      : state.view === "practice"
+                        ? renderPractice()
+                        : state.view === "games"
+                          ? renderGamesHub()
+                          : state.view === "videos"
+                            ? renderVideos()
+                            : state.view === "profile"
+                              ? renderProfile(user, char, snap)
+                              : state.view === "wordwall"
+                                ? renderWordwall()
+                                : state.view === "timeline"
+                                  ? renderTimeline()
+                                  : state.view === "dialogue"
+                                    ? renderDialogue()
+                                    : state.view === "shizhan"
+                                      ? renderShizhan(user, char, idn)
+                                      : "";
 
   const topNav = null; // nav built below
 
   const navItems = [
     ["home", "行旅", "ico-home"],
+    ["growth", "成長", "ico-growth"],
     ["scroll", "長卷", "ico-scroll"],
     ["promote", "晉升", "ico-seal"],
     ["cuoshi", "錯史", "ico-battle"],

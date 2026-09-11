@@ -5,12 +5,12 @@ let avatarSeq = 0;
 
 const GLOW = [0, 0.02, 0.06, 0.1, 0.16, 0.24, 0.34, 0.46, 0.58];
 
-/** 低階改為粗布色；高階保留角色本色 */
+/** 低階改為粗布色；學子青綠、縣令朱紅細節；高階保留角色本色 */
 function dressLook(L, rank) {
   if (!L) return L;
   const r = Math.min(8, Math.max(0, rank));
   if (r >= 5) return { ...L };
-  if (r <= 1) {
+  if (r <= 0) {
     return {
       ...L,
       robe: "#9a8b72",
@@ -18,23 +18,38 @@ function dressLook(L, rank) {
       accent: "#8a7a60",
     };
   }
+  if (r === 1) {
+    return {
+      ...L,
+      robe: "#c4b496",
+      robe2: "#8a7a60",
+      accent: "#7a8f4a",
+    };
+  }
   if (r === 2) {
     return {
       ...L,
-      robe: mixHex(L.robe, "#8a7a68", 0.55),
-      robe2: mixHex(L.robe2, "#5c5040", 0.5),
-      accent: mixHex(L.accent, "#9a8a70", 0.55),
+      robe: mixHex(L.robe || "#d8e4dc", "#5a8a7a", 0.35),
+      robe2: "#35665b",
+      accent: "#35665b",
     };
   }
   if (r === 3) {
     return {
       ...L,
-      robe: mixHex(L.robe, "#9a8b72", 0.3),
-      robe2: mixHex(L.robe2, "#6e6250", 0.25),
-      accent: mixHex(L.accent, "#a09070", 0.3),
+      robe: mixHex(L.robe, "#6a8a9a", 0.25),
+      robe2: mixHex(L.robe2, "#4a6a7a", 0.3),
+      accent: mixHex(L.accent, "#4a7a6e", 0.4),
     };
   }
-  // rank 4：略低調
+  if (r === 4) {
+    return {
+      ...L,
+      robe: mixHex(L.robe, "#a3312b", 0.22),
+      robe2: mixHex(L.robe2, "#7e2418", 0.25),
+      accent: "#a3312b",
+    };
+  }
   return {
     ...L,
     accent: mixHex(L.accent, "#b0a080", 0.15),
@@ -494,21 +509,22 @@ export function renderAvatar(character, rankId = 0, size = "md", opts = {}) {
     return `<div class="avatar-fallback">?</div>`;
   }
   const rank = Math.min(8, Math.max(0, rankId));
-  const dims = size === "lg" ? 248 : size === "sm" ? 104 : 148;
-  const h = Math.round(dims * 1.24);
+  const dims =
+    size === "hero" ? 320 : size === "lg" ? 248 : size === "sm" ? 104 : 148;
+  const h = Math.round(dims * (size === "hero" ? 1.35 : 1.24));
   const gender = character.look?.gender || character.gender || "male";
   const outfit =
     opts.outfitLabel ||
     (gender === "female"
-      ? ["粗布襖裙", "布裙短襖", "戎裝布甲", "羅衫青裙", "青衫束帶", "錦甲華服", "錦裙珠釵", "翟衣華飾", "鳳袍珠冠"][rank]
-      : ["粗布短褐", "布衣短褐", "戎服布甲", "青衫儒服", "官袍束帶", "錦甲戎裝", "錦衣玉帶", "蟒袍華冠", "龍袍冕旒"][rank]);
+      ? ["粗布襖裙", "布裙短襖", "青衿布裙", "羅衫青裙", "青衫束帶", "緋袍佩印", "錦裙珠釵", "翟衣華飾", "鳳袍珠冠"][rank]
+      : ["粗布短褐", "布衣短褐", "青衿布袍", "青衫儒服", "官袍束帶", "緋袍佩印", "錦衣玉帶", "蟒袍華冠", "龍袍冕旒"][rank]);
   const baseAccent = character.look?.accent || character.color || "#c6a35a";
   const accent = rank <= 1 ? "#8a7a60" : rank <= 3 ? "#a09070" : baseAccent;
 
   if (character.portrait) {
     return `
     <div class="avatar-art avatar-${size} outfit-${rank}" style="--accent:${accent};--glow:${GLOW[rank]};width:${dims}px;height:${h}px" role="img" aria-label="${character.name} · ${outfit}">
-      <img src="${character.portrait}?v=rps1" alt="${character.name}" width="${dims}" height="${h}" loading="lazy" />
+      <img src="${character.portrait}?v=ink2" alt="${character.name}" width="${dims}" height="${h}" loading="lazy" />
       <span class="avatar-art-outfit">${outfit}</span>
       <span class="avatar-art-era">${character.era || ""}</span>
     </div>`;
@@ -519,7 +535,8 @@ export function renderAvatar(character, rankId = 0, size = "md", opts = {}) {
   }
   const L = dressLook(character.look, rank);
   const uid = `av-${character.id}-${++avatarSeq}`;
-  const drawFn = rank <= 1 ? drawPlain : DRAW[character.id] || drawHanxin;
+  const drawFn =
+    rank <= 0 ? drawPlain : rank === 1 ? drawPlain : DRAW[character.id] || drawHanxin;
   return `
   <svg class="avatar-svg avatar-${size} outfit-${rank}" viewBox="0 -10 120 156" width="${dims}" height="${h}" aria-label="${character.name} · ${outfit}" role="img">
     ${frame(uid, L, outfit, GLOW[rank], drawFn(uid, L))}

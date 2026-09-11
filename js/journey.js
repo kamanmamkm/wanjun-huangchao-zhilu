@@ -4,7 +4,10 @@
 import { CHAPTERS, chapterList } from "./data/chapters.js";
 import { XP_REWARDS } from "./data/levels.js";
 import { CUOSHI_BATTLES, getCuoshi } from "./data/cuoshi.js";
+import { IDENTITIES } from "./data/identities.js";
+import { getStageVisual, SKILL_BARS, skillFill, STAGE_RELIC } from "./data/stageVisuals.js";
 import { renderAvatar } from "./avatar.js";
+import { renderHeroStage, renderStudyCompanion, renderPromoteReveal } from "./heroStage.js";
 import {
   userSnapshot,
   buildPromotionOrder,
@@ -27,25 +30,26 @@ import {
 import { updateUser, addXp, pushRecent } from "./storage.js";
 import { getTrial } from "./data/trials.js";
 
-export function renderJourneyHome(user, char, ctx) {
+export function renderJourneyHome(user, char) {
   const snap = userSnapshot(user);
   const order = buildPromotionOrder(user);
   const ch = CHAPTERS.ch1_escape;
   const chProg = user.progress?.chapters?.ch1_escape || { stages: {} };
   const stages = ch.stages || [];
   const nextStage = stages.find((s) => !chProg.stages?.[s.id]) || stages[stages.length - 1];
-  const dots = stages
-    .map((s) => {
-      const done = !!chProg.stages?.[s.id];
-      const cur = nextStage?.id === s.id && !chProg.done;
-      if (done) return `<span class="route-dot done" title="${s.title}">●</span>`;
-      if (cur) return `<span class="route-dot current" title="${s.title}">◉</span>`;
-      return `<span class="route-dot locked" title="${s.title}">○</span>`;
-    })
-    .join('<span class="route-line">──</span>');
+  const skills = user.progress?.skills || {};
+  const vis = getStageVisual(snap.identity.id);
+
+  const skillBars = SKILL_BARS.map((s) => {
+    const fill = skillFill(skills, s.key);
+    const blocks = [0, 1, 2, 3]
+      .map((i) => `<i class="${fill > i * 0.25 ? "on" : ""}"></i>`)
+      .join("");
+    return `<div class="skill-row"><span>${s.label}</span><span class="skill-pips">${blocks}</span></div>`;
+  }).join("");
 
   const checklist = order.items
-    .slice(0, 6)
+    .slice(0, 5)
     .map((i) => {
       const mark = i.ok ? "✓" : i.locked ? "○" : "✗";
       const cls = i.ok ? "ok" : i.locked ? "lock" : "no";
@@ -53,62 +57,64 @@ export function renderJourneyHome(user, char, ctx) {
     })
     .join("");
 
-  const recent = (user.progress?.recent || [])
-    .slice(0, 3)
-    .map((t) => `<span class="chip-soft">${t}</span>`)
-    .join("") || `<span class="chip-soft">尚未有紀錄——從第一章開始</span>`;
+  const ladder = IDENTITIES.map((idn) => {
+    const unlocked = user.identityId >= idn.id;
+    const current = user.identityId === idn.id;
+    const label = identityDisplayName(idn, user.gender);
+    if (current) return `<span class="grow-step current">【${label}】</span>`;
+    if (unlocked) return `<span class="grow-step done">${label}</span>`;
+    if (idn.id === user.identityId + 1) return `<span class="grow-step next">${label}</span>`;
+    return `<span class="grow-step locked">…</span>`;
+  }).join('<span class="grow-sep">──</span>');
 
   return `
-  <section class="dash">
-    <aside class="dash-nav panel-paper">
-      <p class="brand-mini">《任平生》</p>
-      <button type="button" class="side-link active" data-nav="home">行旅首頁</button>
-      <button type="button" class="side-link" data-nav="scroll">歷史長卷</button>
-      <button type="button" class="side-link" data-nav="promote">晉升試煉</button>
-      <button type="button" class="side-link" data-nav="cuoshi">錯史之戰</button>
-      <button type="button" class="side-link" data-nav="notes">待考札記</button>
-      <button type="button" class="side-link" data-nav="practice">藏書閣·練習</button>
-      <button type="button" class="side-link" data-nav="games">趣味關卡</button>
-      <button type="button" class="side-link" data-nav="chronicle">我的史冊</button>
-      <button type="button" class="side-link" data-nav="teacher">老師頁</button>
-      <p class="side-note">${IDENTITY_DISCLAIMER.slice(0, 42)}…</p>
+  <section class="dash dash-hero-first">
+    <aside class="dash-left thin-card">
+      <p class="eyebrow ink-red">當前身份</p>
+      <h2 class="id-hero-name" style="color:${snap.identity.color}">【${snap.identityName}】</h2>
+      <p class="muted">${char?.name || "行者"} · ${vis.scene}</p>
+      <p class="id-line">Lv.${snap.level.level}　XP ${user.xp}</p>
+      <div class="xp-bar xl"><i style="width:${snap.level.progress}%"></i></div>
+      <h3 class="section-mini">成長能力</h3>
+      <div class="skill-panel">${skillBars}</div>
+      <button type="button" class="btn ghost" data-nav="growth">人物成長長卷</button>
     </aside>
 
-    <div class="dash-main panel-paper">
-      <p class="eyebrow ink-red">${ch.arc}</p>
-      <h2>${ch.title}</h2>
-      <p class="lead">${ch.blurb}</p>
-      <div class="route-map" aria-label="關卡路線">${dots}</div>
-      <div class="task-card">
-        <p class="task-kicker">當前任務</p>
-        <h3>${nextStage?.icon || "🚩"} ${nextStage?.title || "本章已完成"}</h3>
-        <p>${nextStage?.goal || "可前往晉升殿查看脫籍考核。"}</p>
-        <p class="muted">預計 ${nextStage?.minutes || "—"} 分鐘${nextStage?.difficulty ? ` · ${nextStage.difficulty}` : ""}</p>
-        <button type="button" class="btn" data-goto="scroll">${chProg.done ? "重溫長卷" : "繼續旅程"}</button>
-      </div>
+    <div class="dash-center">
+      ${renderHeroStage(char, snap.identity.id, "hero", {
+        gender: user.gender,
+        priorityBoost: true,
+      })}
+      <p class="hero-nameplate">${char?.name || "行者"} · ${snap.outfit}</p>
     </div>
 
-    <aside class="dash-hero panel-paper">
-      <div class="hero-card">
-        ${renderAvatar(char, snap.identity.id, "lg")}
-        <h3>${char?.name || "行者"}</h3>
-        <p class="id-line">身份：<strong style="color:${snap.identity.color}">${snap.identityName}</strong></p>
-        <p class="id-line">等級：Lv.${snap.level.level}　衣裝：${snap.outfit}</p>
-        <div class="xp-bar xl"><i style="width:${snap.level.progress}%"></i></div>
-        <p class="muted">經驗 ${user.xp}${snap.level.nextXp != null ? `／下一級 ${snap.level.nextXp}` : ""}</p>
-      </div>
-      <div class="edict">
-        <h4>晉升令${order.next ? ` → ${identityDisplayName(order.next, user.gender)}` : ""}</h4>
+    <aside class="dash-right thin-card">
+      <p class="task-kicker">主線任務</p>
+      <h3>${nextStage?.title || "本章已完成"}</h3>
+      <p>${nextStage?.goal || "可前往晉升殿查看脫籍考核。"}</p>
+      <p class="muted">${ch.arc} · 約 ${nextStage?.minutes || "—"} 分鐘</p>
+      <button type="button" class="btn" data-goto="scroll">${chProg.done ? "重溫長卷" : "繼續旅程"}</button>
+      <div class="edict compact">
+        <h4>晉升條件</h4>
         <ul class="edict-list">${checklist}</ul>
         <button type="button" class="btn ${order.canChallenge ? "" : "ghost"}" data-goto="promote">
-          ${order.canChallenge ? "前往晉升試煉" : "查看晉升條件"}
+          ${order.canChallenge ? "查看試煉" : "查看試煉"}
         </button>
       </div>
     </aside>
 
-    <footer class="dash-foot panel-paper">
-      <span>最新成果</span>
-      <div class="foot-chips">${recent}</div>
+    <footer class="dash-foot thin-card">
+      <div class="growth-strip">
+        <span>人物成長</span>
+        <div class="growth-ladder">${ladder}</div>
+        <button type="button" class="btn ghost" data-nav="growth">展開長卷</button>
+      </div>
+      <div class="home-quick">
+        <button type="button" class="chip" data-nav="scroll">歷史長卷</button>
+        <button type="button" class="chip" data-nav="notes">待考札記</button>
+        <button type="button" class="chip" data-nav="practice">藏書閣</button>
+        <button type="button" class="chip" data-nav="cuoshi">錯史之戰</button>
+      </div>
     </footer>
   </section>`;
 }
@@ -178,11 +184,13 @@ export function renderChapterDetail(user, chapterId, stageId) {
 }
 
 function renderStagePlay(user, ch, stage) {
+  const companionSlot = `<div id="study-companion-slot" data-identity="${user.identityId || 0}"></div>`;
   if (stage.kind === "story") {
     return `
-    <section class="panel-paper stage-play">
+    <section class="panel-paper stage-play study-mode">
+      ${companionSlot}
       <p class="eyebrow">${ch.title}</p>
-      <h2>${stage.icon} ${stage.title}</h2>
+      <h2>${stage.title}</h2>
       <div class="story-box">${stage.body}</div>
       <p class="lead">學習目標：${stage.goal}</p>
       <button type="button" class="btn" data-finish-stage="${ch.id}:${stage.id}">明白了，繼續</button>
@@ -190,8 +198,9 @@ function renderStagePlay(user, ch, stage) {
   }
   if (stage.kind === "interact" && stage.gotoGame) {
     return `
-    <section class="panel-paper stage-play">
-      <h2>${stage.icon} ${stage.title}</h2>
+    <section class="panel-paper stage-play study-mode">
+      ${companionSlot}
+      <h2>${stage.title}</h2>
       <p class="lead">${stage.goal}</p>
       <p>此關連接到「時光長河」互動。完成一局後返回可標記進度。</p>
       <button type="button" class="btn" data-goto="${stage.gotoGame}">開始時序長廊</button>
@@ -200,22 +209,98 @@ function renderStagePlay(user, ch, stage) {
   }
   if (stage.kind === "boss" && stage.boss) {
     return `
-    <section class="panel-paper stage-play" id="boss-stage" data-chapter="${ch.id}" data-stage="${stage.id}">
-      <h2>${stage.icon} ${stage.title}</h2>
+    <section class="panel-paper stage-play study-mode" id="boss-stage" data-chapter="${ch.id}" data-stage="${stage.id}">
+      ${companionSlot}
+      <h2>${stage.title}</h2>
       <p class="lead">Boss 是一本被改亂的史書——辨錯、修正、舉證。</p>
       <div class="boss-progress"><i style="width:0%" id="boss-bar"></i></div>
       <div id="boss-body"></div>
     </section>`;
   }
-  // basic / source questions
   const qs = stage.questions || [];
   return `
-  <section class="panel-paper stage-play" id="stage-quiz" data-chapter="${ch.id}" data-stage="${stage.id}">
+  <section class="panel-paper stage-play study-mode" id="stage-quiz" data-chapter="${ch.id}" data-stage="${stage.id}">
+    ${companionSlot}
     <div class="q-top">
       <span>${ch.title} · ${stage.title}</span>
       <span id="sq-progress">進度 1 / ${qs.length}</span>
     </div>
     <div id="sq-body"></div>
+  </section>`;
+}
+
+export function renderGrowthScroll(user, char, growthFocus) {
+  const cur = user.identityId || 0;
+  const promotions = user.progress?.chronicle?.promotions || [];
+  const cards = IDENTITIES.map((idn) => {
+    const unlocked = cur >= idn.id;
+    const current = cur === idn.id;
+    const nextHint = idn.id === cur + 1;
+    const vis = getStageVisual(idn.id);
+    const name = identityDisplayName(idn, user.gender);
+    const promo = promotions.find((p) => p.to === idn.id);
+    if (!unlocked && !nextHint) {
+      return `
+      <article class="growth-card locked">
+        <div class="growth-preview unknown">？</div>
+        <h3>未知</h3>
+        <p class="muted">繼續晉升以揭曉</p>
+      </article>`;
+    }
+    if (nextHint && !unlocked) {
+      return `
+      <article class="growth-card next-hint">
+        ${renderHeroStage(char, idn.id, "md", {
+          gender: user.gender,
+          silhouette: true,
+          previewId: idn.id,
+          compact: true,
+          showRelic: false,
+          hideQuote: true,
+        })}
+        <h3>${name}</h3>
+        <p class="muted">剪影 · 可見「${vis.prop}」</p>
+      </article>`;
+    }
+    return `
+    <article class="growth-card ${current ? "current" : "done"}" data-growth-pick="${idn.id}">
+      ${renderHeroStage(char, idn.id, "md", {
+        gender: user.gender,
+        compact: true,
+        hideQuote: true,
+        showRelic: idn.id === 0 || idn.id === cur,
+      })}
+      <h3>${current ? `【${name}】` : name} ${current ? "· 目前" : "· 已解鎖"}</h3>
+      <p>${vis.scene} · ${vis.prop}</p>
+      <p class="muted">${promo ? new Date(promo.at).toLocaleDateString() + " 晉升" : idn.id === 0 ? "開局" : ""}</p>
+    </article>`;
+  }).join("");
+
+  const focusId =
+    typeof growthFocus === "number" && growthFocus <= cur ? growthFocus : cur;
+  const focusVis = getStageVisual(focusId);
+  const focusIdn = getIdentity(focusId);
+  const focusPromo = promotions.find((p) => p.to === focusId);
+
+  return `
+  <section class="panel-paper growth-scroll-view">
+    <p class="eyebrow ink-red">人物成長長卷</p>
+    <h2>同一人物 · 八個人生階段</h2>
+    <p class="lead">面貌不變，場景、姿態、道具與氣場隨身份解鎖。${STAGE_RELIC.note}</p>
+    <p class="muted">${IDENTITY_DISCLAIMER}</p>
+    <div class="growth-rail">${cards}</div>
+    <div class="growth-focus thin-card">
+      ${renderHeroStage(char, focusId, "hero", { gender: user.gender, priorityBoost: true })}
+      <div class="growth-focus-meta">
+        <h3>${identityDisplayName(focusIdn, user.gender)}</h3>
+        <p>${focusVis.pose} · 手持／標誌：${focusVis.prop}</p>
+        <p>背景：${focusVis.scene}（${focusVis.bgHint}）</p>
+        <p class="stage-quote">「${focusVis.quote}」</p>
+        <p class="muted">${focusPromo ? `通過試煉晉升於 ${new Date(focusPromo.at).toLocaleString()}` : focusId === 0 ? "旅程起點" : "已解鎖造型"}</p>
+        <p class="muted">衣裝標籤：${focusIdn.outfit?.[user.gender] || focusIdn.outfit?.male}（重看舊造型唔等於改身份）</p>
+      </div>
+    </div>
+    <button type="button" class="btn ghost" data-nav="home">返回行旅</button>
   </section>`;
 }
 
@@ -283,6 +368,14 @@ export function bindJourney(user, ctx) {
   bindPromote(user, ctx);
   bindNotes(user, ctx);
   bindCuoshi(user, ctx);
+  bindGrowth(user, ctx);
+
+  const slot = document.getElementById("study-companion-slot");
+  if (slot && ctx.getCharacter) {
+    const char = ctx.getCharacter();
+    const id = Number(slot.dataset.identity || 0);
+    slot.outerHTML = renderStudyCompanion(char, id);
+  }
 }
 
 function bindCuoshi(user, ctx) {
@@ -528,7 +621,7 @@ export function renderPromote(user, char) {
     <p class="lead disclaimer">${IDENTITY_DISCLAIMER}</p>
     <div class="promote-layout">
       <div class="promote-silhouette">
-        ${renderAvatar(char, snap.identity.id, "lg")}
+        ${renderHeroStage(char, snap.identity.id, "lg", { gender: user.gender, priorityBoost: true })}
         <p>當前：<strong>${snap.identityName}</strong> · Lv.${snap.level.level}</p>
         <p class="next-shadow">下一身份：${order.next ? identityDisplayName(order.next, user.gender) : "—"}</p>
       </div>
@@ -567,17 +660,20 @@ export function renderPromote(user, char) {
 function bindPromote(user, ctx) {
   const { state, render, toast } = ctx;
   document.getElementById("btn-confirm-promote")?.addEventListener("click", () => {
+    const fromId = ctx.getUser()?.identityId ?? 0;
+    let toId = null;
     let name = "";
     updateUser((u) => {
       const r = applyPromotion(u);
       if (r.ok) {
+        toId = r.identityId;
         name = identityDisplayName(getIdentity(r.identityId), u.gender);
         pushRecent(`晉升為${name}`);
       } else toast(r.reason);
     });
-    if (name) {
-      toast(`晉升成功：${name}！`);
+    if (name && toId != null) {
       addXp(XP_REWARDS.trialPassBonus || 40, { correct: true });
+      state.promoteReveal = { fromId, toId };
       render();
     }
   });
@@ -602,6 +698,14 @@ function bindPromote(user, ctx) {
       answers: [],
     };
     paintTrial(ctx);
+  });
+}
+
+export function bindGrowth(user, ctx) {
+  appClick("[data-growth-pick]", (btn) => {
+    const id = Number(btn.dataset.growthPick);
+    ctx.state.growthFocus = id;
+    ctx.render();
   });
 }
 

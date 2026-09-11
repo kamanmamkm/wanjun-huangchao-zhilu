@@ -1,0 +1,410 @@
+/* 人物主角舞台 · 成長長卷 · 晉升揭幕 · 答題陪伴 */
+
+.dash-hero-first {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.9fr) minmax(280px, 1.4fr) minmax(200px, 0.95fr);
+  grid-template-areas:
+    "left center right"
+    "foot foot foot";
+  gap: 0.85rem;
+  align-items: stretch;
+}
+.dash-left { grid-area: left; }
+.dash-center { grid-area: center; text-align: center; }
+.dash-right { grid-area: right; }
+.dash-hero-first .dash-foot { grid-area: foot; }
+
+.thin-card {
+  background: linear-gradient(180deg, rgba(255, 252, 245, 0.92), rgba(245, 240, 230, 0.88));
+  border: 1px solid rgba(37, 40, 32, 0.1);
+  border-radius: 8px;
+  padding: 1rem 1.05rem;
+  box-shadow: none;
+}
+.id-hero-name {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 3vw, 2.1rem);
+  margin: 0.2rem 0 0.5rem;
+  letter-spacing: 0.06em;
+}
+.section-mini {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  margin: 1rem 0 0.4rem;
+  color: var(--ink-soft);
+}
+.skill-panel { display: grid; gap: 0.35rem; margin-bottom: 0.85rem; }
+.skill-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.88rem;
+}
+.skill-pips { display: inline-flex; gap: 3px; }
+.skill-pips i {
+  width: 14px;
+  height: 8px;
+  border-radius: 2px;
+  background: rgba(37, 40, 32, 0.12);
+  display: inline-block;
+}
+.skill-pips i.on { background: var(--jade); }
+.edict.compact { margin-top: 1rem; padding: 0.75rem; }
+.hero-nameplate {
+  font-family: var(--font-display);
+  margin: 0.5rem 0 0;
+  color: var(--ink-soft);
+}
+
+/* —— 舞台框 —— */
+.hero-stage-frame {
+  position: relative;
+  margin: 0 auto;
+  max-width: 100%;
+  min-height: 280px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--stage-accent, var(--cinnabar)) 35%, transparent);
+  background: var(--paper-warm);
+}
+.hero-stage-frame.size-hero {
+  min-height: min(58vh, 520px);
+  width: 100%;
+}
+.hero-stage-frame.size-lg { min-height: 300px; }
+.hero-stage-frame.size-md { min-height: 200px; max-width: 220px; }
+.stage-sky,
+.stage-ground {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.stage-sky {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 20%, color-mix(in srgb, var(--stage-accent) 18%, transparent), transparent 60%),
+    linear-gradient(180deg, #f7f2e8, #ebe3d4);
+}
+.stage-ground {
+  top: auto;
+  height: 38%;
+  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--stage-accent) 12%, #d9d0c0));
+}
+.stage-figure {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  padding: 1.2rem 0.5rem 0.4rem;
+  min-height: inherit;
+}
+.stage-figure .avatar-art,
+.stage-figure .avatar-svg {
+  max-width: min(92%, 340px);
+  height: auto !important;
+  filter: drop-shadow(0 10px 18px rgba(37, 40, 32, 0.18));
+}
+.stage-caption {
+  position: relative;
+  z-index: 2;
+  padding: 0 1rem 1rem;
+  text-align: center;
+}
+.stage-scene {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+.stage-quote {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  margin: 0.35rem 0 0;
+  color: var(--ink);
+  letter-spacing: 0.04em;
+}
+.stage-prop-badge {
+  position: absolute;
+  top: 0.7rem;
+  right: 0.7rem;
+  z-index: 3;
+  font-size: 0.72rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--stage-accent) 40%, transparent);
+  background: rgba(255, 252, 245, 0.9);
+  color: var(--ink-soft);
+  border-radius: 4px;
+  letter-spacing: 0.06em;
+}
+.stage-relic {
+  position: absolute;
+  left: 0.7rem;
+  bottom: 0.7rem;
+  z-index: 3;
+  font-size: 0.68rem;
+  padding: 0.2rem 0.45rem;
+  background: rgba(37, 40, 32, 0.72);
+  color: #f5f0e6;
+  border-radius: 3px;
+}
+
+/* 場景色調差異（優先：庶民／學子／縣令） */
+.scene-courtyard .stage-sky { background: linear-gradient(180deg, #e8dfd0, #cfc2ae); }
+.scene-street .stage-sky { background: linear-gradient(180deg, #f3e9d6, #e2d2b4); }
+.scene-academy .stage-sky {
+  background: linear-gradient(180deg, #e4efe8, #c5d9ce);
+}
+.scene-academy.priority-stage {
+  box-shadow: inset 0 0 0 1px rgba(53, 102, 91, 0.35);
+}
+.scene-study .stage-sky { background: linear-gradient(180deg, #dde6ec, #c5d0da); }
+.scene-yamen .stage-sky {
+  background: linear-gradient(180deg, #f0e4d8, #e2c8b8);
+}
+.scene-yamen.priority-stage {
+  box-shadow: inset 0 0 0 1px rgba(163, 49, 43, 0.35);
+}
+.scene-hall .stage-sky { background: linear-gradient(180deg, #d8e0dc, #2a3834 160%); }
+.scene-court .stage-sky { background: linear-gradient(180deg, #2a322e, #182321); }
+.scene-court .stage-quote,
+.scene-tower .stage-quote,
+.scene-palace .stage-quote { color: #fffcf5; }
+.scene-court .stage-scene,
+.scene-tower .stage-scene,
+.scene-palace .stage-scene { color: rgba(255, 252, 245, 0.75); }
+.scene-tower .stage-sky { background: linear-gradient(180deg, #3a4038, #182321); }
+.scene-palace .stage-sky {
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(178, 148, 85, 0.35), transparent 55%),
+    linear-gradient(180deg, #3a2824, #182321);
+}
+
+/* 姿態微調（同一立繪，氣場不同） */
+.pose-watchful .stage-figure { transform: translateY(4px); }
+.pose-ready .stage-figure { transform: none; }
+.pose-reading .stage-figure { transform: translateX(-6px) rotate(-1.5deg); }
+.pose-writing .stage-figure { transform: translateX(4px); }
+.pose-document .stage-figure { transform: scale(1.02); }
+.pose-sovereign .stage-figure { transform: scale(1.04); }
+
+.stage-silhouette {
+  position: relative;
+  display: inline-block;
+}
+.stage-silhouette .avatar-art,
+.stage-silhouette .avatar-svg {
+  filter: brightness(0) contrast(1.1);
+  opacity: 0.55;
+}
+.sil-veil {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 40%, rgba(24, 35, 33, 0.55));
+}
+.sil-prop {
+  position: absolute;
+  bottom: 12%;
+  right: 8%;
+  font-size: 0.75rem;
+  color: var(--gold);
+  background: rgba(24, 35, 33, 0.75);
+  padding: 0.2rem 0.45rem;
+  border-radius: 3px;
+}
+
+.growth-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+}
+.growth-ladder {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem;
+  font-size: 0.86rem;
+  font-family: var(--font-display);
+}
+.grow-step.current { color: var(--cinnabar); font-weight: 700; }
+.grow-step.done { color: var(--jade); }
+.grow-step.next { color: var(--gold-deep); }
+.grow-step.locked { color: #b0a890; }
+.grow-sep { color: #c4b498; font-size: 0.75rem; }
+.home-quick { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.55rem; }
+.home-quick .chip,
+.chip {
+  border: 1px solid rgba(37, 40, 32, 0.14);
+  background: var(--paper-warm);
+  border-radius: 6px;
+  padding: 0.4rem 0.75rem;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+/* 成長長卷 */
+.growth-rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(160px, 200px);
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding: 0.5rem 0 1rem;
+  scroll-snap-type: x proximity;
+}
+.growth-card {
+  scroll-snap-align: start;
+  border: 1px solid rgba(37, 40, 32, 0.12);
+  border-radius: 8px;
+  padding: 0.65rem;
+  background: var(--paper-warm);
+  cursor: pointer;
+  text-align: left;
+}
+.growth-card.current { border-color: var(--cinnabar); }
+.growth-card.locked {
+  opacity: 0.65;
+  cursor: default;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 180px;
+}
+.growth-preview.unknown {
+  font-size: 2.5rem;
+  font-family: var(--font-display);
+  color: #b0a890;
+}
+.growth-focus {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 1rem;
+  margin: 0.5rem 0 1rem;
+  align-items: center;
+}
+.growth-focus-meta h3 {
+  font-family: var(--font-display);
+  font-size: var(--fs-page);
+  margin: 0 0 0.5rem;
+}
+
+/* 晉升揭幕 */
+.promote-reveal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  background: rgba(24, 35, 33, 0.82);
+  padding: 1rem;
+  animation: revealFade 0.45s ease both;
+}
+.reveal-inner {
+  max-width: 920px;
+  width: 100%;
+  background: linear-gradient(180deg, #24302c, #182321);
+  border: 1px solid rgba(178, 148, 85, 0.5);
+  border-radius: 10px;
+  padding: 1.4rem;
+  color: #fffcf5;
+  text-align: center;
+}
+.reveal-swap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+.reveal-arrow {
+  font-size: 1.8rem;
+  color: var(--gold);
+  font-family: var(--font-display);
+}
+.reveal-new {
+  animation: revealPop 0.7s 0.2s ease both;
+}
+.reveal-title {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  color: var(--gold);
+  margin: 0.4rem 0 0;
+}
+.reveal-old { opacity: 0.55; transform: scale(0.85); }
+.reduce-motion .reveal-new,
+.reduce-motion .promote-reveal {
+  animation: none !important;
+}
+@keyframes revealFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes revealPop {
+  from { opacity: 0; transform: translateY(12px) scale(0.92); }
+  to { opacity: 1; transform: none; }
+}
+
+/* 答題模式：人物退到角落 */
+.study-mode {
+  position: relative;
+  padding-bottom: 4.5rem;
+}
+.study-companion {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 40;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.55rem;
+  max-width: min(320px, 92vw);
+  pointer-events: none;
+}
+.study-companion .avatar-art,
+.study-companion .avatar-svg {
+  width: 72px !important;
+  height: auto !important;
+  flex-shrink: 0;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.2));
+}
+.study-bubble {
+  background: rgba(255, 252, 245, 0.96);
+  border: 1px solid rgba(37, 40, 32, 0.14);
+  border-radius: 8px;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--ink-soft);
+  box-shadow: 0 8px 20px rgba(37, 40, 32, 0.12);
+}
+.study-bubble p { margin: 0; }
+
+@media (max-width: 960px) {
+  .dash-hero-first {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "left"
+      "center"
+      "right"
+      "foot";
+  }
+  .dash-left .skill-panel { display: none; }
+  .hero-stage-frame.size-hero {
+    min-height: 320px;
+  }
+  .stage-figure .avatar-art,
+  .stage-figure .avatar-svg {
+    max-width: min(78%, 260px);
+  }
+  .growth-focus { grid-template-columns: 1fr; }
+  .study-companion {
+    right: 0.5rem;
+    bottom: 0.5rem;
+  }
+  .study-bubble { display: none; }
+}

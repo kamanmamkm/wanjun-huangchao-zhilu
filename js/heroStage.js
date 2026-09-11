@@ -1,8 +1,9 @@
 /**
  * 角色舞台：場景框＋立繪＋道具徽章＋貫穿小物
+ * 有階段專屬海報時，主頁／成長大圖優先用海報（保留角色臉孔系統作小頭像）
  */
 import { renderAvatar } from "./avatar.js";
-import { getStageVisual, STAGE_RELIC } from "./data/stageVisuals.js";
+import { getStageVisual, STAGE_RELIC, getStageArt } from "./data/stageVisuals.js";
 import { identityDisplayName, getIdentity, outfitForIdentity } from "./data/identities.js";
 
 /**
@@ -15,40 +16,56 @@ export function renderHeroStage(char, identityId, size = "hero", opts = {}) {
   const id = Math.min(8, Math.max(0, identityId ?? 0));
   const vis = getStageVisual(id);
   const idn = getIdentity(id);
-  const name = identityDisplayName(idn, opts.gender || char?.look?.gender || char?.gender);
-  const outfit = outfitForIdentity(id, opts.gender || char?.gender || "male");
+  const gender = opts.gender || char?.look?.gender || char?.gender || "male";
+  const name = identityDisplayName(idn, gender);
+  const outfit = outfitForIdentity(id, gender);
   const avatarSize = size === "hero" ? "lg" : size === "corner" ? "sm" : size;
   const locked = !!opts.silhouette;
   const preview = opts.previewId != null ? opts.previewId : id;
+  const art = !locked && !opts.forceAvatar ? getStageArt(id, gender) : null;
+  const usePoster = art && (opts.poster || size === "hero" || size === "lg" || opts.preferStageArt);
 
-  const body = locked
-    ? `<div class="stage-silhouette" aria-hidden="true">
+  let body;
+  if (locked) {
+    body = `<div class="stage-silhouette" aria-hidden="true">
         ${renderAvatar(char, preview, avatarSize, { outfitLabel: "？" })}
         <span class="sil-veil"></span>
         <span class="sil-prop hint-${getStageVisual(preview).propKey}">${getStageVisual(preview).prop}</span>
-      </div>`
-    : renderAvatar(char, id, avatarSize, { outfitLabel: outfit });
+      </div>`;
+  } else if (usePoster) {
+    body = `<div class="stage-poster" role="img" aria-label="${name} · ${art.badge || outfit}">
+      <img src="${art.src}?v=rad2" alt="${name} · ${art.badge || "階段立繪"}" loading="lazy" />
+      ${art.badge ? `<span class="stage-art-badge">${art.badge}</span>` : ""}
+    </div>`;
+  } else {
+    body = renderAvatar(char, id, avatarSize, { outfitLabel: outfit });
+  }
 
   const quote = opts.hideQuote
     ? ""
     : `<p class="stage-quote">「${opts.quote || vis.quote}」</p>`;
 
   const relic =
-    opts.showRelic === false
+    opts.showRelic === false || usePoster
       ? ""
       : `<span class="stage-relic" title="${STAGE_RELIC.note}">${STAGE_RELIC.label}</span>`;
 
+  const propBadge =
+    usePoster
+      ? ""
+      : `<div class="stage-prop-badge prop-${vis.propKey}" title="${vis.prop}">${vis.prop}</div>`;
+
   return `
-  <div class="hero-stage-frame scene-${vis.sceneKey} pose-${vis.poseKey} size-${size} ${locked ? "is-locked" : ""} ${opts.priorityBoost && vis.priority ? "priority-stage" : ""} ${opts.poster ? "is-poster" : ""}"
+  <div class="hero-stage-frame scene-${vis.sceneKey} pose-${vis.poseKey} size-${size} ${locked ? "is-locked" : ""} ${opts.priorityBoost && vis.priority ? "priority-stage" : ""} ${opts.poster ? "is-poster" : ""} ${usePoster ? "has-stage-art" : ""}"
        style="--stage-accent:${vis.accent}"
        data-identity="${id}">
     <div class="stage-sky" aria-hidden="true"></div>
     <div class="stage-ground" aria-hidden="true"></div>
-    <div class="stage-prop-badge prop-${vis.propKey}" title="${vis.prop}">${vis.prop}</div>
+    ${propBadge}
     <div class="stage-figure">${body}</div>
     ${relic}
     ${
-      opts.compact || opts.poster
+      opts.compact || opts.poster || usePoster
         ? ""
         : `<div class="stage-caption">
         <p class="stage-scene">${vis.scene} · ${vis.pose}</p>
@@ -81,12 +98,12 @@ export function renderPromoteReveal({ char, fromId, toId, gender, quote }) {
       <p class="eyebrow ink-gold">身份躍升</p>
       <div class="reveal-swap">
         <div class="reveal-old">
-          ${renderHeroStage(char, fromId, "md", { gender, compact: true, showRelic: false, hideQuote: true })}
+          ${renderHeroStage(char, fromId, "md", { gender, compact: true, showRelic: false, hideQuote: true, preferStageArt: true })}
           <p>${identityDisplayName(from, gender)}</p>
         </div>
         <div class="reveal-arrow" aria-hidden="true">→</div>
         <div class="reveal-new">
-          ${renderHeroStage(char, toId, "hero", { gender, quote: quote || vis.quote, priorityBoost: true })}
+          ${renderHeroStage(char, toId, "hero", { gender, quote: quote || vis.quote, priorityBoost: true, preferStageArt: true })}
           <p class="reveal-title">${identityDisplayName(to, gender)}</p>
         </div>
       </div>

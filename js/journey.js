@@ -270,7 +270,8 @@ export function renderGrowthScroll(user, char, growthFocus) {
         gender: user.gender,
         compact: true,
         hideQuote: true,
-        showRelic: idn.id === 0 || idn.id === cur,
+        showRelic: false,
+        preferStageArt: true,
       })}
       <h3>${current ? `【${name}】` : name} ${current ? "· 目前" : "· 已解鎖"}</h3>
       <p>${vis.scene} · ${vis.prop}</p>
@@ -292,8 +293,8 @@ export function renderGrowthScroll(user, char, growthFocus) {
     <p class="muted">${IDENTITY_DISCLAIMER}</p>
     <div class="growth-rail">${cards}</div>
     <div class="growth-focus thin-card">
-      ${renderHeroStage(char, focusId, "hero", { gender: user.gender, priorityBoost: true })}
-    <div class="growth-focus-meta">
+      ${renderHeroStage(char, focusId, "hero", { gender: user.gender, priorityBoost: true, preferStageArt: true })}
+      <div class="growth-focus-meta">
         <p class="realm-kicker">${realmLabel(focusId)} · ${focusVis.vibe}</p>
         <h3>${identityDisplayName(focusIdn, user.gender)}</h3>
         <p>${focusVis.pose} · ${focusVis.prop}</p>
@@ -632,7 +633,7 @@ export function renderPromote(user, char) {
     <p class="lead disclaimer">${IDENTITY_DISCLAIMER}</p>
     <div class="promote-layout">
       <div class="promote-silhouette">
-        ${renderHeroStage(char, snap.identity.id, "lg", { gender: user.gender, priorityBoost: true })}
+        ${renderHeroStage(char, snap.identity.id, "lg", { gender: user.gender, priorityBoost: true, preferStageArt: true })}
         <p>當前：<strong>${snap.identityName}</strong> · Lv.${snap.level.level}</p>
         <p class="next-shadow">下一身份：${order.next ? identityDisplayName(order.next, user.gender) : "—"}</p>
       </div>

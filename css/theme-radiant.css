@@ -339,6 +339,73 @@ body.theme-court {
     saturate(1.05)
     brightness(1.03);
 }
+
+/* 階段專屬海報：全幅融入，似遊戲登場畫面 */
+.hero-stage-frame.has-stage-art .stage-sky,
+.hero-stage-frame.has-stage-art .stage-ground {
+  opacity: 0;
+}
+.stage-poster {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+.stage-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 20%;
+  display: block;
+}
+.stage-art-badge {
+  position: absolute;
+  right: 1rem;
+  bottom: 1.1rem;
+  z-index: 3;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(0.85rem, 1.6vw, 1.05rem);
+  letter-spacing: 0.08em;
+  color: #fff8ec;
+  background: rgba(36, 55, 70, 0.72);
+  border: 1px solid rgba(215, 170, 80, 0.55);
+  padding: 0.35rem 0.7rem;
+  border-radius: 4px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+}
+.poster-art .hero-stage-frame.has-stage-art .stage-figure {
+  padding: 0;
+  justify-content: stretch;
+  align-items: stretch;
+  animation: none;
+  transform: none;
+}
+.poster-art .hero-stage-frame.has-stage-art .stage-figure::before {
+  display: none;
+}
+.poster-art .has-stage-art .stage-poster img {
+  object-position: center 18%;
+}
+.hero-stage-frame.has-stage-art.size-md,
+.hero-stage-frame.has-stage-art.size-lg {
+  min-height: 240px;
+}
+.hero-stage-frame.has-stage-art.size-md .stage-figure,
+.hero-stage-frame.has-stage-art.size-lg .stage-figure {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  min-height: 100%;
+}
+.growth-card .has-stage-art {
+  max-width: none;
+  width: 100%;
+  min-height: 200px;
+}
+.growth-focus .has-stage-art.size-hero {
+  min-height: min(52vh, 480px);
+}
+
 .poster-art .avatar-art img {
   object-fit: cover;
   object-position: center 12%;

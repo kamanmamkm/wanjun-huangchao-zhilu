@@ -144,6 +144,29 @@ export function getStageVisual(identityId) {
   return STAGE_VISUALS[id] || STAGE_VISUALS[0];
 }
 
+/**
+ * 階段專屬海報立繪（有則優先用於主頁／成長長卷大圖）
+ * key = identityId
+ */
+export const STAGE_ART = {
+  1: {
+    male: "assets/stages/shumin-male.jpg",
+    female: "assets/stages/shumin-female.jpg",
+    badge: "① 庶民｜Lv.1–5",
+    label: "庶民登場",
+  },
+};
+
+export function getStageArt(identityId, gender = "male") {
+  const id = Math.min(8, Math.max(0, Number(identityId) || 0));
+  const pack = STAGE_ART[id];
+  if (!pack) return null;
+  const g = gender === "female" ? "female" : "male";
+  const src = pack[g] || pack.male;
+  if (!src) return null;
+  return { ...pack, src, gender: g };
+}
+
 /** 士人＝第三境（id 3）；開局困境單獨標示 */
 export function realmLabel(identityId) {
   const id = Math.min(8, Math.max(0, Number(identityId) || 0));

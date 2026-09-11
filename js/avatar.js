@@ -27,15 +27,18 @@ function frame(uid, accent, robe, robe2, inner, era, glow) {
   `;
 }
 
-function eyes(cx1, cx2, cy, eye, sharp = false) {
-  const h = sharp ? 4.2 : 5.2;
+function eyes(cx1, cx2, cy, eye, mood = "normal") {
+  // mood: normal | sharp | soft | fierce
+  const h = mood === "sharp" || mood === "fierce" ? 4.1 : mood === "soft" ? 5.6 : 5.1;
+  const browY = mood === "fierce" ? cy - 10 : cy - 8;
   return `
-    <ellipse cx="${cx1}" cy="${cy}" rx="5.2" ry="${h}" fill="#fff"/>
-    <ellipse cx="${cx2}" cy="${cy}" rx="5.2" ry="${h}" fill="#fff"/>
-    <circle cx="${cx1 + 0.6}" cy="${cy}" r="2.6" fill="${eye}"/>
-    <circle cx="${cx2 + 0.6}" cy="${cy}" r="2.6" fill="${eye}"/>
-    <circle cx="${cx1 + 1.4}" cy="${cy - 1}" r="1" fill="#fff"/>
-    <circle cx="${cx2 + 1.4}" cy="${cy - 1}" r="1" fill="#fff"/>
+    <ellipse cx="${cx1}" cy="${cy}" rx="5.4" ry="${h}" fill="#fff"/>
+    <ellipse cx="${cx2}" cy="${cy}" rx="5.4" ry="${h}" fill="#fff"/>
+    <circle cx="${cx1 + (mood === "fierce" ? 1.2 : 0.5)}" cy="${cy}" r="${mood === "soft" ? 2.4 : 2.7}" fill="${eye}"/>
+    <circle cx="${cx2 + (mood === "fierce" ? 1.2 : 0.5)}" cy="${cy}" r="${mood === "soft" ? 2.4 : 2.7}" fill="${eye}"/>
+    <circle cx="${cx1 + 1.5}" cy="${cy - 1.1}" r="1.1" fill="#fff"/>
+    <circle cx="${cx2 + 1.5}" cy="${cy - 1.1}" r="1.1" fill="#fff"/>
+    ${mood === "fierce" ? `<path d="M${cx1 - 6} ${browY + 2} L${cx1 + 5} ${browY}" stroke="${eye}" stroke-width="2.2" stroke-linecap="round"/><path d="M${cx2 + 6} ${browY + 2} L${cx2 - 5} ${browY}" stroke="${eye}" stroke-width="2.2" stroke-linecap="round"/>` : ""}
   `;
 }
 
@@ -65,7 +68,7 @@ function drawHanxin(L, rank) {
     <ellipse cx="60" cy="62" rx="24" ry="27" fill="${L.skin}"/>
     <path d="M42 52 Q49 47 55 52" fill="none" stroke="${L.hair}" stroke-width="2.4" stroke-linecap="round"/>
     <path d="M65 52 Q71 47 78 52" fill="none" stroke="${L.hair}" stroke-width="2.4" stroke-linecap="round"/>
-    ${eyes(49, 71, 60, L.eye, true)}
+    ${eyes(49, 71, 60, L.eye, "sharp")}
     <path d="M60 62 L58 70 Q60 72 62 70" fill="none" stroke="${L.eye}" stroke-width="1.2" opacity=".5"/>
     <path d="M52 76 Q60 81 68 76" fill="none" stroke="${L.lip}" stroke-width="2.2" stroke-linecap="round"/>
     <!-- 劍柄 -->
@@ -96,9 +99,9 @@ function drawZhuge(L, rank) {
     <ellipse cx="60" cy="62" rx="23" ry="26" fill="${L.skin}"/>
     <path d="M44 52 Q50 48 55 52" fill="none" stroke="${L.hair}" stroke-width="1.8"/>
     <path d="M65 52 Q70 48 76 52" fill="none" stroke="${L.hair}" stroke-width="1.8"/>
-    ${eyes(49, 71, 60, L.eye)}
+    ${eyes(49, 71, 60, L.eye, "soft")}
     <path d="M58 64 Q60 70 62 64" fill="none" stroke="${L.eye}" stroke-width="1" opacity=".45"/>
-    <path d="M52 74 Q60 78 68 74" fill="none" stroke="${L.lip}" stroke-width="1.8"/>
+    <path d="M52 75 Q60 79 68 75" fill="none" stroke="${L.lip}" stroke-width="1.8"/>
     <path d="M44 78 Q60 104 76 78 Q60 92 44 78" fill="${L.hair}"/>
     <path d="M56 72 H64 V80 H56 Z" fill="${L.hair}"/>
     <!-- 羽扇 -->
@@ -132,9 +135,9 @@ function drawYuefei(L, rank) {
     <ellipse cx="60" cy="64" rx="24" ry="26" fill="${L.skin}"/>
     <path d="M42 54 Q48 48 55 53" fill="none" stroke="${L.hair}" stroke-width="2.6" stroke-linecap="round"/>
     <path d="M65 53 Q72 48 78 54" fill="none" stroke="${L.hair}" stroke-width="2.6" stroke-linecap="round"/>
-    ${eyes(49, 71, 62, L.eye, true)}
+    ${eyes(49, 71, 62, L.eye, "fierce")}
     <path d="M60 64 L57 72 Q60 74 63 72" fill="${L.skin}" stroke="${L.eye}" stroke-width=".8" opacity=".5"/>
-    <path d="M52 78 Q60 82 68 78" fill="none" stroke="${L.lip}" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M50 80 Q60 78 70 80" fill="none" stroke="${L.lip}" stroke-width="2.6" stroke-linecap="round"/>
     <!-- 槍 -->
     <line x1="104" y1="40" x2="108" y2="128" stroke="#6e5430" stroke-width="4"/>
     <path d="M100 36 L108 20 L116 36 Z" fill="${L.accent}"/>
@@ -164,7 +167,7 @@ function drawZhenghe(L, rank) {
     <ellipse cx="60" cy="64" rx="24" ry="27" fill="${L.skin}"/>
     <path d="M44 54 Q50 50 55 54" fill="none" stroke="${L.hair}" stroke-width="2"/>
     <path d="M65 54 Q70 50 76 54" fill="none" stroke="${L.hair}" stroke-width="2"/>
-    ${eyes(49, 71, 62, L.eye)}
+    ${eyes(49, 71, 62, L.eye, "normal")}
     <path d="M58 66 Q60 72 62 66" fill="none" stroke="${L.eye}" stroke-width="1.1" opacity=".5"/>
     <path d="M52 78 Q60 82 68 78" fill="none" stroke="${L.lip}" stroke-width="2"/>
     <!-- 耳飾 -->
@@ -195,7 +198,7 @@ function drawSimaqian(L, rank) {
     <ellipse cx="60" cy="62" rx="23" ry="26" fill="${L.skin}"/>
     <path d="M44 52 Q50 48 55 52" fill="none" stroke="${L.hair}" stroke-width="1.6"/>
     <path d="M65 52 Q70 48 76 52" fill="none" stroke="${L.hair}" stroke-width="1.6"/>
-    ${eyes(49, 71, 60, L.eye)}
+    ${eyes(49, 71, 60, L.eye, "soft")}
     <path d="M52 74 Q60 77 68 74" fill="none" stroke="${L.lip}" stroke-width="1.6"/>
     <path d="M42 78 Q60 112 78 78 Q60 96 42 78" fill="${L.hair}"/>
     <path d="M55 70 H65 V82 H55 Z" fill="${L.hair}"/>
@@ -222,7 +225,7 @@ function drawSunwu(L, rank) {
     <ellipse cx="60" cy="64" rx="24" ry="26" fill="${L.skin}"/>
     <path d="M42 54 Q49 48 56 53" fill="none" stroke="${L.hair}" stroke-width="2.3"/>
     <path d="M64 53 Q71 48 78 54" fill="none" stroke="${L.hair}" stroke-width="2.3"/>
-    ${eyes(49, 71, 62, L.eye, true)}
+    ${eyes(49, 71, 62, L.eye, "sharp")}
     <path d="M60 64 L58 72 Q60 74 62 72" fill="none" stroke="${L.eye}" stroke-width="1" opacity=".5"/>
     <path d="M52 78 Q60 80 68 78" fill="none" stroke="${L.lip}" stroke-width="2"/>
     <!-- 《兵法》簡 -->
@@ -263,9 +266,9 @@ function drawWuzetian(L, rank) {
     <ellipse cx="80" cy="72" rx="6" ry="3.5" fill="#e89a90" opacity=".4"/>
     <path d="M44 52 Q50 47 56 52" fill="none" stroke="${L.hair}" stroke-width="2"/>
     <path d="M64 52 Q70 47 76 52" fill="none" stroke="${L.hair}" stroke-width="2"/>
-    ${eyes(49, 71, 60, L.eye)}
+    ${eyes(49, 71, 60, L.eye, "fierce")}
     <path d="M58 64 Q60 70 62 64" fill="none" stroke="${L.eye}" stroke-width="1" opacity=".4"/>
-    <path d="M52 78 Q60 84 68 78" fill="none" stroke="${L.lip}" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M51 79 Q60 77 69 79" fill="none" stroke="${L.lip}" stroke-width="2.8" stroke-linecap="round"/>
   `;
 }
 
@@ -292,7 +295,7 @@ function drawMulan(L, rank) {
     <ellipse cx="78" cy="72" rx="5" ry="3" fill="#e89a90" opacity=".35"/>
     <path d="M44 54 Q50 49 55 54" fill="none" stroke="${L.hair}" stroke-width="2.2"/>
     <path d="M65 54 Q70 49 76 54" fill="none" stroke="${L.hair}" stroke-width="2.2"/>
-    ${eyes(49, 71, 62, L.eye, true)}
+    ${eyes(49, 71, 62, L.eye, "sharp")}
     <path d="M52 78 Q60 82 68 78" fill="none" stroke="${L.lip}" stroke-width="2.2"/>
     <!-- 刀 -->
     <g transform="translate(98,68) rotate(8)">
@@ -322,7 +325,7 @@ function drawCaiwenji(L, rank) {
     <ellipse cx="80" cy="72" rx="6" ry="3.5" fill="#e89a90" opacity=".42"/>
     <path d="M44 54 Q50 49 56 54" fill="none" stroke="${L.hair}" stroke-width="1.8"/>
     <path d="M64 54 Q70 49 76 54" fill="none" stroke="${L.hair}" stroke-width="1.8"/>
-    ${eyes(49, 71, 62, L.eye)}
+    ${eyes(49, 71, 62, L.eye, "soft")}
     <path d="M52 80 Q60 86 68 80" fill="none" stroke="${L.lip}" stroke-width="2.5" stroke-linecap="round"/>
     <!-- 胡笳／琴 -->
     <g transform="translate(10,88)">
@@ -354,7 +357,7 @@ function drawLiqingzhao(L, rank) {
     <ellipse cx="80" cy="72" rx="6" ry="3.5" fill="#e89a90" opacity=".4"/>
     <path d="M44 54 Q50 50 55 54" fill="none" stroke="${L.hair}" stroke-width="1.7"/>
     <path d="M65 54 Q70 50 76 54" fill="none" stroke="${L.hair}" stroke-width="1.7"/>
-    ${eyes(49, 71, 62, L.eye)}
+    ${eyes(49, 71, 62, L.eye, "soft")}
     <path d="M52 80 Q60 85 68 80" fill="none" stroke="${L.lip}" stroke-width="2.4" stroke-linecap="round"/>
     <!-- 詞箋筆 -->
     <g transform="translate(88,92) rotate(15)">
@@ -387,7 +390,7 @@ function drawWangzhaojun(L, rank) {
     <ellipse cx="80" cy="72" rx="6" ry="3.5" fill="#e89a90" opacity=".35"/>
     <path d="M44 54 Q50 49 56 54" fill="none" stroke="${L.hair}" stroke-width="1.8"/>
     <path d="M64 54 Q70 49 76 54" fill="none" stroke="${L.hair}" stroke-width="1.8"/>
-    ${eyes(49, 71, 62, L.eye)}
+    ${eyes(49, 71, 62, L.eye, "soft")}
     <path d="M52 80 Q60 84 68 80" fill="none" stroke="${L.lip}" stroke-width="2.3"/>
     <!-- 月牙飾 -->
     <path d="M96 48 Q108 40 104 56" fill="none" stroke="#e8e0d0" stroke-width="2.5"/>
@@ -420,7 +423,7 @@ function drawBanzhao(L, rank) {
     <ellipse cx="78" cy="72" rx="5" ry="3" fill="#e89a90" opacity=".35"/>
     <path d="M44 54 Q50 50 55 54" fill="none" stroke="${L.hair}" stroke-width="1.8"/>
     <path d="M65 54 Q70 50 76 54" fill="none" stroke="${L.hair}" stroke-width="1.8"/>
-    ${eyes(49, 71, 62, L.eye)}
+    ${eyes(49, 71, 62, L.eye, "normal")}
     <path d="M52 78 Q60 82 68 78" fill="none" stroke="${L.lip}" stroke-width="2.1"/>
   `;
 }

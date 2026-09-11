@@ -61,9 +61,9 @@ export const IDENTITIES = [
     key: "minister",
     name: "重臣",
     arc: "治政篇",
-    color: "#6a4a8a",
-    outfit: { male: "錦衣玉帶", female: "錦裙珠釵" },
-    desc: "參與朝政議論，須兼顧代價與證據。",
+    color: "#243746",
+    outfit: { male: "藍袍玉帶", female: "鳳冠藍袍" },
+    desc: "朝堂議事——展卷批閱，權愈重愈要敢於自問。",
   },
   {
     id: 6,

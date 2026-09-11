@@ -82,17 +82,17 @@ export const STAGE_VISUALS = {
   },
   5: {
     id: 5,
-    scene: "議事廳正中",
+    scene: "殿閣議事堂",
     sceneKey: "court",
-    pose: "沉穩而開闊的議事姿態",
+    pose: "展卷批閱，玉印在側",
     poseKey: "counsel",
-    prop: "金色細節",
+    prop: "奏卷／玉印",
     propKey: "seal",
     accent: "#d7aa50",
-    bgHint: "陽光與金飾",
+    bgHint: "藍袍金繡與殿內陽光",
     quote: "權愈重，愈要敢於自問。",
-    vibe: "獨當一面",
-    priority: false,
+    vibe: "重臣議事",
+    priority: true,
   },
   6: {
     id: 6,
@@ -160,6 +160,12 @@ export const STAGE_ART = {
     female: "assets/stages/zhuzheng-female.jpg",
     badge: "⑤ 主政｜Lv.41–55",
     label: "主政登場",
+  },
+  5: {
+    male: "assets/stages/zhongchen-male.jpg",
+    female: "assets/stages/zhongchen-female.jpg",
+    badge: "⑥ 重臣｜Lv.56–70",
+    label: "重臣登場",
   },
 };
 

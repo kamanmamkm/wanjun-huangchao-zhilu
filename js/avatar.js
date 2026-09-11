@@ -510,8 +510,8 @@ export function renderAvatar(character, rankId = 0, size = "md", opts = {}) {
   const outfit =
     opts.outfitLabel ||
     (gender === "female"
-      ? ["米白短襖", "青綠長衫", "白衣青袍", "青袍官服", "青袍玉印", "錦裙珠釵", "翟衣華飾", "鳳袍珠冠"][rank]
-      : ["米白短衣", "青綠長衫", "白衣青袍", "青袍官服", "青袍玉印", "錦衣玉帶", "蟒袍華冠", "龍袍冕旒"][rank]);
+      ? ["米白短襖", "青綠長衫", "白衣青袍", "青袍官服", "青袍玉印", "鳳冠藍袍", "翟衣華飾", "鳳袍珠冠"][rank]
+      : ["米白短衣", "青綠長衫", "白衣青袍", "青袍官服", "青袍玉印", "藍袍玉帶", "蟒袍華冠", "龍袍冕旒"][rank]);
   const baseAccent = character.look?.accent || character.color || "#c6a35a";
   const accent = rank <= 0 ? "#c84436" : rank <= 2 ? "#246b87" : baseAccent;
 
@@ -520,7 +520,7 @@ export function renderAvatar(character, rankId = 0, size = "md", opts = {}) {
   if (stageArt) {
     return `
     <div class="avatar-art avatar-${size} outfit-${rank} stage-face" style="--accent:${accent};--glow:${GLOW[Math.min(rank, GLOW.length - 1)]};width:${dims}px;height:${h}px" role="img" aria-label="${character.name} · ${stageArt.badge || outfit}">
-      <img src="${stageArt.src}?v=rad8" alt="${character.name}" width="${dims}" height="${h}" loading="lazy" />
+      <img src="${stageArt.src}?v=rad9" alt="${character.name}" width="${dims}" height="${h}" loading="lazy" />
       <span class="avatar-art-outfit">${outfit}</span>
     </div>`;
   }
@@ -528,7 +528,7 @@ export function renderAvatar(character, rankId = 0, size = "md", opts = {}) {
   if (character.portrait) {
     return `
     <div class="avatar-art avatar-${size} outfit-${rank}" style="--accent:${accent};--glow:${GLOW[Math.min(rank, GLOW.length - 1)]};width:${dims}px;height:${h}px" role="img" aria-label="${character.name} · ${outfit}">
-      <img src="${character.portrait}?v=rad8" alt="${character.name}" width="${dims}" height="${h}" loading="lazy" />
+      <img src="${character.portrait}?v=rad9" alt="${character.name}" width="${dims}" height="${h}" loading="lazy" />
       <span class="avatar-art-outfit">${outfit}</span>
       <span class="avatar-art-era">${character.era || ""}</span>
     </div>`;

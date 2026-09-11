@@ -1,11 +1,11 @@
-import { CHARACTERS, getCharacter } from "./data/characters.js?v=rad8";
-import { QUESTIONS, checkFill } from "./data/questions.js?v=rad8";
-import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad8";
-import { levelFromXp } from "./data/levels.js?v=rad8";
-import { DIALOGUES } from "./data/dialogues.js?v=rad8";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad8";
-import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=rad8";
-import { renderAvatar } from "./avatar.js?v=rad8";
+import { CHARACTERS, getCharacter } from "./data/characters.js?v=rad9";
+import { QUESTIONS, checkFill } from "./data/questions.js?v=rad9";
+import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad9";
+import { levelFromXp } from "./data/levels.js?v=rad9";
+import { DIALOGUES } from "./data/dialogues.js?v=rad9";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad9";
+import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=rad9";
+import { renderAvatar } from "./avatar.js?v=rad9";
 import {
   CARD_TYPES,
   createBattle,
@@ -15,7 +15,7 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=rad8";
+} from "./data/shizhan.js?v=rad9";
 import {
   getCurrentUser,
   registerUser,
@@ -23,7 +23,7 @@ import {
   clearSession,
   addXp,
   updateUser,
-} from "./storage.js?v=rad8";
+} from "./storage.js?v=rad9";
 import {
   userSnapshot,
   buildPromotionOrder,
@@ -31,7 +31,7 @@ import {
   IDENTITY_DISCLAIMER,
   identityDisplayName,
   getIdentity,
-} from "./progress.js?v=rad8";
+} from "./progress.js?v=rad9";
 import {
   renderJourneyHome,
   renderScroll,
@@ -42,10 +42,10 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad8";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad8";
-import { renderPromoteReveal } from "./heroStage.js?v=rad8";
-import { getStageVisual } from "./data/stageVisuals.js?v=rad8";
+} from "./journey.js?v=rad9";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad9";
+import { renderPromoteReveal } from "./heroStage.js?v=rad9";
+import { getStageVisual } from "./data/stageVisuals.js?v=rad9";
 
 const app = document.getElementById("app");
 let toastTimer = null;

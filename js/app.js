@@ -279,7 +279,7 @@ function renderHome(user, char, rank) {
   return `
   <section class="panel">
     <h2>萬鈞伯裘—皇朝之路</h2>
-    <p class="lead">你化身${char?.name}（${char?.era}）：「${char?.motto}」現職${rank.name}。答岩題目、完成挑戰即可升級——難度中等，需持續練習方可达帝位。</p>
+    <p class="lead">你化身${char?.name}（${char?.era}）：「${char?.motto}」現職${rank.name}。答岩題目、完成挑戰即可升級——難度中等，需持續練習方可達帝位。</p>
     <div class="grid-cards">
       <article class="feature-card" data-goto="practice">
         <div style="font-size:1.6rem">📝</div>

@@ -1,17 +1,17 @@
-import { CHARACTERS, getCharacter } from "./data/characters.js";
-import { QUESTIONS, checkFill } from "./data/questions.js";
-import { RANKS, XP_REWARDS, rankFromXp } from "./data/ranks.js";
-import { DIALOGUES } from "./data/dialogues.js";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js";
-import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js";
-import { renderAvatar } from "./avatar.js";
+import { CHARACTERS, getCharacter } from "./data/characters.js?v=cute20260911";
+import { QUESTIONS, checkFill } from "./data/questions.js?v=cute20260911";
+import { RANKS, XP_REWARDS, rankFromXp } from "./data/ranks.js?v=cute20260911";
+import { DIALOGUES } from "./data/dialogues.js?v=cute20260911";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=cute20260911";
+import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=cute20260911";
+import { renderAvatar } from "./avatar.js?v=cute20260911";
 import {
   getCurrentUser,
   registerUser,
   loginUser,
   clearSession,
   addXp,
-} from "./storage.js";
+} from "./storage.js?v=cute20260911";
 
 const app = document.getElementById("app");
 let toastTimer = null;

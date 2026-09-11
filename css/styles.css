@@ -1416,3 +1416,170 @@ select {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ===== 史戰風雲 ===== */
+.shizhan-panel .shizhan-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.shizhan-rules {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.55rem;
+  margin: 1rem 0;
+}
+
+.shizhan-rules > div {
+  padding: 0.7rem 0.85rem;
+  border-radius: 8px;
+  background: rgba(255, 250, 240, 0.85);
+  border: 1px solid rgba(110, 84, 48, 0.22);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.shizhan-arena {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 0.75rem;
+  align-items: center;
+  margin: 0.75rem 0 1rem;
+  padding: 0.85rem;
+  border-radius: 12px;
+  background: linear-gradient(160deg, rgba(36, 48, 64, 0.1), rgba(154, 34, 38, 0.08));
+  border: 1px solid rgba(198, 163, 90, 0.3);
+}
+
+.sz-fighter {
+  display: flex;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.sz-fighter.enemy {
+  flex-direction: row;
+}
+
+.sz-fighter.me {
+  flex-direction: row-reverse;
+  text-align: right;
+}
+
+.sz-fighter strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+}
+
+.sz-hp {
+  color: var(--cinnabar);
+  letter-spacing: 0.08em;
+  font-size: 1.1rem;
+  margin: 0.15rem 0;
+}
+
+.sz-vs {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  color: var(--cinnabar-deep);
+  opacity: 0.85;
+}
+
+.shizhan-hand {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.55rem;
+}
+
+.sz-card {
+  text-align: left;
+  border: 2px solid var(--c, #888);
+  border-radius: 12px;
+  padding: 0.75rem;
+  background: linear-gradient(160deg, #fffef8, #f3e2bc);
+  cursor: pointer;
+  display: grid;
+  gap: 0.25rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sz-card:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+}
+
+.sz-card .sz-icon {
+  font-size: 1.5rem;
+}
+
+.sz-card strong {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  letter-spacing: 0.1em;
+  color: var(--c, #333);
+}
+
+.sz-card small {
+  font-size: 0.75rem;
+  opacity: 0.75;
+  line-height: 1.35;
+}
+
+.shizhan-quiz {
+  padding: 1rem;
+  border-radius: 12px;
+  background: rgba(255, 250, 240, 0.9);
+  border: 1px solid rgba(110, 84, 48, 0.25);
+}
+
+.shizhan-log {
+  margin-top: 1rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 8px;
+  background: rgba(20, 28, 40, 0.06);
+  font-size: 0.85rem;
+  line-height: 1.55;
+  max-height: 140px;
+  overflow-y: auto;
+  border-left: 3px solid var(--gold);
+}
+
+.shizhan-end {
+  text-align: center;
+  padding: 1.25rem;
+  background: rgba(255, 250, 240, 0.9);
+  border-radius: 12px;
+  border: 1px solid rgba(198, 163, 90, 0.35);
+}
+
+.shizhan-end h3 {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 400;
+  margin: 0 0 0.5rem;
+}
+
+.shizhan-end .btn {
+  margin: 0.35rem;
+}
+
+@media (max-width: 640px) {
+  .shizhan-arena {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+  .sz-fighter,
+  .sz-fighter.me {
+    flex-direction: column;
+    text-align: center;
+  }
+  .sz-vs {
+    display: none;
+  }
+}

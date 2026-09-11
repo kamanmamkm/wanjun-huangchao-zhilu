@@ -35,6 +35,8 @@ export const XP_REWARDS = {
   streakBonus: 1,
   /** 已答過的題目再答，只得此比例經驗 */
   repeatScale: 0.25,
+  shizhanWin: 28,
+  shizhanLose: 8,
 };
 
 export function rankFromXp(gender, xp) {

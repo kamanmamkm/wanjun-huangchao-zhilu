@@ -1,17 +1,27 @@
-import { CHARACTERS, getCharacter } from "./data/characters.js?v=cute20260911";
-import { QUESTIONS, checkFill } from "./data/questions.js?v=cute20260911";
-import { RANKS, XP_REWARDS, rankFromXp } from "./data/ranks.js?v=cute20260911";
-import { DIALOGUES } from "./data/dialogues.js?v=cute20260911";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=cute20260911";
-import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=cute20260911";
-import { renderAvatar } from "./avatar.js?v=cute20260911";
+import { CHARACTERS, getCharacter } from "./data/characters.js?v=shizhan1";
+import { QUESTIONS, checkFill } from "./data/questions.js?v=shizhan1";
+import { RANKS, XP_REWARDS, rankFromXp } from "./data/ranks.js?v=shizhan1";
+import { DIALOGUES } from "./data/dialogues.js?v=shizhan1";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=shizhan1";
+import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=shizhan1";
+import { renderAvatar } from "./avatar.js?v=shizhan1";
+import {
+  CARD_TYPES,
+  createBattle,
+  startPlayCard,
+  useSkillOnQuiz,
+  resolvePlayerQuiz,
+  resolveEnemyTurn,
+  resolveGuardQuiz,
+  hearts,
+} from "./data/shizhan.js?v=shizhan1";
 import {
   getCurrentUser,
   registerUser,
   loginUser,
   clearSession,
   addXp,
-} from "./storage.js?v=cute20260911";
+} from "./storage.js?v=shizhan1";
 
 const app = document.getElementById("app");
 let toastTimer = null;
@@ -25,6 +35,7 @@ let state = {
   flip: { cards: [], flipped: [], matched: new Set(), lock: false },
   timeline: { setId: TIMELINE_SETS[0].id },
   dialogue: { id: DIALOGUES[0].id, step: 0 },
+  shizhan: null,
 };
 
 function toast(msg) {
@@ -272,7 +283,9 @@ function renderShell(user) {
                       ? renderTimeline()
                       : state.view === "dialogue"
                         ? renderDialogue()
-                        : ""
+                        : state.view === "shizhan"
+                          ? renderShizhan(user, char, current)
+                          : ""
       }
     </main>
   </div>`;
@@ -300,11 +313,13 @@ function bindShell(user) {
   if (state.view === "wordwall") bindWordwall();
   if (state.view === "timeline") bindTimeline();
   if (state.view === "dialogue") bindDialogue();
+  if (state.view === "shizhan") bindShizhan(user, char);
 }
 
 function renderHome(user, char, rank) {
   const { next, progress } = rankFromXp(user.gender, user.xp);
   const quests = [
+    { goto: "shizhan", icon: "⚔️", title: "史戰風雲", tip: "卡牌對戰 · 答題攻防", xp: `+${XP_REWARDS.shizhanWin}`, tone: "cinnabar" },
     { goto: "practice", icon: "📝", title: "科舉答題", tip: "選擇 · 填充 · 配對", xp: `+${XP_REWARDS.mcCorrect}起`, tone: "cinnabar" },
     { goto: "wordwall", icon: "🎯", title: "機緣翻牌", tip: "Wordwall 風挑戰", xp: `+${XP_REWARDS.wordwallRound}`, tone: "gold" },
     { goto: "timeline", icon: "⏳", title: "時光長河", tip: "事件配對年代", xp: `+${XP_REWARDS.timelineComplete}`, tone: "jade" },
@@ -625,17 +640,22 @@ function renderGamesHub() {
     <h2>小遊戲大廳</h2>
     <p class="lead">挑一關挑戰吧！破關經驗比普通練習更高。</p>
     <div class="quest-grid games-quest">
-      <article class="quest-card tone-gold" data-goto="wordwall" style="--i:0">
+      <article class="quest-card tone-cinnabar" data-goto="shizhan" style="--i:0">
+        <div class="quest-icon">⚔️</div>
+        <div class="quest-body"><h3>史戰風雲</h3><p>靈感自三國殺節奏：體力、出牌、答題攻防</p></div>
+        <span class="quest-xp">+${XP_REWARDS.shizhanWin}</span>
+      </article>
+      <article class="quest-card tone-gold" data-goto="wordwall" style="--i:1">
         <div class="quest-icon">🎯</div>
         <div class="quest-body"><h3>機緣翻牌</h3><p>Wordwall 風 · 翻牌配對／問答</p></div>
         <span class="quest-xp">+${XP_REWARDS.wordwallRound}</span>
       </article>
-      <article class="quest-card tone-jade" data-goto="timeline" style="--i:1">
+      <article class="quest-card tone-jade" data-goto="timeline" style="--i:2">
         <div class="quest-icon">⏳</div>
         <div class="quest-body"><h3>時光長河</h3><p>把事件放回正確年代</p></div>
         <span class="quest-xp">+${XP_REWARDS.timelineComplete}</span>
       </article>
-      <article class="quest-card tone-indigo" data-goto="dialogue" style="--i:2">
+      <article class="quest-card tone-indigo" data-goto="dialogue" style="--i:3">
         <div class="quest-icon">💬</div>
         <div class="quest-body"><h3>古人問答</h3><p>與名君對話，考你史識</p></div>
         <span class="quest-xp">+${XP_REWARDS.dialogueGood}</span>
@@ -652,6 +672,174 @@ function renderGamesHub() {
       ).join("")}
     </div>
   </section>`;
+}
+
+/* ========== 史戰風雲（三國殺靈感·原創教學版） ========== */
+function renderShizhan(user, char, rank) {
+  if (!state.shizhan) {
+    return `
+    <section class="panel shizhan-panel">
+      <h2>史戰風雲</h2>
+      <p class="lead">靈感來自三國殺的<strong>體力、出牌、回合攻防</strong>——但這是原創中史科教學對戰：用史識決勝負，不是複刻官方遊戲。</p>
+      <div class="shizhan-rules">
+        <div><strong>⚔️ 問攻</strong> 答選擇題傷敵 1 點</div>
+        <div><strong>📜 奇策</strong> 答難題傷敵 2 點</div>
+        <div><strong>🌿 回春</strong> 答填充題回血 1 點</div>
+        <div><strong>🛡️ 守禦</strong> 下回合可擋敵方攻擊</div>
+      </div>
+      <p class="lead">雙方各有 ${4} 點體力。打空對手體力即可獲勝（+${XP_REWARDS.shizhanWin} XP）。</p>
+      <button type="button" class="btn" id="shizhan-start">以「${char?.name}」出戰</button>
+      <button type="button" class="btn ghost" data-goto="games">返回大廳</button>
+    </section>`;
+  }
+
+  let b = state.shizhan;
+  if (b.phase === "enemy") {
+    b = resolveEnemyTurn(b);
+    state.shizhan = b;
+  }
+
+  const enemy = b.enemy;
+  const enemyChar = { ...enemy, look: enemy.look };
+
+  let center = "";
+  if (b.phase === "end") {
+    center = `
+      <div class="shizhan-end">
+        <h3>${b.winner === "player" ? "🏆 大獲全勝！" : "💀 再接再厲"}</h3>
+        <p>${b.winner === "player" ? `擊敗 ${enemy.name}，史識立功。` : `${enemy.name} 技高一籌，溫習後再戰！`}</p>
+        <button type="button" class="btn" id="shizhan-again">再戰一場</button>
+        <button type="button" class="btn ghost" data-goto="games">返回大廳</button>
+      </div>`;
+  } else if (b.phase === "quiz" && b.quiz) {
+    const q = b.quiz.question;
+    const meta = CARD_TYPES[b.quiz.cardType];
+    center = `
+      <div class="shizhan-quiz">
+        <div class="q-meta">${b.quiz.purpose === "guard" ? "守禦答題" : `打出【${meta.name}】`} · ${q.grade || ""} ${q.topic || ""}</div>
+        <div class="q-text">${q.q}</div>
+        ${
+          b.quiz.mode === "mc"
+            ? `<div class="options">${q.options
+                .map((o, i) => `<button type="button" class="option" data-sz-ans="${i}">${String.fromCharCode(65 + i)}. ${o}</button>`)
+                .join("")}</div>`
+            : `<div class="fill-row"><input id="sz-fill" placeholder="輸入答案" /><button type="button" class="btn" id="sz-fill-go">提交</button></div>
+               <p style="font-size:.85rem;opacity:.7">提示：${q.hint || "——"}</p>`
+        }
+        ${
+          b.quiz.purpose === "play" &&
+          b.skillReady &&
+          (b.quiz.cardType === "attack" || b.quiz.cardType === "strategy")
+            ? `<button type="button" class="btn gold" id="sz-skill" style="margin-top:.75rem">✨ 角色技：此擊傷害+1（本局一次）</button>`
+            : b.quiz.skillBoost
+              ? `<p class="lead" style="margin-top:.5rem">✨ 角色技已發動</p>`
+              : ""
+        }
+      </div>`;
+  } else {
+    center = `
+      <div class="shizhan-hand-wrap">
+        <p class="lead" style="margin-bottom:.5rem">選擇一張牌打出（第 ${b.turn} 回合）${b.hasGuard ? " · 🛡️ 守勢中" : ""}</p>
+        <div class="shizhan-hand">
+          ${b.hand
+            .map((c) => {
+              const m = CARD_TYPES[c.type];
+              return `<button type="button" class="sz-card" data-sz-card="${c.uid}" style="--c:${m.color}">
+                <span class="sz-icon">${m.icon}</span>
+                <strong>${m.name}</strong>
+                <small>${m.desc}</small>
+              </button>`;
+            })
+            .join("")}
+        </div>
+      </div>`;
+  }
+
+  return `
+  <section class="panel shizhan-panel">
+    <div class="shizhan-top">
+      <h2>史戰風雲</h2>
+      <button type="button" class="btn ghost" data-goto="games">離開</button>
+    </div>
+    <div class="shizhan-arena">
+      <div class="sz-fighter enemy">
+        ${renderAvatar(enemyChar, 3, "md")}
+        <div>
+          <strong>${enemy.name}</strong>
+          <div class="sz-hp" title="體力">${hearts(b.enemyHp)}</div>
+          <small>${enemy.era} · 對手</small>
+        </div>
+      </div>
+      <div class="sz-vs">VS</div>
+      <div class="sz-fighter me">
+        ${renderAvatar(char, rank.id, "md")}
+        <div>
+          <strong>${char.name}</strong>
+          <div class="sz-hp">${hearts(b.playerHp)}</div>
+          <small>${char.era} · 你${b.skillReady ? " · 技可用" : ""}</small>
+        </div>
+      </div>
+    </div>
+    ${center}
+    <div class="shizhan-log">
+      ${b.log
+        .slice(-6)
+        .map((l) => `<div>${l}</div>`)
+        .join("")}
+    </div>
+  </section>`;
+}
+
+function bindShizhan(user, char) {
+  app.querySelector("#shizhan-start")?.addEventListener("click", () => {
+    state.shizhan = createBattle(char);
+    render();
+  });
+  app.querySelector("#shizhan-again")?.addEventListener("click", () => {
+    state.shizhan = createBattle(char);
+    render();
+  });
+  app.querySelectorAll("[data-sz-card]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      state.shizhan = startPlayCard(state.shizhan, btn.dataset.szCard);
+      render();
+    });
+  });
+  app.querySelector("#sz-skill")?.addEventListener("click", () => {
+    state.shizhan = useSkillOnQuiz(state.shizhan);
+    render();
+  });
+  app.querySelectorAll("[data-sz-ans]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const b = state.shizhan;
+      if (!b?.quiz) return;
+      const ans = btn.dataset.szAns;
+      if (b.quiz.purpose === "guard") {
+        state.shizhan = resolveGuardQuiz(b, ans);
+      } else {
+        state.shizhan = resolvePlayerQuiz(b, ans);
+      }
+      finishShizhanIfEnded(user);
+      render();
+    });
+  });
+  app.querySelector("#sz-fill-go")?.addEventListener("click", () => {
+    const input = app.querySelector("#sz-fill");
+    state.shizhan = resolvePlayerQuiz(state.shizhan, input?.value || "");
+    finishShizhanIfEnded(user);
+    render();
+  });
+}
+
+function finishShizhanIfEnded(user) {
+  const b = state.shizhan;
+  if (!b || b.phase !== "end" || b._xpGiven) return;
+  b._xpGiven = true;
+  if (b.winner === "player") {
+    reward(XP_REWARDS.shizhanWin, { correct: true, game: true });
+  } else {
+    reward(XP_REWARDS.shizhanLose, { game: true });
+  }
 }
 
 function renderWordwall() {

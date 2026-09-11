@@ -1,10 +1,10 @@
-import { CHARACTERS, getCharacter } from "./data/characters.js?v=art1";
-import { QUESTIONS, checkFill } from "./data/questions.js?v=art1";
-import { RANKS, XP_REWARDS, rankFromXp } from "./data/ranks.js?v=art1";
-import { DIALOGUES } from "./data/dialogues.js?v=art1";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=art1";
-import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=art1";
-import { renderAvatar } from "./avatar.js?v=art1";
+import { CHARACTERS, getCharacter } from "./data/characters.js?v=ren1";
+import { QUESTIONS, checkFill } from "./data/questions.js?v=ren1";
+import { RANKS, XP_REWARDS, rankFromXp } from "./data/ranks.js?v=ren1";
+import { DIALOGUES } from "./data/dialogues.js?v=ren1";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=ren1";
+import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=ren1";
+import { renderAvatar } from "./avatar.js?v=ren1";
 import {
   CARD_TYPES,
   createBattle,
@@ -14,14 +14,14 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=art1";
+} from "./data/shizhan.js?v=ren1";
 import {
   getCurrentUser,
   registerUser,
   loginUser,
   clearSession,
   addXp,
-} from "./storage.js?v=art1";
+} from "./storage.js?v=ren1";
 
 const app = document.getElementById("app");
 let toastTimer = null;
@@ -119,9 +119,9 @@ function renderAuth() {
   return `
   <section class="hero-screen">
     <div class="brand-block">
-      <p class="eyebrow">萬鈞伯裘中史科 · 角色成長遊戲</p>
-      <h1>萬鈞伯裘<br>皇朝之路</h1>
-      <p class="subtitle">化身古代人物，答題升級——從奴隸走到皇帝。每個帳號都是你的獨立傳奇。</p>
+      <p class="eyebrow">萬鈞伯裘中史科成長遊戲</p>
+      <h1>任平生</h1>
+      <p class="subtitle">歷千年風雨，成就我人生。</p>
       <div class="hero-preview">
         <div class="hero-stage">
           ${
@@ -177,7 +177,7 @@ function renderAuth() {
             : ""
         }
         <p class="form-error" id="auth-error"></p>
-        <button class="btn btn-wide" type="submit">${state.authMode === "login" ? "⚔️ 進入皇朝" : "🏯 創角出發"}</button>
+        <button class="btn btn-wide" type="submit">${state.authMode === "login" ? "⚔️ 進入任平生" : "🏯 創角出發"}</button>
       </form>
     </div>
   </section>`;
@@ -224,7 +224,7 @@ function bindAuth() {
       }
       state.view = "home";
       render();
-      toast("歡迎踏上皇朝之路");
+      toast("歡迎踏上任平生之路");
     } catch (ex) {
       err.textContent = ex.message;
     }
@@ -336,7 +336,7 @@ function renderHome(user, char, rank) {
         <div class="rank-badge" style="background:${rank.color}">${rank.name}</div>
       </div>
       <div class="hero-banner-copy">
-        <p class="eyebrow">今日挑戰 · 皇朝之路</p>
+        <p class="eyebrow">今日挑戰 · 任平生</p>
         <h2>${char?.name}，繼續你的傳奇</h2>
         <p class="motto">「${char?.motto}」</p>
         <p class="lead">${char?.era}人物原型 · 現職<strong>${rank.name}</strong>。答岩題、破關卡，衣裝會隨等級更華麗！</p>

@@ -195,7 +195,7 @@ select {
 }
 
 .brand-block::before {
-  content: "史";
+  content: "任";
   position: absolute;
   left: -0.2rem;
   top: 0.35rem;
@@ -608,7 +608,7 @@ select {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 0.65rem;
-  max-height: 380px;
+  max-height: 460px;
   overflow-y: auto;
   padding: 0.25rem;
 }

@@ -39,7 +39,7 @@ export function renderHeroStage(char, identityId, size = "hero", opts = {}) {
       : `<span class="stage-relic" title="${STAGE_RELIC.note}">${STAGE_RELIC.label}</span>`;
 
   return `
-  <div class="hero-stage-frame scene-${vis.sceneKey} pose-${vis.poseKey} size-${size} ${locked ? "is-locked" : ""} ${opts.priorityBoost && vis.priority ? "priority-stage" : ""}"
+  <div class="hero-stage-frame scene-${vis.sceneKey} pose-${vis.poseKey} size-${size} ${locked ? "is-locked" : ""} ${opts.priorityBoost && vis.priority ? "priority-stage" : ""} ${opts.poster ? "is-poster" : ""}"
        style="--stage-accent:${vis.accent}"
        data-identity="${id}">
     <div class="stage-sky" aria-hidden="true"></div>
@@ -48,7 +48,7 @@ export function renderHeroStage(char, identityId, size = "hero", opts = {}) {
     <div class="stage-figure">${body}</div>
     ${relic}
     ${
-      opts.compact
+      opts.compact || opts.poster
         ? ""
         : `<div class="stage-caption">
         <p class="stage-scene">${vis.scene} · ${vis.pose}</p>

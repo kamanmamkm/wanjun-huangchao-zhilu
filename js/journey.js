@@ -5,7 +5,7 @@ import { CHAPTERS, chapterList } from "./data/chapters.js";
 import { XP_REWARDS } from "./data/levels.js";
 import { CUOSHI_BATTLES, getCuoshi } from "./data/cuoshi.js";
 import { IDENTITIES } from "./data/identities.js";
-import { getStageVisual, SKILL_BARS, skillFill, STAGE_RELIC } from "./data/stageVisuals.js";
+import { getStageVisual, SKILL_BARS, skillFill, STAGE_RELIC, realmLabel } from "./data/stageVisuals.js";
 import { renderAvatar } from "./avatar.js";
 import { renderHeroStage, renderStudyCompanion, renderPromoteReveal } from "./heroStage.js";
 import {
@@ -39,82 +39,61 @@ export function renderJourneyHome(user, char) {
   const nextStage = stages.find((s) => !chProg.stages?.[s.id]) || stages[stages.length - 1];
   const skills = user.progress?.skills || {};
   const vis = getStageVisual(snap.identity.id);
+  const realm = realmLabel(snap.identity.id);
 
-  const skillBars = SKILL_BARS.map((s) => {
-    const fill = skillFill(skills, s.key);
-    const blocks = [0, 1, 2, 3]
-      .map((i) => `<i class="${fill > i * 0.25 ? "on" : ""}"></i>`)
-      .join("");
-    return `<div class="skill-row"><span>${s.label}</span><span class="skill-pips">${blocks}</span></div>`;
-  }).join("");
-
-  const checklist = order.items
-    .slice(0, 5)
-    .map((i) => {
-      const mark = i.ok ? "✓" : i.locked ? "○" : "✗";
-      const cls = i.ok ? "ok" : i.locked ? "lock" : "no";
-      return `<li class="${cls}"><span>${mark}</span>${i.label}</li>`;
+  const skillBars = SKILL_BARS.slice(0, 3)
+    .map((s) => {
+      const fill = skillFill(skills, s.key);
+      const blocks = [0, 1, 2, 3]
+        .map((i) => `<i class="${fill > i * 0.25 ? "on" : ""}"></i>`)
+        .join("");
+      return `<div class="skill-row"><span>${s.label}</span><span class="skill-pips">${blocks}</span></div>`;
     })
     .join("");
 
-  const ladder = IDENTITIES.map((idn) => {
-    const unlocked = user.identityId >= idn.id;
-    const current = user.identityId === idn.id;
-    const label = identityDisplayName(idn, user.gender);
-    if (current) return `<span class="grow-step current">【${label}】</span>`;
-    if (unlocked) return `<span class="grow-step done">${label}</span>`;
-    if (idn.id === user.identityId + 1) return `<span class="grow-step next">${label}</span>`;
-    return `<span class="grow-step locked">…</span>`;
-  }).join('<span class="grow-sep">──</span>');
+  const ladder = IDENTITIES.filter((idn) => idn.id !== 0 || user.identityId === 0)
+    .map((idn) => {
+      const unlocked = user.identityId >= idn.id;
+      const current = user.identityId === idn.id;
+      const label = identityDisplayName(idn, user.gender);
+      if (current) return `<span class="grow-step current">【${label}】</span>`;
+      if (unlocked) return `<span class="grow-step done">${label}</span>`;
+      if (idn.id === user.identityId + 1) return `<span class="grow-step next">${label}</span>`;
+      if (idn.id > user.identityId + 1 && idn.id <= user.identityId + 3)
+        return `<span class="grow-step locked">${label}</span>`;
+      if (idn.id === 8) return `<span class="grow-step locked">？</span>`;
+      return "";
+    })
+    .filter(Boolean)
+    .join('<span class="grow-sep">──</span>');
 
   return `
-  <section class="dash dash-hero-first">
-    <aside class="dash-left thin-card">
-      <p class="eyebrow ink-red">當前身份</p>
-      <h2 class="id-hero-name" style="color:${snap.identity.color}">【${snap.identityName}】</h2>
-      <p class="muted">${char?.name || "行者"} · ${vis.scene}</p>
-      <p class="id-line">Lv.${snap.level.level}　XP ${user.xp}</p>
-      <div class="xp-bar xl"><i style="width:${snap.level.progress}%"></i></div>
-      <h3 class="section-mini">成長能力</h3>
-      <div class="skill-panel">${skillBars}</div>
-      <button type="button" class="btn ghost" data-nav="growth">人物成長長卷</button>
-    </aside>
-
-    <div class="dash-center">
+  <section class="poster-home scene-poster-${vis.sceneKey}">
+    <div class="poster-copy">
+      <p class="realm-kicker">${realm}</p>
+      <h2 class="realm-title">${snap.identityName}</h2>
+      <hr class="realm-rule" />
+      <p class="realm-quote">${vis.quote}</p>
+      <p class="poster-char">${char?.name || "行者"} · Lv.${snap.level.level} · ${vis.vibe}</p>
+      <div class="poster-skills">${skillBars}</div>
+      <div class="poster-actions">
+        <button type="button" class="btn" data-goto="scroll">${chProg.done ? "重溫長卷" : "繼續征程"}</button>
+        <button type="button" class="btn ghost" data-goto="promote">晉升試煉</button>
+      </div>
+      <p class="muted" style="font-size:.8rem;margin:0">當前任務：${nextStage?.title || "—"} · ${order.canChallenge ? "試煉已解鎖" : "完成條件後挑戰晉升"}</p>
+    </div>
+    <div class="poster-art" aria-label="${char?.name} 立繪">
       ${renderHeroStage(char, snap.identity.id, "hero", {
         gender: user.gender,
         priorityBoost: true,
+        poster: true,
       })}
-      <p class="hero-nameplate">${char?.name || "行者"} · ${snap.outfit}</p>
     </div>
-
-    <aside class="dash-right thin-card">
-      <p class="task-kicker">主線任務</p>
-      <h3>${nextStage?.title || "本章已完成"}</h3>
-      <p>${nextStage?.goal || "可前往晉升殿查看脫籍考核。"}</p>
-      <p class="muted">${ch.arc} · 約 ${nextStage?.minutes || "—"} 分鐘</p>
-      <button type="button" class="btn" data-goto="scroll">${chProg.done ? "重溫長卷" : "繼續旅程"}</button>
-      <div class="edict compact">
-        <h4>晉升條件</h4>
-        <ul class="edict-list">${checklist}</ul>
-        <button type="button" class="btn ${order.canChallenge ? "" : "ghost"}" data-goto="promote">
-          ${order.canChallenge ? "查看試煉" : "查看試煉"}
-        </button>
-      </div>
-    </aside>
-
-    <footer class="dash-foot thin-card">
-      <div class="growth-strip">
-        <span>人物成長</span>
-        <div class="growth-ladder">${ladder}</div>
-        <button type="button" class="btn ghost" data-nav="growth">展開長卷</button>
-      </div>
-      <div class="home-quick">
-        <button type="button" class="chip" data-nav="scroll">歷史長卷</button>
-        <button type="button" class="chip" data-nav="notes">待考札記</button>
-        <button type="button" class="chip" data-nav="practice">藏書閣</button>
-        <button type="button" class="chip" data-nav="cuoshi">錯史之戰</button>
-      </div>
+    <footer class="poster-rail">
+      <div class="growth-ladder">${ladder}</div>
+      <button type="button" class="btn ghost" data-nav="growth">成長長卷</button>
+      <button type="button" class="chip" data-nav="notes">札記</button>
+      <button type="button" class="chip" data-nav="practice">藏書閣</button>
     </footer>
   </section>`;
 }
@@ -185,11 +164,12 @@ export function renderChapterDetail(user, chapterId, stageId) {
 
 function renderStagePlay(user, ch, stage) {
   const companionSlot = `<div id="study-companion-slot" data-identity="${user.identityId || 0}"></div>`;
+  const readToggle = `<button type="button" class="btn ghost read-toggle" data-toggle-read>米白閱讀底</button>`;
   if (stage.kind === "story") {
     return `
     <section class="panel-paper stage-play study-mode">
       ${companionSlot}
-      <p class="eyebrow">${ch.title}</p>
+      <div class="q-top"><span>${ch.title}</span>${readToggle}</div>
       <h2>${stage.title}</h2>
       <div class="story-box">${stage.body}</div>
       <p class="lead">學習目標：${stage.goal}</p>
@@ -200,7 +180,7 @@ function renderStagePlay(user, ch, stage) {
     return `
     <section class="panel-paper stage-play study-mode">
       ${companionSlot}
-      <h2>${stage.title}</h2>
+      <div class="q-top"><span>${stage.title}</span>${readToggle}</div>
       <p class="lead">${stage.goal}</p>
       <p>此關連接到「時光長河」互動。完成一局後返回可標記進度。</p>
       <button type="button" class="btn" data-goto="${stage.gotoGame}">開始時序長廊</button>
@@ -211,7 +191,7 @@ function renderStagePlay(user, ch, stage) {
     return `
     <section class="panel-paper stage-play study-mode" id="boss-stage" data-chapter="${ch.id}" data-stage="${stage.id}">
       ${companionSlot}
-      <h2>${stage.title}</h2>
+      <div class="q-top"><span>${stage.title}</span>${readToggle}</div>
       <p class="lead">Boss 是一本被改亂的史書——辨錯、修正、舉證。</p>
       <div class="boss-progress"><i style="width:0%" id="boss-bar"></i></div>
       <div id="boss-body"></div>
@@ -224,6 +204,7 @@ function renderStagePlay(user, ch, stage) {
     <div class="q-top">
       <span>${ch.title} · ${stage.title}</span>
       <span id="sq-progress">進度 1 / ${qs.length}</span>
+      ${readToggle}
     </div>
     <div id="sq-body"></div>
   </section>`;
@@ -284,20 +265,21 @@ export function renderGrowthScroll(user, char, growthFocus) {
 
   return `
   <section class="panel-paper growth-scroll-view">
-    <p class="eyebrow ink-red">人物成長長卷</p>
-    <h2>同一人物 · 八個人生階段</h2>
-    <p class="lead">面貌不變，場景、姿態、道具與氣場隨身份解鎖。${STAGE_RELIC.note}</p>
+    <p class="eyebrow ink-gold">人物成長長卷</p>
+    <h2>同一人物 · 由孤身求存到坐鎮天下</h2>
+    <p class="lead">面貌不變；場景、氣勢與道具隨身份解鎖。${STAGE_RELIC.note}</p>
     <p class="muted">${IDENTITY_DISCLAIMER}</p>
     <div class="growth-rail">${cards}</div>
     <div class="growth-focus thin-card">
       ${renderHeroStage(char, focusId, "hero", { gender: user.gender, priorityBoost: true })}
       <div class="growth-focus-meta">
+        <p class="realm-kicker">${realmLabel(focusId)}</p>
         <h3>${identityDisplayName(focusIdn, user.gender)}</h3>
-        <p>${focusVis.pose} · 手持／標誌：${focusVis.prop}</p>
+        <p>${focusVis.pose} · ${focusVis.prop}</p>
         <p>背景：${focusVis.scene}（${focusVis.bgHint}）</p>
         <p class="stage-quote">「${focusVis.quote}」</p>
         <p class="muted">${focusPromo ? `通過試煉晉升於 ${new Date(focusPromo.at).toLocaleString()}` : focusId === 0 ? "旅程起點" : "已解鎖造型"}</p>
-        <p class="muted">衣裝標籤：${focusIdn.outfit?.[user.gender] || focusIdn.outfit?.male}（重看舊造型唔等於改身份）</p>
+        <p class="muted">重看舊造型唔等於改身份</p>
       </div>
     </div>
     <button type="button" class="btn ghost" data-nav="home">返回行旅</button>
@@ -376,6 +358,14 @@ export function bindJourney(user, ctx) {
     const id = Number(slot.dataset.identity || 0);
     slot.outerHTML = renderStudyCompanion(char, id);
   }
+  document.querySelectorAll("[data-toggle-read]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const pane = btn.closest(".study-mode") || btn.closest(".panel-paper");
+      pane?.classList.toggle("read-warm");
+      const on = pane?.classList.contains("read-warm");
+      btn.textContent = on ? "深色面板" : "米白閱讀底";
+    });
+  });
 }
 
 function bindCuoshi(user, ctx) {
@@ -616,7 +606,7 @@ export function renderPromote(user, char) {
 
   return `
   <section class="panel-paper promote-view">
-    <p class="eyebrow ink-gold">晉升殿</p>
+    <p class="eyebrow ink-gold">晉升殿 · ${realmLabel(snap.identity.id)}</p>
     <h2>經驗解鎖資格 · 考核決定晉升</h2>
     <p class="lead disclaimer">${IDENTITY_DISCLAIMER}</p>
     <div class="promote-layout">

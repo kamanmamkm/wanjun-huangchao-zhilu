@@ -1,11 +1,11 @@
-import { CHARACTERS, getCharacter } from "./data/characters.js?v=ink2";
-import { QUESTIONS, checkFill } from "./data/questions.js?v=ink2";
-import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=ink2";
-import { levelFromXp } from "./data/levels.js?v=ink2";
-import { DIALOGUES } from "./data/dialogues.js?v=ink2";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=ink2";
-import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=ink2";
-import { renderAvatar } from "./avatar.js?v=ink2";
+import { CHARACTERS, getCharacter } from "./data/characters.js?v=epic1";
+import { QUESTIONS, checkFill } from "./data/questions.js?v=epic1";
+import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=epic1";
+import { levelFromXp } from "./data/levels.js?v=epic1";
+import { DIALOGUES } from "./data/dialogues.js?v=epic1";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=epic1";
+import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=epic1";
+import { renderAvatar } from "./avatar.js?v=epic1";
 import {
   CARD_TYPES,
   createBattle,
@@ -15,7 +15,7 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=ink2";
+} from "./data/shizhan.js?v=epic1";
 import {
   getCurrentUser,
   registerUser,
@@ -23,7 +23,7 @@ import {
   clearSession,
   addXp,
   updateUser,
-} from "./storage.js?v=ink2";
+} from "./storage.js?v=epic1";
 import {
   userSnapshot,
   buildPromotionOrder,
@@ -31,7 +31,7 @@ import {
   IDENTITY_DISCLAIMER,
   identityDisplayName,
   getIdentity,
-} from "./progress.js?v=ink2";
+} from "./progress.js?v=epic1";
 import {
   renderJourneyHome,
   renderScroll,
@@ -42,10 +42,10 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=ink2";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=ink2";
-import { renderPromoteReveal } from "./heroStage.js?v=ink2";
-import { getStageVisual } from "./data/stageVisuals.js?v=ink2";
+} from "./journey.js?v=epic1";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=epic1";
+import { renderPromoteReveal } from "./heroStage.js?v=epic1";
+import { getStageVisual } from "./data/stageVisuals.js?v=epic1";
 
 const app = document.getElementById("app");
 let toastTimer = null;
@@ -229,11 +229,10 @@ function renderAuth() {
         </div>
       </div>
       <div class="tags">
-        <span class="tag">選擇 · 填充 · 配對</span>
+        <span class="tag">暗黑國風史詩</span>
         <span class="tag">晉升靠考核</span>
-        <span class="tag">水墨書卷</span>
+        <span class="tag">人物海報主頁</span>
         <span class="tag">錯史之戰</span>
-        <span class="tag">與古人對話</span>
       </div>
     </div>
     <div class="auth-panel">

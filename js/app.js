@@ -1,10 +1,10 @@
-import { CHARACTERS, getCharacter } from "./data/characters.js?v=ren1";
-import { QUESTIONS, checkFill } from "./data/questions.js?v=ren1";
-import { RANKS, XP_REWARDS, rankFromXp } from "./data/ranks.js?v=ren1";
-import { DIALOGUES } from "./data/dialogues.js?v=ren1";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=ren1";
-import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=ren1";
-import { renderAvatar } from "./avatar.js?v=ren1";
+import { CHARACTERS, getCharacter } from "./data/characters.js?v=ren2";
+import { QUESTIONS, checkFill } from "./data/questions.js?v=ren2";
+import { RANKS, XP_REWARDS, rankFromXp } from "./data/ranks.js?v=ren2";
+import { DIALOGUES } from "./data/dialogues.js?v=ren2";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=ren2";
+import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=ren2";
+import { renderAvatar } from "./avatar.js?v=ren2";
 import {
   CARD_TYPES,
   createBattle,
@@ -14,14 +14,15 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=ren1";
+} from "./data/shizhan.js?v=ren2";
 import {
   getCurrentUser,
   registerUser,
   loginUser,
   clearSession,
   addXp,
-} from "./storage.js?v=ren1";
+  updateUser,
+} from "./storage.js?v=ren2";
 
 const app = document.getElementById("app");
 let toastTimer = null;
@@ -115,7 +116,8 @@ function render() {
 function renderAuth() {
   const list = CHARACTERS[state.gender];
   const preview = list.find((c) => c.id === state.characterId) || list[0];
-  const parade = [...CHARACTERS.male.slice(0, 3), ...CHARACTERS.female.slice(0, 3)];
+  // 登入頁展示全部人物（可橫向滑動），唔好只顯示前幾個
+  const parade = [...CHARACTERS.male, ...CHARACTERS.female];
   return `
   <section class="hero-screen">
     <div class="brand-block">
@@ -128,10 +130,10 @@ function renderAuth() {
             state.authMode === "register"
               ? `${renderAvatar(preview, 5, "lg")}
                  <div class="hero-caption"><strong>${preview.name}</strong><span>${preview.era} · 「${preview.motto}」</span></div>`
-              : `<div class="parade-row">
-                  ${parade.map((c) => `<div class="parade-item" title="${c.name}">${renderAvatar(c, 3, "sm")}<span>${c.name}</span></div>`).join("")}
+              : `<div class="parade-row" id="parade-row">
+                  ${parade.map((c) => `<div class="parade-item" title="${c.name} · ${c.era}">${renderAvatar(c, 3, "sm")}<span>${c.name}</span></div>`).join("")}
                 </div>
-                <p class="hero-idle-note">每位人物樣貌、衣裝都不同 · 註冊後即可選角</p>`
+                <p class="hero-idle-note">共 ${parade.length} 位人物 · 按「註冊角色」即可選角（可向下／向右滑動睇晒）</p>`
           }
         </div>
       </div>
@@ -160,7 +162,7 @@ function renderAuth() {
           </select>
         </label>
         <div>
-          <div class="pick-label">點選人物 · 樣貌衣裝各異</div>
+          <div class="pick-label">點選人物（${list.length} 位）· 向下滑動睇更多</div>
           <div class="char-pick" id="char-pick">
             ${list
               .map(
@@ -292,6 +294,7 @@ function renderShell(user) {
 }
 
 function bindShell(user) {
+  const char = getCharacter(user.gender, user.characterId);
   app.querySelector("#logout-btn")?.addEventListener("click", () => {
     clearSession();
     render();
@@ -305,6 +308,15 @@ function bindShell(user) {
   app.querySelectorAll("[data-goto]").forEach((btn) => {
     btn.addEventListener("click", () => {
       state.view = btn.dataset.goto;
+      render();
+    });
+  });
+  app.querySelectorAll("[data-switch-char]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      updateUser((u) => {
+        u.characterId = btn.dataset.switchChar;
+      });
+      toast(`已切換為「${btn.querySelector(".name")?.textContent || "新角色"}」`);
       render();
     });
   });
@@ -375,6 +387,7 @@ function renderHome(user, char, rank) {
 }
 
 function renderProfile(user, ranks, current, char) {
+  const roster = CHARACTERS[user.gender] || [];
   return `
   <section class="panel profile-panel">
     <div class="profile-hero">
@@ -383,6 +396,20 @@ function renderProfile(user, ranks, current, char) {
         <h2>${char?.name} 的登基之路</h2>
         <p class="lead">${current.desc}　連勝 ${user.streak || 0} 題可獲額外經驗。等級愈高，衣裝飾物愈華麗。</p>
       </div>
+    </div>
+    <h3 class="section-title"><span>更換人物（${roster.length} 位）</span></h3>
+    <p class="lead" style="margin-top:0">進度保留，可隨時改選同性別角色。向下滑動睇晒全部。</p>
+    <div class="char-pick profile-char-pick">
+      ${roster
+        .map(
+          (c) => `
+        <button type="button" class="char-card ${user.characterId === c.id ? "selected" : ""}" data-switch-char="${c.id}" style="--accent:${c.color}">
+          <div class="char-portrait">${renderAvatar(c, current.id, "md")}</div>
+          <div class="name">${c.name}</div>
+          <div class="era">${c.era}</div>
+        </button>`
+        )
+        .join("")}
     </div>
     <div class="rank-road">
       ${ranks

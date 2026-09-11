@@ -549,9 +549,14 @@ select {
 
 .parade-row {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 0.65rem;
   margin-top: 0.4rem;
+  max-width: min(560px, 92vw);
+  overflow-x: auto;
+  padding: 0.35rem 0.15rem 0.55rem;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
 }
 
 .parade-item {
@@ -564,6 +569,8 @@ select {
   background: rgba(255, 248, 236, 0.72);
   border: 1px solid rgba(166, 124, 58, 0.3);
   box-shadow: 0 4px 14px rgba(90, 60, 30, 0.06);
+  flex: 0 0 auto;
+  scroll-snap-align: start;
 }
 
 .parade-item span {
@@ -608,15 +615,23 @@ select {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 0.65rem;
-  max-height: 460px;
+  max-height: 520px;
   overflow-y: auto;
-  padding: 0.25rem;
+  padding: 0.35rem;
+  border: 1px dashed rgba(166, 124, 58, 0.35);
+  border-radius: 10px;
+  background: rgba(255, 248, 236, 0.35);
+}
+
+.profile-char-pick {
+  max-height: 420px;
+  margin: 0.75rem 0 1.2rem;
 }
 
 @media (max-width: 640px) {
   .char-pick {
     grid-template-columns: repeat(2, 1fr);
-    max-height: 420px;
+    max-height: 480px;
   }
 }
 

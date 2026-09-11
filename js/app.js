@@ -1,11 +1,11 @@
-import { CHARACTERS, getCharacter } from "./data/characters.js?v=rad5";
-import { QUESTIONS, checkFill } from "./data/questions.js?v=rad5";
-import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad5";
-import { levelFromXp } from "./data/levels.js?v=rad5";
-import { DIALOGUES } from "./data/dialogues.js?v=rad5";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad5";
-import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=rad5";
-import { renderAvatar } from "./avatar.js?v=rad5";
+import { CHARACTERS, getCharacter } from "./data/characters.js?v=rad6";
+import { QUESTIONS, checkFill } from "./data/questions.js?v=rad6";
+import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad6";
+import { levelFromXp } from "./data/levels.js?v=rad6";
+import { DIALOGUES } from "./data/dialogues.js?v=rad6";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad6";
+import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=rad6";
+import { renderAvatar } from "./avatar.js?v=rad6";
 import {
   CARD_TYPES,
   createBattle,
@@ -15,7 +15,7 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=rad5";
+} from "./data/shizhan.js?v=rad6";
 import {
   getCurrentUser,
   registerUser,
@@ -23,7 +23,7 @@ import {
   clearSession,
   addXp,
   updateUser,
-} from "./storage.js?v=rad5";
+} from "./storage.js?v=rad6";
 import {
   userSnapshot,
   buildPromotionOrder,
@@ -31,7 +31,7 @@ import {
   IDENTITY_DISCLAIMER,
   identityDisplayName,
   getIdentity,
-} from "./progress.js?v=rad5";
+} from "./progress.js?v=rad6";
 import {
   renderJourneyHome,
   renderScroll,
@@ -42,10 +42,10 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad5";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad5";
-import { renderPromoteReveal } from "./heroStage.js?v=rad5";
-import { getStageVisual } from "./data/stageVisuals.js?v=rad5";
+} from "./journey.js?v=rad6";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad6";
+import { renderPromoteReveal } from "./heroStage.js?v=rad6";
+import { getStageVisual } from "./data/stageVisuals.js?v=rad6";
 
 const app = document.getElementById("app");
 let toastTimer = null;
@@ -141,7 +141,7 @@ function refreshTopbarOnly() {
   const badge = app.querySelector(".player-badge");
   if (!badge) return;
   badge.innerHTML = `
-    <div class="avatar-ring">${renderAvatar(char, snap.identity.id, "sm")}</div>
+    <div class="avatar-ring">${renderAvatar(char, snap.identity.id, "sm", { gender: user.gender })}</div>
     <div class="player-meta">
       <strong>${char?.name || "行者"} · ${snap.identityName}</strong>
       <span>${user.username}　Lv.${snap.level.level}　XP ${user.xp}</span>
@@ -219,12 +219,12 @@ function renderAuth() {
         <div class="hero-stage">
           ${
             state.authMode === "register"
-              ? `${renderAvatar(preview, 0, "lg")}
+              ? `${renderAvatar(preview, 0, "lg", { forcePortrait: true, gender: state.gender })}
                  <div class="hero-caption"><strong>${preview.name}</strong><span>${preview.era} · 起步衣裝「${outfitOf(state.gender, 0)}」· 「${preview.motto}」</span></div>`
               : `<div class="parade-row" id="parade-row">
-                  ${parade.map((c) => `<div class="parade-item" title="${c.name} · ${c.era}">${renderAvatar(c, 0, "sm")}<span>${c.name}</span></div>`).join("")}
+                  ${parade.map((c) => `<div class="parade-item" title="${c.name} · ${c.era}">${renderAvatar(c, 0, "sm", { forcePortrait: true, gender: c.look?.gender || c.gender })}<span>${c.name}</span></div>`).join("")}
                 </div>
-                <p class="hero-idle-note">共 ${parade.length} 位人物 · 開局為庶民，考核晉升後衣裝與場景漸開闊</p>`
+                <p class="hero-idle-note">共 ${parade.length} 位人物 · 開局為庶民樣貌，考核晉升後衣裝與場景漸開闊</p>`
           }
         </div>
       </div>
@@ -259,7 +259,7 @@ function renderAuth() {
               .map(
                 (c) => `
               <button type="button" class="char-card ${state.characterId === c.id ? "selected" : ""}" data-char="${c.id}" style="--accent:${c.color}">
-                <div class="char-portrait">${renderAvatar(c, 0, "md")}</div>
+                <div class="char-portrait">${renderAvatar(c, 0, "md", { forcePortrait: true, gender: state.gender })}</div>
                 <div class="name">${c.name}</div>
                 <div class="era">${c.era} · ${outfitOf(state.gender, 0)}</div>
               </button>`
@@ -385,7 +385,7 @@ function renderShell(user) {
   <div class="app-shell paper-shell">
     <header class="topbar">
       <div class="player-badge">
-        <div class="avatar-ring">${renderAvatar(char, idn.id, "sm")}</div>
+        <div class="avatar-ring">${renderAvatar(char, idn.id, "sm", { gender: user.gender })}</div>
         <div class="player-meta">
           <strong>${char?.name || "行者"} · ${snap.identityName}</strong>
           <span>${user.username}　Lv.${snap.level.level}　XP ${user.xp}</span>
@@ -463,7 +463,7 @@ function renderProfile(user, char, snap) {
   return `
   <section class="panel-paper profile-panel">
     <div class="profile-hero">
-      ${renderAvatar(char, snap.identity.id, "lg")}
+      ${renderAvatar(char, snap.identity.id, "lg", { gender: user.gender })}
       <div>
         <h2>${char?.name}</h2>
         <p class="lead">身份「${snap.identityName}」· Lv.${snap.level.level} · 衣裝「${snap.outfit}」。${snap.identity.desc}</p>
@@ -487,7 +487,7 @@ function renderProfile(user, char, snap) {
         .map(
           (c) => `
         <button type="button" class="char-card ${user.characterId === c.id ? "selected" : ""}" data-switch-char="${c.id}" style="--accent:${c.color}">
-          <div class="char-portrait">${renderAvatar(c, snap.identity.id, "md")}</div>
+          <div class="char-portrait">${renderAvatar(c, snap.identity.id, "md", { forcePortrait: true, gender: user.gender })}</div>
           <div class="name">${c.name}</div>
           <div class="era">${c.era}</div>
         </button>`

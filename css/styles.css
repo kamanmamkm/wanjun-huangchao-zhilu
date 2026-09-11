@@ -460,45 +460,67 @@ select {
   background: linear-gradient(180deg, transparent, rgba(255, 248, 236, 0.92));
 }
 
-/* —— 衣裝階級：同一面貌，濾鏡／場景由簡入繁 —— */
+/* —— 衣裝階級：開局庶民明亮，唔再用粗布灰階 —— */
 .outfit-0 {
-  border-color: #7a6a55 !important;
+  border-color: #c84436 !important;
   border-width: 2px;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 6px 14px rgba(200, 68, 54, 0.18);
 }
 
 .outfit-0 img {
-  filter: grayscale(0.55) saturate(0.35) brightness(0.92) contrast(0.9);
+  filter: saturate(1.05) brightness(1.04) contrast(1.02);
+}
+
+.outfit-0::before {
+  background: linear-gradient(180deg, transparent 55%, rgba(200, 68, 54, 0.12) 100%);
+}
+
+.outfit-0 .avatar-art-era {
+  color: #243746;
+  background: linear-gradient(180deg, transparent, rgba(255, 248, 236, 0.95));
+}
+
+/* 階段海報作頭像：裁切上半身／臉部 */
+.avatar-art.stage-face {
+  overflow: hidden;
+  border-radius: 12px;
+}
+.avatar-art.stage-face img {
+  object-fit: cover;
+  object-position: center 12%;
+  width: 100%;
+  height: 100%;
+  filter: none;
+}
+.avatar-art.avatar-sm.stage-face {
+  border-radius: 50%;
+}
+.avatar-art.avatar-sm.stage-face img {
+  object-position: center 8%;
+}
+.avatar-ring .avatar-art.stage-face {
+  border-radius: 50%;
+}
+.growth-av .avatar-art.stage-face {
+  border-radius: 50%;
+  width: 40px !important;
+  height: 40px !important;
+}
+.growth-av .avatar-art.stage-face img {
+  object-position: center 10%;
 }
 
 .outfit-1 {
-  border-color: #8a9a60 !important;
+  border-color: #246b87 !important;
   border-width: 2px;
 }
 
 .outfit-1 img {
-  filter: saturate(0.8) sepia(0.12) brightness(1.02) contrast(0.96);
-}
-
-.outfit-0::before {
-  background:
-    linear-gradient(180deg, transparent 38%, rgba(110, 90, 60, 0.28) 58%, rgba(85, 70, 48, 0.5) 100%),
-    repeating-linear-gradient(
-      -18deg,
-      transparent,
-      transparent 3px,
-      rgba(70, 55, 35, 0.08) 3px,
-      rgba(70, 55, 35, 0.08) 5px
-    );
+  filter: saturate(1.08) contrast(1.02) brightness(1.02);
 }
 
 .outfit-1::before {
-  background: linear-gradient(180deg, transparent 55%, rgba(122, 143, 74, 0.18) 100%);
-}
-
-.outfit-0 .avatar-art-era {
-  color: #4a3c2c;
-  background: linear-gradient(180deg, transparent, rgba(210, 195, 165, 0.95));
+  background: linear-gradient(180deg, transparent 55%, rgba(36, 107, 135, 0.18) 100%);
 }
 
 .outfit-2 img {

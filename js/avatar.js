@@ -1,6 +1,8 @@
 /**
- * 日漫／立繪頭像：衣裝隨等級由簡樸→華麗
+ * 日漫／立繪頭像：開局為庶民樣貌；有階段海報時優先用海報臉部
  */
+import { getStageArt } from "./data/stageVisuals.js";
+
 let avatarSeq = 0;
 
 const GLOW = [0, 0.02, 0.06, 0.1, 0.16, 0.24, 0.34, 0.46, 0.58];
@@ -504,7 +506,7 @@ export function renderAvatar(character, rankId = 0, size = "md", opts = {}) {
   const dims =
     size === "hero" ? 320 : size === "lg" ? 248 : size === "sm" ? 104 : 148;
   const h = Math.round(dims * (size === "hero" ? 1.35 : 1.24));
-  const gender = character.look?.gender || character.gender || "male";
+  const gender = opts.gender || character.look?.gender || character.gender || "male";
   const outfit =
     opts.outfitLabel ||
     (gender === "female"
@@ -513,10 +515,20 @@ export function renderAvatar(character, rankId = 0, size = "md", opts = {}) {
   const baseAccent = character.look?.accent || character.color || "#c6a35a";
   const accent = rank <= 0 ? "#c84436" : rank <= 2 ? "#246b87" : baseAccent;
 
+  // 有階段海報 → 頭像用庶民／學子／士人樣貌（選角頁可用 forcePortrait 保留原型）
+  const stageArt = !opts.forcePortrait ? getStageArt(rank, gender) : null;
+  if (stageArt) {
+    return `
+    <div class="avatar-art avatar-${size} outfit-${rank} stage-face" style="--accent:${accent};--glow:${GLOW[Math.min(rank, GLOW.length - 1)]};width:${dims}px;height:${h}px" role="img" aria-label="${character.name} · ${stageArt.badge || outfit}">
+      <img src="${stageArt.src}?v=rad6" alt="${character.name}" width="${dims}" height="${h}" loading="lazy" />
+      <span class="avatar-art-outfit">${outfit}</span>
+    </div>`;
+  }
+
   if (character.portrait) {
     return `
     <div class="avatar-art avatar-${size} outfit-${rank}" style="--accent:${accent};--glow:${GLOW[Math.min(rank, GLOW.length - 1)]};width:${dims}px;height:${h}px" role="img" aria-label="${character.name} · ${outfit}">
-      <img src="${character.portrait}?v=rad5" alt="${character.name}" width="${dims}" height="${h}" loading="lazy" />
+      <img src="${character.portrait}?v=rad6" alt="${character.name}" width="${dims}" height="${h}" loading="lazy" />
       <span class="avatar-art-outfit">${outfit}</span>
       <span class="avatar-art-era">${character.era || ""}</span>
     </div>`;
@@ -530,6 +542,6 @@ export function renderAvatar(character, rankId = 0, size = "md", opts = {}) {
   const drawFn = DRAW[character.id] || drawHanxin;
   return `
   <svg class="avatar-svg avatar-${size} outfit-${rank}" viewBox="0 -10 120 156" width="${dims}" height="${h}" aria-label="${character.name} · ${outfit}" role="img">
-    ${frame(uid, L, outfit, GLOW[rank], drawFn(uid, L))}
+    ${frame(uid, L, outfit, GLOW[Math.min(rank, GLOW.length - 1)], drawFn(uid, L))}
   </svg>`;
 }

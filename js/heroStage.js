@@ -34,7 +34,7 @@ export function renderHeroStage(char, identityId, size = "hero", opts = {}) {
       </div>`;
   } else if (usePoster) {
     body = `<div class="stage-poster" role="img" aria-label="${name} · ${art.badge || outfit}">
-      <img src="${art.src}?v=rad5" alt="${name} · ${art.badge || "階段立繪"}" loading="lazy" />
+      <img src="${art.src}?v=rad6" alt="${name} · ${art.badge || "階段立繪"}" loading="lazy" />
       ${art.badge ? `<span class="stage-art-badge">${art.badge}</span>` : ""}
     </div>`;
   } else {
@@ -80,7 +80,7 @@ export function renderStudyCompanion(char, identityId, line = "") {
   const vis = getStageVisual(identityId);
   return `
   <aside class="study-companion" aria-label="角色提示">
-    ${renderAvatar(char, identityId, "sm")}
+    ${renderAvatar(char, identityId, "sm", { gender: char?.look?.gender || char?.gender })}
     <div class="study-bubble">
       <p>${line || vis.quote}</p>
     </div>

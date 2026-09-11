@@ -236,7 +236,7 @@ export const TRIALS = {
   /** 終章：三部分可分段完成 */
   trial_ascension: {
     id: "trial_ascension",
-    title: "終章：天下待定",
+    title: "終章試煉：天下待定",
     isFinale: true,
     passScore: 80,
     minSource: 65,

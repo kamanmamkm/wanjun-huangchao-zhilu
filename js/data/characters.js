@@ -210,10 +210,10 @@ export const CHARACTERS = {
   ],
   female: [
     {
-      id: "wuzetian",
-      name: "武則天",
-      era: "唐",
-      motto: "臨朝稱制，開創新局",
+      id: "fengyi",
+      name: "任鳳儀",
+      era: "架空",
+      motto: "以才治國，不讓鬚眉",
       color: "#9b2226",
       portrait: "assets/portraits/wuzetian.png",
       look: {
@@ -423,5 +423,7 @@ export const CHARACTERS = {
 };
 
 export function getCharacter(gender, id) {
-  return (CHARACTERS[gender] || []).find((c) => c.id === id) || null;
+  // 舊存檔：wuzetian → 架空角色任鳳儀
+  const cid = id === "wuzetian" ? "fengyi" : id;
+  return (CHARACTERS[gender] || []).find((c) => c.id === cid) || null;
 }

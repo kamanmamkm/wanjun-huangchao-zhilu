@@ -80,9 +80,9 @@ export const IDENTITIES = [
     name: "帝王",
     altName: "女帝",
     arc: "天下篇",
-    color: "#c9a227",
+    color: "#d7aa50",
     outfit: { male: "龍袍冕旒", female: "鳳袍珠冠" },
-    desc: "通過終章試煉，以學習成果登基——非簽到獎勵。",
+    desc: "通過終章試煉登基——宮階金暉，責任亦隨之而來。",
   },
 ];
 
@@ -151,7 +151,7 @@ export const PROMOTION_GATES = {
     mastery: { synthesis: 0.85, sources: 0.85, policy: 0.8 },
     skills: { timeline: 0.85, source: 0.85, argue: 0.85 },
     trialId: "trial_ascension",
-    label: "終章：天下待定",
+    label: "終章試煉：天下待定",
     isFinale: true,
   },
 };

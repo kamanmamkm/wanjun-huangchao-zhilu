@@ -598,7 +598,7 @@ export function renderPromote(user, char) {
     finale && (order.canChallenge || order.trialPassed || user.identityId >= 6)
       ? `
     <div class="finale-board">
-      <h3>終章任務：天下待定</h3>
+      <h3>終章試煉：天下待定</h3>
       <p class="lead">三部分可分開完成並儲存進度。全部通過後才可登基。</p>
       <div class="finale-segs">
         ${finale.segs

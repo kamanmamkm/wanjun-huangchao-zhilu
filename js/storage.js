@@ -77,6 +77,7 @@ export function migrateUser(u) {
   if (typeof u.identityId !== "number" || u.identityId < 0) {
     u.identityId = STARTING_IDENTITY_ID;
   }
+  if (u.characterId === "wuzetian") u.characterId = "fengyi";
   return u;
 }
 

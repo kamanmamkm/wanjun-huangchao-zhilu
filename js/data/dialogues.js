@@ -77,10 +77,10 @@ export const DIALOGUES = [
   },
   {
     id: "d_wu",
-    character: "武則天",
-    era: "唐",
+    character: "任鳳儀",
+    era: "架空",
     avatar: "🦅",
-    intro: "朕以女子君臨天下。爾以為女主臨朝有何挑戰？",
+    intro: "吾以女子之身問鼎天下。爾以為女主臨朝有何挑戰？",
     steps: [
       {
         prompt: "如何鞏固統治、選拔人才？",
@@ -91,7 +91,7 @@ export const DIALOGUES = [
         ],
       },
       {
-        prompt: "史家對朕褒貶不一，爾如何看？",
+        prompt: "史家對女主褒貶不一，爾如何看？",
         choices: [
           { text: "應就其政績與爭議分開評價", good: true, reply: "史識在於全面。功過並存，方是實錄。" },
           { text: "女子不當皇帝，一律否定", good: false, reply: "以性別否定一切，並非公允史觀。" },

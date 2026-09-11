@@ -110,17 +110,17 @@ export const STAGE_VISUALS = {
   },
   7: {
     id: 7,
-    scene: "宮殿廣場",
+    scene: "宮階金暉",
     sceneKey: "palace",
-    pose: "居中登場，旗幟與晴空",
+    pose: "立於石階，龍鳳禮服居中",
     poseKey: "sovereign",
-    prop: "專屬禮服",
+    prop: "冕旒／鳳冠",
     propKey: "crown",
     accent: "#d7aa50",
-    bgHint: "朱紅・象牙白・金色",
+    bgHint: "象牙白龍袍／硃紅鳳袍與殿門金光",
     quote: "盛世登場——責任亦隨之而來。",
-    vibe: "盛世登場",
-    priority: false,
+    vibe: "帝王登階",
+    priority: true,
   },
 };
 
@@ -172,6 +172,12 @@ export const STAGE_ART = {
     female: "assets/stages/zhuhou-female.jpg",
     badge: "⑦ 諸侯｜Lv.71–85",
     label: "諸侯登場",
+  },
+  7: {
+    male: "assets/stages/diwang-male.jpg",
+    female: "assets/stages/diwang-female.jpg",
+    badge: "⑧ 帝王｜Lv.86–100",
+    label: "帝王登場 · 終章試煉",
   },
 };
 

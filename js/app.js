@@ -4,6 +4,7 @@ import { RANKS, XP_REWARDS, rankFromXp } from "./data/ranks.js";
 import { DIALOGUES } from "./data/dialogues.js";
 import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js";
 import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js";
+import { renderAvatar } from "./avatar.js";
 import {
   getCurrentUser,
   registerUser,
@@ -70,12 +71,15 @@ function refreshTopbarOnly() {
   if (!user) return;
   const char = getCharacter(user.gender, user.characterId);
   const { current, next, progress } = rankFromXp(user.gender, user.xp);
-  const meta = app.querySelector(".player-meta");
-  if (!meta) return;
-  meta.innerHTML = `
-    <strong>${char?.name || "行者"} · ${current.name}</strong>
-    <span>${user.username}　經驗 ${user.xp}${next ? `／下一階 ${next.xp}` : "（已登頂）"}</span>
-    <div class="xp-bar"><i style="width:${progress}%"></i></div>`;
+  const badge = app.querySelector(".player-badge");
+  if (!badge) return;
+  badge.innerHTML = `
+    <div class="avatar-ring">${renderAvatar(char, current.id, "sm")}</div>
+    <div class="player-meta">
+      <strong>${char?.name || "行者"} · ${current.name}</strong>
+      <span>${user.username}　經驗 ${user.xp}${next ? `／下一階 ${next.xp}` : "（已登頂）"}</span>
+      <div class="xp-bar"><i style="width:${progress}%"></i></div>
+    </div>`;
 }
 
 function render() {
@@ -92,16 +96,31 @@ function render() {
 /* ========== Auth ========== */
 function renderAuth() {
   const list = CHARACTERS[state.gender];
+  const preview = list.find((c) => c.id === state.characterId) || list[0];
   return `
   <section class="hero-screen">
     <div class="brand-block">
+      <p class="eyebrow">萬鈞伯裘中史科 · 角色成長遊戲</p>
       <h1>萬鈞伯裘<br>皇朝之路</h1>
-      <p class="subtitle">初中中史科角色成長遊戲：答題升級，從奴隸／婢女走到皇帝／女皇。每個帳號都是獨立角色。</p>
+      <p class="subtitle">化身古代人物，答題升級——從奴隸走到皇帝。每個帳號都是你的獨立傳奇。</p>
+      <div class="hero-preview ${state.authMode === "register" ? "show" : ""}">
+        <div class="hero-stage">
+          ${state.authMode === "register" ? renderAvatar(preview, 4, "lg") : ""}
+          ${
+            state.authMode === "register"
+              ? `<div class="hero-caption"><strong>${preview.name}</strong><span>${preview.era} · 「${preview.motto}」</span></div>`
+              : `<div class="hero-idle">
+                  <div class="lantern"></div>
+                  <p>註冊後選擇人物原型<br>衣裝樣貌各不相同</p>
+                </div>`
+          }
+        </div>
+      </div>
       <div class="tags">
-        <span class="tag">選擇題 · 填充 · 配對</span>
-        <span class="tag">Wordwall 風小遊戲</span>
-        <span class="tag">時間線 · 與古人對話</span>
-        <span class="tag">影片學習區</span>
+        <span class="tag">📝 選擇 · 填充 · 配對</span>
+        <span class="tag">🎯 趣味小遊戲</span>
+        <span class="tag">💬 與古人對話</span>
+        <span class="tag">🎬 影片學習</span>
       </div>
     </div>
     <div class="auth-panel">
@@ -122,13 +141,13 @@ function renderAuth() {
           </select>
         </label>
         <div>
-          <div style="font-weight:600;margin-bottom:.4rem;font-size:.9rem">選擇古代人物原型</div>
+          <div class="pick-label">點選人物 · 樣貌衣裝各異</div>
           <div class="char-pick" id="char-pick">
             ${list
               .map(
                 (c) => `
-              <button type="button" class="char-card ${state.characterId === c.id ? "selected" : ""}" data-char="${c.id}" style="border-color:${state.characterId === c.id ? c.color : ""}">
-                <div class="emoji">${c.emoji}</div>
+              <button type="button" class="char-card ${state.characterId === c.id ? "selected" : ""}" data-char="${c.id}" style="--accent:${c.color}">
+                <div class="char-portrait">${renderAvatar(c, 2, "sm")}</div>
                 <div class="name">${c.name}</div>
                 <div class="era">${c.era}</div>
               </button>`
@@ -139,7 +158,7 @@ function renderAuth() {
             : ""
         }
         <p class="form-error" id="auth-error"></p>
-        <button class="btn" type="submit">${state.authMode === "login" ? "進入皇朝" : "創角出發"}</button>
+        <button class="btn btn-wide" type="submit">${state.authMode === "login" ? "⚔️ 進入皇朝" : "🏯 創角出發"}</button>
       </form>
     </div>
   </section>`;
@@ -202,7 +221,7 @@ function renderShell(user) {
   <div class="app-shell">
     <header class="topbar">
       <div class="player-badge">
-        <div class="avatar-ring" style="background:${char?.color || current.color}">${char?.emoji || "🏯"}</div>
+        <div class="avatar-ring">${renderAvatar(char, current.id, "sm")}</div>
         <div class="player-meta">
           <strong>${char?.name || "行者"} · ${current.name}</strong>
           <span>${user.username}　經驗 ${user.xp}${next ? `／下一階 ${next.xp}` : "（已登頂）"}</span>
@@ -215,11 +234,11 @@ function renderShell(user) {
     </header>
     <nav class="nav">
       ${[
-        ["home", "主殿"],
-        ["practice", "題目練習"],
-        ["games", "小遊戲"],
-        ["videos", "影片區"],
-        ["profile", "角色之路"],
+        ["home", "🏯 主殿"],
+        ["practice", "📝 練習"],
+        ["games", "🎯 遊戲"],
+        ["videos", "🎬 影片"],
+        ["profile", "👑 角色"],
       ]
         .map(
           ([id, label]) =>
@@ -238,7 +257,7 @@ function renderShell(user) {
               : state.view === "videos"
                 ? renderVideos()
                 : state.view === "profile"
-                  ? renderProfile(user, ranks, current)
+                  ? renderProfile(user, ranks, current, char)
                   : state.view === "wordwall"
                     ? renderWordwall()
                     : state.view === "timeline"
@@ -276,50 +295,72 @@ function bindShell(user) {
 }
 
 function renderHome(user, char, rank) {
+  const { next, progress } = rankFromXp(user.gender, user.xp);
+  const quests = [
+    { goto: "practice", icon: "📝", title: "科舉答題", tip: "選擇 · 填充 · 配對", xp: `+${XP_REWARDS.mcCorrect}起`, tone: "cinnabar" },
+    { goto: "wordwall", icon: "🎯", title: "機緣翻牌", tip: "Wordwall 風挑戰", xp: `+${XP_REWARDS.wordwallRound}`, tone: "gold" },
+    { goto: "timeline", icon: "⏳", title: "時光長河", tip: "事件配對年代", xp: `+${XP_REWARDS.timelineComplete}`, tone: "jade" },
+    { goto: "dialogue", icon: "💬", title: "古人問答", tip: "與名君對話", xp: `+${XP_REWARDS.dialogueGood}`, tone: "indigo" },
+    { goto: "videos", icon: "🎬", title: "史影堂", tip: "看片鞏固知識", xp: "加分備戰", tone: "bronze" },
+    { goto: "profile", icon: "👑", title: "登基之路", tip: "等級與衣裝演進", xp: `${user.xp} XP`, tone: "royal" },
+  ];
   return `
-  <section class="panel">
-    <h2>萬鈞伯裘—皇朝之路</h2>
-    <p class="lead">你化身${char?.name}（${char?.era}）：「${char?.motto}」現職${rank.name}。答岩題目、完成挑戰即可升級——難度中等，需持續練習方可達帝位。</p>
-    <div class="grid-cards">
-      <article class="feature-card" data-goto="practice">
-        <div style="font-size:1.6rem">📝</div>
-        <h3>題目練習</h3>
-        <p>選擇題、填充題、配對題，涵蓋中一至中三中史重點。</p>
-      </article>
-      <article class="feature-card" data-goto="wordwall">
-        <div style="font-size:1.6rem">🎯</div>
-        <h3>Wordwall 風挑戰</h3>
-        <p>翻牌配對與限時問答，練反應與史識。</p>
-      </article>
-      <article class="feature-card" data-goto="timeline">
-        <div style="font-size:1.6rem">⏳</div>
-        <h3>人物時間線</h3>
-        <p>把事件拖回正確年代，理清歷史順序。</p>
-      </article>
-      <article class="feature-card" data-goto="dialogue">
-        <div style="font-size:1.6rem">💬</div>
-        <h3>與古人對話</h3>
-        <p>與秦始皇、太宗、太祖等問答，考你史識與判斷。</p>
-      </article>
-      <article class="feature-card" data-goto="videos">
-        <div style="font-size:1.6rem">🎬</div>
-        <h3>影片學習區</h3>
-        <p>觀看教育影片，鞏固課堂知識。</p>
-      </article>
-      <article class="feature-card" data-goto="profile">
-        <div style="font-size:1.6rem">🏯</div>
-        <h3>角色之路</h3>
-        <p>查看等級階梯、答題統計與升級條件。</p>
-      </article>
+  <section class="home-layout">
+    <div class="hero-banner panel">
+      <div class="hero-banner-art">
+        <div class="portrait-glow" style="--glow:${char?.color || rank.color}"></div>
+        ${renderAvatar(char, rank.id, "lg")}
+        <div class="rank-badge" style="background:${rank.color}">${rank.name}</div>
+      </div>
+      <div class="hero-banner-copy">
+        <p class="eyebrow">今日挑戰 · 皇朝之路</p>
+        <h2>${char?.name}，繼續你的傳奇</h2>
+        <p class="motto">「${char?.motto}」</p>
+        <p class="lead">${char?.era}人物原型 · 現職<strong>${rank.name}</strong>。答岩題、破關卡，衣裝會隨等級更華麗！</p>
+        <div class="progress-card">
+          <div class="progress-head">
+            <span>升級進度</span>
+            <span>${next ? `距「${next.name}」還差 ${Math.max(0, next.xp - user.xp)} XP` : "已登帝位 🎉"}</span>
+          </div>
+          <div class="xp-bar xl"><i style="width:${progress}%"></i></div>
+        </div>
+        <div class="quick-actions">
+          <button type="button" class="btn" data-goto="practice">立即答題</button>
+          <button type="button" class="btn ghost" data-goto="games">玩小遊戲</button>
+        </div>
+      </div>
+    </div>
+    <div class="quest-board">
+      <h3 class="section-title"><span>任務告示板</span></h3>
+      <div class="quest-grid">
+        ${quests
+          .map(
+            (q, i) => `
+          <article class="quest-card tone-${q.tone}" data-goto="${q.goto}" style="--i:${i}">
+            <div class="quest-icon">${q.icon}</div>
+            <div class="quest-body">
+              <h3>${q.title}</h3>
+              <p>${q.tip}</p>
+            </div>
+            <span class="quest-xp">${q.xp}</span>
+          </article>`
+          )
+          .join("")}
+      </div>
     </div>
   </section>`;
 }
 
-function renderProfile(user, ranks, current) {
+function renderProfile(user, ranks, current, char) {
   return `
-  <section class="panel">
-    <h2>角色之路</h2>
-    <p class="lead">${current.desc}　連勝 ${user.streak || 0} 題可獲額外經驗。</p>
+  <section class="panel profile-panel">
+    <div class="profile-hero">
+      ${renderAvatar(char, current.id, "lg")}
+      <div>
+        <h2>${char?.name} 的登基之路</h2>
+        <p class="lead">${current.desc}　連勝 ${user.streak || 0} 題可獲額外經驗。等級愈高，衣裝飾物愈華麗。</p>
+      </div>
+    </div>
     <div class="rank-road">
       ${ranks
         .map(
@@ -334,7 +375,7 @@ function renderProfile(user, ranks, current) {
       <div class="stat">小遊戲 ${user.stats?.games || 0}</div>
       <div class="stat">總經驗 ${user.xp}</div>
     </div>
-    <p class="lead" style="margin-top:1rem">升級提示：選擇題 +${XP_REWARDS.mcCorrect}、填充 +${XP_REWARDS.fillCorrect}、配對每對 +${XP_REWARDS.matchPair}；小遊戲獎勵更高。中等難度下，大約需完成多輪練習才能登頂。</p>
+    <p class="lead" style="margin-top:1rem">升級提示：選擇題 +${XP_REWARDS.mcCorrect}、填充 +${XP_REWARDS.fillCorrect}、配對每對 +${XP_REWARDS.matchPair}；小遊戲獎勵更高。</p>
   </section>`;
 }
 
@@ -574,17 +615,29 @@ function renderGamesHub() {
   return `
   <section class="panel">
     <h2>小遊戲大廳</h2>
-    <p class="lead">Wordwall 風格挑戰、時間線排序、與古人對話——完成可獲較高經驗。</p>
-    <div class="grid-cards">
-      <article class="feature-card" data-goto="wordwall"><div style="font-size:1.6rem">🎯</div><h3>Wordwall 風</h3><p>翻牌配對、限時問答</p></article>
-      <article class="feature-card" data-goto="timeline"><div style="font-size:1.6rem">⏳</div><h3>時間線</h3><p>人物／事件與年代配對</p></article>
-      <article class="feature-card" data-goto="dialogue"><div style="font-size:1.6rem">💬</div><h3>與古人對話</h3><p>選擇正確回應</p></article>
+    <p class="lead">挑一關挑戰吧！破關經驗比普通練習更高。</p>
+    <div class="quest-grid games-quest">
+      <article class="quest-card tone-gold" data-goto="wordwall" style="--i:0">
+        <div class="quest-icon">🎯</div>
+        <div class="quest-body"><h3>機緣翻牌</h3><p>Wordwall 風 · 翻牌配對／問答</p></div>
+        <span class="quest-xp">+${XP_REWARDS.wordwallRound}</span>
+      </article>
+      <article class="quest-card tone-jade" data-goto="timeline" style="--i:1">
+        <div class="quest-icon">⏳</div>
+        <div class="quest-body"><h3>時光長河</h3><p>把事件放回正確年代</p></div>
+        <span class="quest-xp">+${XP_REWARDS.timelineComplete}</span>
+      </article>
+      <article class="quest-card tone-indigo" data-goto="dialogue" style="--i:2">
+        <div class="quest-icon">💬</div>
+        <div class="quest-body"><h3>古人問答</h3><p>與名君對話，考你史識</p></div>
+        <span class="quest-xp">+${XP_REWARDS.dialogueGood}</span>
+      </article>
     </div>
-    <h3 style="margin-top:1.5rem;font-family:var(--font-display)">外部 Wordwall</h3>
+    <h3 class="section-title" style="margin-top:1.5rem"><span>外部 Wordwall</span></h3>
     <div class="grid-cards" style="margin-top:.6rem">
       ${EXTERNAL_WORDWALL.map(
         (w) => `
-        <a class="feature-card" href="${w.url}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit">
+        <a class="feature-card" href="${w.url}" target="_blank" rel="noopener">
           <h3>${w.title}</h3>
           <p>${w.note || w.url}</p>
         </a>`

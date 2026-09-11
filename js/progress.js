@@ -15,7 +15,7 @@ import {
 } from "./data/identities.js";
 import { CHAPTERS, REMEDIALS } from "./data/chapters.js";
 import { getTrial } from "./data/trials.js";
-import { stageIdFromLevel } from "./data/stageVisuals.js";
+import { stageIdFromLevel, stageIdForUser, syncIdentityToLevel } from "./data/levelStage.js";
 
 export {
   IDENTITY_DISCLAIMER,
@@ -25,6 +25,8 @@ export {
   STARTING_IDENTITY_ID,
   IDENTITIES,
   stageIdFromLevel,
+  stageIdForUser,
+  syncIdentityToLevel,
 };
 
 function clamp01(n) {
@@ -50,9 +52,11 @@ export function ensureProgress(user) {
 }
 
 export function userSnapshot(user) {
+  syncIdentityToLevel(user);
   const p = ensureProgress(user);
-  const identity = getIdentity(user.identityId);
-  const next = nextIdentity(user.identityId);
+  const stageId = stageIdForUser(user);
+  const identity = getIdentity(stageId);
+  const next = nextIdentity(Math.max(user.identityId || 0, stageId));
   const lv = levelFromXp(user.xp);
   return {
     identity,
@@ -60,33 +64,10 @@ export function userSnapshot(user) {
     next,
     nextName: next ? identityDisplayName(next, user.gender) : null,
     level: lv,
-    outfit: outfitForIdentity(user.identityId, user.gender),
+    outfit: outfitForIdentity(stageId, user.gender),
+    stageId,
     progress: p,
   };
-}
-
-/**
- * 等級落入海報等級帶時，自動升身份形象（Lv.6→學子等）
- * @returns {{ from: number, to: number, level: number } | null}
- */
-export function syncIdentityToLevel(user) {
-  if (!user) return null;
-  ensureProgress(user);
-  const lv = levelFromXp(user.xp).level;
-  const band = stageIdFromLevel(lv);
-  const cur = Math.min(7, Math.max(0, Number(user.identityId) || 0));
-  if (band <= cur) return null;
-  const from = cur;
-  user.identityId = band;
-  const p = user.progress;
-  p.chronicle = p.chronicle || { promotions: [], restored: [], quotes: [] };
-  p.chronicle.promotions.push({
-    to: band,
-    at: Date.now(),
-    trialId: "level_band",
-    byLevel: lv,
-  });
-  return { from, to: band, level: lv };
 }
 
 /** 答題後更新掌握度／技能／章節 */

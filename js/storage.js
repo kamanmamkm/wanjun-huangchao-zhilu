@@ -4,7 +4,7 @@
  */
 import { migrateIdentityId, STARTING_IDENTITY_ID } from "./data/identities.js";
 import { normalizeHeroName } from "./data/characters.js";
-import { syncIdentityToLevel } from "./progress.js";
+import { syncIdentityToLevel } from "./data/levelStage.js";
 
 const USERS_KEY = "huangchao_users_v1";
 const SESSION_KEY = "huangchao_session_v1";
@@ -152,13 +152,10 @@ export function getCurrentUser() {
   const users = readUsers();
   let u = users[s.username];
   if (!u) return null;
-  const schemaBefore = u.identitySchema;
-  const idBefore = u.identityId;
   u = migrateUser(u);
-  if (u.identitySchema !== schemaBefore || u.identityId !== idBefore || !u.progress) {
-    users[s.username] = u;
-    writeUsers(users);
-  }
+  // 等級帶補升／遷移後一律寫回，確保形象即時生效
+  users[s.username] = u;
+  writeUsers(users);
   return u;
 }
 
@@ -191,6 +188,7 @@ export function addXp(amount, meta = {}) {
       u.answered = u.answered || {};
       u.answered[meta.qid] = true;
     }
+    syncIdentityToLevel(u);
   });
 }
 

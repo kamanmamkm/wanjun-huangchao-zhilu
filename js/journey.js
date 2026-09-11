@@ -33,14 +33,15 @@ import { getTrial } from "./data/trials.js";
 
 export function renderJourneyHome(user, char) {
   const snap = userSnapshot(user);
+  const stageId = snap.stageId ?? user.identityId ?? 0;
   const order = buildPromotionOrder(user);
   const ch = CHAPTERS.ch1_escape;
   const chProg = user.progress?.chapters?.ch1_escape || { stages: {} };
   const stages = ch.stages || [];
   const nextStage = stages.find((s) => !chProg.stages?.[s.id]) || stages[stages.length - 1];
   const skills = user.progress?.skills || {};
-  const vis = getStageVisual(snap.identity.id);
-  const realm = realmLabel(snap.identity.id);
+  const vis = getStageVisual(stageId);
+  const realm = realmLabel(stageId);
 
   const skillBars = SKILL_BARS.slice(0, 3)
     .map((s) => {
@@ -53,13 +54,13 @@ export function renderJourneyHome(user, char) {
     .join("");
 
   const ladder = IDENTITIES.map((idn) => {
-    const unlocked = user.identityId >= idn.id;
-    const current = user.identityId === idn.id;
+    const unlocked = stageId >= idn.id;
+    const current = stageId === idn.id;
     const label = identityDisplayName(idn, user.gender);
     if (current) return `<span class="grow-step current">【${label}】</span>`;
     if (unlocked) return `<span class="grow-step done">${label}</span>`;
-    if (idn.id === user.identityId + 1) return `<span class="grow-step next">${label}</span>`;
-    if (idn.id > user.identityId + 1 && idn.id <= user.identityId + 3)
+    if (idn.id === stageId + 1) return `<span class="grow-step next">${label}</span>`;
+    if (idn.id > stageId + 1 && idn.id <= stageId + 3)
       return `<span class="grow-step locked">${label}</span>`;
     if (idn.id === IDENTITIES.length - 1) return `<span class="grow-step locked">？</span>`;
     return "";
@@ -68,10 +69,10 @@ export function renderJourneyHome(user, char) {
     .join('<span class="grow-sep">──</span>');
 
   const avatars = IDENTITIES.map((idn) => {
-    const unlocked = user.identityId >= idn.id;
-    const current = user.identityId === idn.id;
-    const next = idn.id === user.identityId + 1;
-    if (!unlocked && !next && idn.id > user.identityId + 1) {
+    const unlocked = stageId >= idn.id;
+    const current = stageId === idn.id;
+    const next = idn.id === stageId + 1;
+    if (!unlocked && !next && idn.id > stageId + 1) {
       if (idn.id === IDENTITIES.length - 1)
         return `<button type="button" class="growth-av locked" disabled title="？">？</button>`;
       return "";
@@ -105,7 +106,7 @@ export function renderJourneyHome(user, char) {
       <p class="muted" style="font-size:.8rem;margin:0">當前任務：${nextStage?.title || "—"}</p>
     </div>
     <div class="poster-art" aria-label="${heroDisplayName(user, char)} 立繪">
-      ${renderHeroStage(char, snap.identity.id, "hero", {
+      ${renderHeroStage(char, stageId, "hero", {
         gender: user.gender,
         priorityBoost: true,
         poster: true,
@@ -628,12 +629,12 @@ export function renderPromote(user, char) {
 
   return `
   <section class="panel-paper promote-view">
-    <p class="eyebrow ink-gold">晉升殿 · ${realmLabel(snap.identity.id)}</p>
+    <p class="eyebrow ink-gold">晉升殿 · ${realmLabel(snap.stageId)}</p>
     <h2>經驗解鎖資格 · 考核決定晉升</h2>
     <p class="lead disclaimer">${IDENTITY_DISCLAIMER}</p>
     <div class="promote-layout">
       <div class="promote-silhouette">
-        ${renderHeroStage(char, snap.identity.id, "lg", { gender: user.gender, priorityBoost: true, preferStageArt: true })}
+        ${renderHeroStage(char, snap.stageId, "lg", { gender: user.gender, priorityBoost: true, preferStageArt: true })}
         <p>當前：<strong>${snap.identityName}</strong> · Lv.${snap.level.level}</p>
         <p class="next-shadow">下一身份：${order.next ? identityDisplayName(order.next, user.gender) : "—"}</p>
       </div>
@@ -869,7 +870,7 @@ export function renderChronicle(user, char) {
     <div class="book">
       <div class="book-page">
         <h3>行者檔案</h3>
-        ${renderAvatar(char, snap.identity.id, "md")}
+        ${renderAvatar(char, snap.stageId, "md")}
         <p>${heroDisplayName(user, char)} · ${snap.identityName} · Lv.${snap.level.level}</p>
         <p>衣裝：${snap.outfit}</p>
       </div>

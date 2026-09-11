@@ -1,11 +1,11 @@
-import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad18";
-import { QUESTIONS, checkFill } from "./data/questions.js?v=rad18";
-import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad18";
-import { levelFromXp } from "./data/levels.js?v=rad18";
-import { DIALOGUES } from "./data/dialogues.js?v=rad18";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad18";
-import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=rad18";
-import { renderAvatar } from "./avatar.js?v=rad18";
+import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad20";
+import { QUESTIONS, checkFill } from "./data/questions.js?v=rad20";
+import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad20";
+import { levelFromXp } from "./data/levels.js?v=rad20";
+import { DIALOGUES } from "./data/dialogues.js?v=rad20";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad20";
+import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=rad20";
+import { renderAvatar } from "./avatar.js?v=rad20";
 import {
   CARD_TYPES,
   createBattle,
@@ -15,7 +15,7 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=rad18";
+} from "./data/shizhan.js?v=rad20";
 import {
   getCurrentUser,
   registerUser,
@@ -23,7 +23,7 @@ import {
   clearSession,
   addXp,
   updateUser,
-} from "./storage.js?v=rad18";
+} from "./storage.js?v=rad20";
 import {
   userSnapshot,
   buildPromotionOrder,
@@ -31,8 +31,7 @@ import {
   IDENTITY_DISCLAIMER,
   identityDisplayName,
   getIdentity,
-  syncIdentityToLevel,
-} from "./progress.js?v=rad18";
+} from "./progress.js?v=rad20";
 import {
   renderJourneyHome,
   renderScroll,
@@ -43,10 +42,10 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad18";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad18";
-import { renderPromoteReveal } from "./heroStage.js?v=rad18";
-import { getStageVisual } from "./data/stageVisuals.js?v=rad18";
+} from "./journey.js?v=rad20";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad20";
+import { renderPromoteReveal } from "./heroStage.js?v=rad20";
+import { getStageVisual } from "./data/stageVisuals.js?v=rad20";
 
 const app = document.getElementById("app");
 let toastTimer = null;
@@ -127,13 +126,12 @@ function reward(amount, meta = {}) {
   addXp(bonus, meta);
   const after = getCurrentUser();
   const nextLv = levelFromXp(after.xp).level;
-  let stageUp = null;
-  if (nextLv > prevLv) {
-    updateUser((u) => {
-      stageUp = syncIdentityToLevel(u);
-    });
-  }
-  const synced = getCurrentUser();
+  const idBefore = before?.identityId ?? 0;
+  const idAfter = after?.identityId ?? 0;
+  // addXp／migrate 已 sync；用前後 identity 判斷有無轉相
+  const stageUp =
+    idAfter > idBefore ? { from: idBefore, to: idAfter, level: nextLv } : null;
+  const synced = after;
   if (stageUp) {
     const name = identityDisplayName(getIdentity(stageUp.to), synced?.gender);
     state.promoteReveal = { fromId: stageUp.from, toId: stageUp.to };
@@ -183,7 +181,8 @@ function render() {
     bindAuth();
     return;
   }
-  const id = user.identityId || 0;
+  const snap = userSnapshot(user);
+  const id = snap.stageId ?? user.identityId ?? 0;
   const courtViews = ["promote"];
   const isCourt =
     courtViews.includes(state.view) ||
@@ -570,7 +569,7 @@ function renderPractice() {
   return `
   <section class="panel">
     <h2>題目練習</h2>
-    <p class="lead">依齡記／初中中史課程主題自擬題目，中等難度。答對可獲經驗升級。</p>
+    <p class="lead">依齡記／初中中史課程主題自擬題目。選擇、填充、配對均可練；答對可獲經驗。</p>
     <div class="toolbar">
       ${["mc|選擇題", "fill|填充題", "match|配對題"]
         .map((s) => {
@@ -743,13 +742,18 @@ function renderGamesHub() {
       </article>
       <article class="quest-card tone-indigo" data-goto="timeline" style="--i:3">
         <div class="quest-icon"><span class="ico ico-scroll" style="width:1.4em;height:1.4em"></span></div>
-        <div class="quest-body"><h3>時光長河</h3><p>把事件放回正確年代</p></div>
+        <div class="quest-body"><h3>時光長河</h3><p>把事件放回正確年代（可再抽一局）</p></div>
         <span class="quest-xp">+${XP_REWARDS.timelineComplete}</span>
       </article>
       <article class="quest-card tone-cinnabar" data-goto="dialogue" style="--i:4">
         <div class="quest-icon"><span class="ico ico-note" style="width:1.4em;height:1.4em"></span></div>
         <div class="quest-body"><h3>古人問答</h3><p>與名君對話，考你史識</p></div>
         <span class="quest-xp">+${XP_REWARDS.dialogueGood}</span>
+      </article>
+      <article class="quest-card tone-gold" data-goto="practice" style="--i:5">
+        <div class="quest-icon"><span class="ico ico-practice" style="width:1.4em;height:1.4em"></span></div>
+        <div class="quest-body"><h3>題目練習</h3><p>選擇／填充／配對，題庫已擴充</p></div>
+        <span class="quest-xp">常練</span>
       </article>
     </div>
     <h3 class="section-title" style="margin-top:1.5rem"><span>外部 Wordwall</span></h3>
@@ -1054,29 +1058,41 @@ function bindWordwall() {
   }
 }
 
+function dealTimelineRound(set) {
+  const n = Math.min(set.pick || 5, set.items.length);
+  const picked = shuffle([...set.items]).slice(0, n);
+  picked.sort((a, b) => a.year - b.year);
+  return {
+    items: picked,
+    labels: shuffle(picked.map((i) => i.label)),
+  };
+}
+
 function renderTimeline() {
   const set = TIMELINE_SETS.find((t) => t.id === state.timeline.setId) || TIMELINE_SETS[0];
-  const years = set.items.map((i) => i.year).sort((a, b) => a - b);
-  const labels = shuffle(set.items.map((i) => i.label));
-  // store shuffled labels once per set
-  if (state.timeline.shuffleId !== set.id) {
+  // 每套題池較大：每次開局／重洗抽不同子集，減少重複感
+  if (state.timeline.shuffleId !== set.id || !state.timeline.roundItems?.length) {
+    const deal = dealTimelineRound(set);
     state.timeline.shuffleId = set.id;
-    state.timeline.labels = labels;
+    state.timeline.roundItems = deal.items;
+    state.timeline.labels = deal.labels;
   }
+  const round = state.timeline.roundItems;
   return `
   <section class="panel">
     <h2>人物／事件時間線</h2>
-    <p class="lead">${set.title}（${set.grade}）——把正確事件配到年代。</p>
+    <p class="lead">${set.title}（${set.grade}）——本題抽 ${round.length}／${set.items.length} 件事件，配到正確年代。按「再抽一局」可換題。</p>
     <div class="toolbar">
       ${TIMELINE_SETS.map(
         (t) =>
           `<button type="button" class="chip ${state.timeline.setId === t.id ? "active" : ""}" data-tl="${t.id}">${t.title}</button>`
       ).join("")}
+      <button class="btn ghost" type="button" id="tl-reshuffle">再抽一局</button>
     </div>
     <div class="timeline-list" id="tl-list">
-      ${years
-        .map((y, idx) => {
-          const item = set.items.find((it) => it.year === y);
+      ${round
+        .map((item) => {
+          const y = item.year;
           return `
           <div class="timeline-slot">
             <div class="year">${y < 0 ? `前${Math.abs(y)}` : y}</div>
@@ -1088,7 +1104,10 @@ function renderTimeline() {
         })
         .join("")}
     </div>
-    <div style="margin-top:1rem"><button class="btn" type="button" id="tl-check">核對時間線</button></div>
+    <div style="margin-top:1rem;display:flex;gap:.6rem;flex-wrap:wrap">
+      <button class="btn" type="button" id="tl-check">核對時間線</button>
+      <button class="btn ghost" type="button" data-goto="practice">去做練習題</button>
+    </div>
     <div class="feedback hidden" id="feedback"></div>
   </section>`;
 }
@@ -1098,8 +1117,19 @@ function bindTimeline() {
     btn.addEventListener("click", () => {
       state.timeline.setId = btn.dataset.tl;
       state.timeline.shuffleId = null;
+      state.timeline.roundItems = null;
       render();
     });
+  });
+  app.querySelector("#tl-reshuffle")?.addEventListener("click", () => {
+    state.timeline.shuffleId = null;
+    state.timeline.roundItems = null;
+    toast("已換一組新事件");
+    render();
+  });
+  app.querySelector("[data-goto=practice]")?.addEventListener("click", () => {
+    state.view = "practice";
+    render();
   });
   app.querySelector("#tl-check")?.addEventListener("click", () => {
     const selects = [...app.querySelectorAll("select[data-expect]")];
@@ -1116,7 +1146,8 @@ function bindTimeline() {
     fb.classList.remove("hidden");
     fb.textContent = `正確 ${ok}/${selects.length}`;
     if (ok === selects.length) {
-      reward(XP_REWARDS.timelineComplete, { correct: true, game: true });
+      reward(XP_REWARDS.timelineComplete, { correct: true, game: true, skill: "timeline" });
+      toast("全對！可按「再抽一局」繼續練");
     } else {
       addXp(0, { wrong: true });
       toast("尚未全對，再檢查一下");

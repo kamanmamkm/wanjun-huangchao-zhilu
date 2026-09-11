@@ -27,6 +27,8 @@ import {
   getFinaleState,
   saveFinaleSegment,
   markCuoshiWon,
+  levelBandLines,
+  stageIdForUser,
 } from "./progress.js";
 import { updateUser, addXp, pushRecent } from "./storage.js";
 import { getTrial } from "./data/trials.js";
@@ -98,6 +100,7 @@ export function renderJourneyHome(user, char) {
       <hr class="realm-rule" />
       <p class="realm-quote">${vis.quote}</p>
       <p class="poster-char">${heroDisplayName(user, char)} · Lv.${snap.level.level} · ${vis.vibe}</p>
+      <p class="muted" style="font-size:.82rem;margin:.2rem 0 0">等級到點自動轉相轉頭像（下一階見晉升殿）</p>
       <div class="poster-skills">${skillBars}</div>
       <div class="poster-actions">
         <button type="button" class="btn" data-goto="scroll">${chProg.done ? "重溫長卷" : "繼續旅程"}</button>
@@ -185,7 +188,7 @@ export function renderChapterDetail(user, chapterId, stageId) {
 }
 
 function renderStagePlay(user, ch, stage) {
-  const companionSlot = `<div id="study-companion-slot" data-identity="${user.identityId || 0}"></div>`;
+  const companionSlot = `<div id="study-companion-slot" data-identity="${stageIdForUser(user)}"></div>`;
   const readToggle = `<button type="button" class="btn ghost read-toggle" data-toggle-read>米白閱讀底</button>`;
   if (stage.kind === "story") {
     return `
@@ -233,21 +236,24 @@ function renderStagePlay(user, ch, stage) {
 }
 
 export function renderGrowthScroll(user, char, growthFocus) {
-  const cur = user.identityId || 0;
+  const snap = userSnapshot(user);
+  const cur = snap.stageId ?? stageIdForUser(user);
   const promotions = user.progress?.chronicle?.promotions || [];
+  const bands = levelBandLines(user.gender);
   const cards = IDENTITIES.map((idn) => {
     const unlocked = cur >= idn.id;
     const current = cur === idn.id;
     const nextHint = idn.id === cur + 1;
     const vis = getStageVisual(idn.id);
     const name = identityDisplayName(idn, user.gender);
+    const band = bands.find((b) => b.id === idn.id);
     const promo = promotions.find((p) => p.to === idn.id);
     if (!unlocked && !nextHint) {
       return `
       <article class="growth-card locked">
         <div class="growth-preview unknown">？</div>
         <h3>未知</h3>
-        <p class="muted">繼續晉升以揭曉</p>
+        <p class="muted">${band ? `${band.range} 自動解鎖` : "繼續升級以揭曉"}</p>
       </article>`;
     }
     if (nextHint && !unlocked) {
@@ -262,7 +268,7 @@ export function renderGrowthScroll(user, char, growthFocus) {
           hideQuote: true,
         })}
         <h3>${name}</h3>
-        <p class="muted">剪影 · 可見「${vis.prop}」</p>
+        <p class="muted">升至 Lv.${band?.minLevel ?? "？"} 自動轉相 · 「${vis.prop}」</p>
       </article>`;
     }
     return `
@@ -275,8 +281,8 @@ export function renderGrowthScroll(user, char, growthFocus) {
         preferStageArt: true,
       })}
       <h3>${current ? `【${name}】` : name} ${current ? "· 目前" : "· 已解鎖"}</h3>
-      <p>${vis.scene} · ${vis.prop}</p>
-      <p class="muted">${promo ? new Date(promo.at).toLocaleDateString() + " 晉升" : idn.id === 0 ? "開局" : ""}</p>
+      <p>${band?.range || ""} · ${vis.scene} · ${vis.prop}</p>
+      <p class="muted">${promo?.byLevel ? `Lv.${promo.byLevel} 自動晉升` : promo ? new Date(promo.at).toLocaleDateString() + " 晉升" : idn.id === 0 ? "開局" : ""}</p>
     </article>`;
   }).join("");
 
@@ -285,24 +291,24 @@ export function renderGrowthScroll(user, char, growthFocus) {
   const focusVis = getStageVisual(focusId);
   const focusIdn = getIdentity(focusId);
   const focusPromo = promotions.find((p) => p.to === focusId);
+  const focusBand = bands.find((b) => b.id === focusId);
 
   return `
   <section class="panel-paper growth-scroll-view">
     <p class="eyebrow ink-gold">人物成長長卷</p>
-    <h2>同一人物 · 由少年出發到盛世登場</h2>
-    <p class="lead">面貌不變；場景愈開闊、姿態愈從容。${STAGE_RELIC.note}</p>
+    <h2>同一人物 · 等級到點即轉相轉頭像</h2>
+    <p class="lead">到達等級帶下限即自動改稱謂與立繪。${STAGE_RELIC.note}</p>
     <p class="muted">${IDENTITY_DISCLAIMER}</p>
     <div class="growth-rail">${cards}</div>
     <div class="growth-focus thin-card">
       ${renderHeroStage(char, focusId, "hero", { gender: user.gender, priorityBoost: true, preferStageArt: true })}
       <div class="growth-focus-meta">
-        <p class="realm-kicker">${realmLabel(focusId)} · ${focusVis.vibe}</p>
+        <p class="realm-kicker">${realmLabel(focusId)} · ${focusBand?.range || ""} · ${focusVis.vibe}</p>
         <h3>${identityDisplayName(focusIdn, user.gender)}</h3>
         <p>${focusVis.pose} · ${focusVis.prop}</p>
         <p>背景：${focusVis.scene}（${focusVis.bgHint}）</p>
         <p class="stage-quote">「${focusVis.quote}」</p>
-        <p class="muted">${focusPromo ? `通過試煉晉升於 ${new Date(focusPromo.at).toLocaleString()}` : focusId === 0 ? "旅程起點" : "已解鎖造型"}</p>
-        <p class="muted">重看舊造型唔等於改身份</p>
+        <p class="muted">${focusPromo?.byLevel ? `Lv.${focusPromo.byLevel} 自動轉相` : focusPromo ? `晉升於 ${new Date(focusPromo.at).toLocaleString()}` : focusId === 0 ? "旅程起點" : "已解鎖造型"}</p>
       </div>
     </div>
     <button type="button" class="btn ghost" data-nav="home">返回行旅</button>
@@ -601,7 +607,7 @@ export function renderPromote(user, char) {
       ? `
     <div class="finale-board">
       <h3>終章試煉：天下待定</h3>
-      <p class="lead">三部分可分開完成並儲存進度。全部通過後才可登基。</p>
+      <p class="lead">三段為加分試煉，可分開完成。登基稱謂／頭像於 Lv.86 自動解鎖。</p>
       <div class="finale-segs">
         ${finale.segs
           .map(
@@ -620,8 +626,8 @@ export function renderPromote(user, char) {
       </div>
       ${
         finale.allDone
-          ? `<p class="ink-gold">三段皆過——可確認晉升為帝王／女帝。</p>
-             <button type="button" class="btn gold" id="btn-confirm-promote">確認登基</button>`
+          ? `<p class="ink-gold">三段皆過——可領取終章加分獎勵。</p>
+             <button type="button" class="btn gold" id="btn-confirm-promote">領取終章獎勵</button>`
           : ""
       }
     </div>`
@@ -630,30 +636,45 @@ export function renderPromote(user, char) {
   return `
   <section class="panel-paper promote-view">
     <p class="eyebrow ink-gold">晉升殿 · ${realmLabel(snap.stageId)}</p>
-    <h2>經驗解鎖資格 · 考核決定晉升</h2>
+    <h2>到達等級 · 自動轉名轉頭像</h2>
     <p class="lead disclaimer">${IDENTITY_DISCLAIMER}</p>
+    <div class="level-band-table" style="display:grid;gap:.35rem;margin:0 0 1rem;font-size:.9rem">
+      ${levelBandLines(user.gender)
+        .map((b) => {
+          const on = snap.stageId === b.id;
+          return `<div style="display:flex;justify-content:space-between;gap:1rem;padding:.35rem .55rem;border-radius:6px;background:${on ? "rgba(215,170,80,.18)" : "transparent"};border:1px solid ${on ? "var(--gold, #d7aa50)" : "transparent"}">
+            <strong>${b.name}</strong><span>${b.range}${on ? " · 當前" : ""}</span>
+          </div>`;
+        })
+        .join("")}
+    </div>
     <div class="promote-layout">
       <div class="promote-silhouette">
         ${renderHeroStage(char, snap.stageId, "lg", { gender: user.gender, priorityBoost: true, preferStageArt: true })}
         <p>當前：<strong>${snap.identityName}</strong> · Lv.${snap.level.level}</p>
-        <p class="next-shadow">下一身份：${order.next ? identityDisplayName(order.next, user.gender) : "—"}</p>
+        <p class="next-shadow">下一階：${
+          order.next
+            ? `${identityDisplayName(order.next, user.gender)}（Lv.${order.nextAutoLevel}+ 自動）`
+            : "—"
+        }</p>
       </div>
       <div class="edict big">
-        <h3>【晉升令】</h3>
+        <h3>【轉相進度】</h3>
         <ul class="edict-list">${list}</ul>
         <div class="row-actions">
+          <button type="button" class="btn" data-goto="practice">去練習升級</button>
           <button type="button" class="btn ghost" data-goto="notes">前往補強</button>
           ${
             isFinale
-              ? `<button type="button" class="btn" data-goto="promote">終章見下方三段</button>`
-              : `<button type="button" class="btn" id="btn-trial" ${order.canChallenge ? "" : "disabled"}>
-            ${order.canChallenge ? `挑戰：${order.gate.label}` : order.trialPassed ? "試煉已通過，確認晉升" : "挑戰晉升：未解鎖"}
+              ? `<button type="button" class="btn ghost" data-goto="promote">終章加分試（可選）</button>`
+              : `<button type="button" class="btn ghost" id="btn-trial" ${order.canChallenge ? "" : "disabled"}>
+            ${order.canChallenge ? `可選：${order.gate.label}` : order.trialPassed ? "加分試已通過" : "加分試未解鎖"}
           </button>`
           }
         </div>
         ${
           order.trialPassed && order.next && !isFinale
-            ? `<button type="button" class="btn gold" id="btn-confirm-promote">確認晉升為「${identityDisplayName(order.next, user.gender)}」</button>`
+            ? `<button type="button" class="btn gold" id="btn-confirm-promote">確認領取試煉獎勵「${identityDisplayName(order.next, user.gender)}」</button>`
             : ""
         }
         ${

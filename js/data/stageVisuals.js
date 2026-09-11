@@ -131,18 +131,33 @@ export function getStageVisual(identityId) {
 
 /**
  * 海報標籤等級帶 → 階段 id（與實際角色 Lv 對齊）
- * ①1–5 庶民｜②6–15 學子｜③16–25 士人｜…
+ * ①1–5 庶民｜②6–15 學子｜③16–25 士人｜④26–40 初仕
+ * ⑤41–55 主政｜⑥56–70 重臣｜⑦71–85 諸侯｜⑧86–100 帝王
  */
+export const LEVEL_STAGE_BANDS = [
+  { id: 0, minLevel: 1, maxLevel: 5, label: "庶民" },
+  { id: 1, minLevel: 6, maxLevel: 15, label: "學子" },
+  { id: 2, minLevel: 16, maxLevel: 25, label: "士人" },
+  { id: 3, minLevel: 26, maxLevel: 40, label: "初仕" },
+  { id: 4, minLevel: 41, maxLevel: 55, label: "主政" },
+  { id: 5, minLevel: 56, maxLevel: 70, label: "重臣" },
+  { id: 6, minLevel: 71, maxLevel: 85, label: "諸侯" },
+  { id: 7, minLevel: 86, maxLevel: 100, label: "帝王" },
+];
+
 export function stageIdFromLevel(level) {
   const lv = Math.max(1, Number(level) || 1);
-  if (lv <= 5) return 0;
-  if (lv <= 15) return 1;
-  if (lv <= 25) return 2;
-  if (lv <= 40) return 3;
-  if (lv <= 55) return 4;
-  if (lv <= 70) return 5;
-  if (lv <= 85) return 6;
-  return 7;
+  for (let i = LEVEL_STAGE_BANDS.length - 1; i >= 0; i--) {
+    if (lv >= LEVEL_STAGE_BANDS[i].minLevel) return LEVEL_STAGE_BANDS[i].id;
+  }
+  return 0;
+}
+
+/** 下一階段起始等級；已最高則 null */
+export function nextStageMinLevel(level) {
+  const id = stageIdFromLevel(level);
+  const next = LEVEL_STAGE_BANDS[id + 1];
+  return next ? next.minLevel : null;
 }
 
 /** 立繪／形象：取身份與等級帶較高者 */

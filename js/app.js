@@ -1,11 +1,11 @@
-import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad20";
-import { QUESTIONS, checkFill } from "./data/questions.js?v=rad20";
-import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad20";
-import { levelFromXp } from "./data/levels.js?v=rad20";
-import { DIALOGUES } from "./data/dialogues.js?v=rad20";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad20";
-import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=rad20";
-import { renderAvatar } from "./avatar.js?v=rad20";
+import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad21";
+import { QUESTIONS, checkFill } from "./data/questions.js?v=rad21";
+import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad21";
+import { levelFromXp } from "./data/levels.js?v=rad21";
+import { DIALOGUES } from "./data/dialogues.js?v=rad21";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad21";
+import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=rad21";
+import { renderAvatar } from "./avatar.js?v=rad21";
 import {
   CARD_TYPES,
   createBattle,
@@ -15,7 +15,7 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=rad20";
+} from "./data/shizhan.js?v=rad21";
 import {
   getCurrentUser,
   registerUser,
@@ -23,7 +23,7 @@ import {
   clearSession,
   addXp,
   updateUser,
-} from "./storage.js?v=rad20";
+} from "./storage.js?v=rad21";
 import {
   userSnapshot,
   buildPromotionOrder,
@@ -31,7 +31,7 @@ import {
   IDENTITY_DISCLAIMER,
   identityDisplayName,
   getIdentity,
-} from "./progress.js?v=rad20";
+} from "./progress.js?v=rad21";
 import {
   renderJourneyHome,
   renderScroll,
@@ -42,10 +42,10 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad20";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad20";
-import { renderPromoteReveal } from "./heroStage.js?v=rad20";
-import { getStageVisual } from "./data/stageVisuals.js?v=rad20";
+} from "./journey.js?v=rad21";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad21";
+import { renderPromoteReveal } from "./heroStage.js?v=rad21";
+import { getStageVisual } from "./data/stageVisuals.js?v=rad21";
 
 const app = document.getElementById("app");
 let toastTimer = null;
@@ -151,7 +151,7 @@ function refreshTopbarOnly() {
   const badge = app.querySelector(".player-badge");
   if (!badge) return;
   badge.innerHTML = `
-    <div class="avatar-ring">${renderAvatar(char, snap.identity.id, "sm", { gender: user.gender })}</div>
+    <div class="avatar-ring">${renderAvatar(char, snap.stageId ?? snap.identity.id, "sm", { gender: user.gender })}</div>
     <div class="player-meta">
       <strong>${heroDisplayName(user, char)} · ${snap.identityName}</strong>
       <span>${user.username}　Lv.${snap.level.level}　XP ${user.xp}</span>
@@ -392,7 +392,7 @@ function renderShell(user) {
   <div class="app-shell paper-shell">
     <header class="topbar">
       <div class="player-badge">
-        <div class="avatar-ring">${renderAvatar(char, idn.id, "sm", { gender: user.gender })}</div>
+        <div class="avatar-ring">${renderAvatar(char, snap.stageId ?? idn.id, "sm", { gender: user.gender })}</div>
         <div class="player-meta">
           <strong>${heroDisplayName(user, char)} · ${snap.identityName}</strong>
           <span>${user.username}　Lv.${snap.level.level}　XP ${user.xp}</span>
@@ -461,7 +461,7 @@ function renderProfile(user, char, snap) {
   return `
   <section class="panel-paper profile-panel">
     <div class="profile-hero">
-      ${renderAvatar(char, snap.identity.id, "lg", { gender: user.gender })}
+      ${renderAvatar(char, snap.stageId ?? snap.identity.id, "lg", { gender: user.gender })}
       <div>
         <h2>${name}</h2>
         <p class="lead">身份「${snap.identityName}」· Lv.${snap.level.level} · 衣裝「${snap.outfit}」。${snap.identity.desc}</p>

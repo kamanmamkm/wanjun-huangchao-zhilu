@@ -1,6 +1,5 @@
 /**
- * 用戶資料：經驗升等級；身份靠考核晉升。
- * 舊帳號自動遷移，唔會因為舊 XP 直接登基。
+ * 用戶資料：經驗升等級；身份稱謂／頭像隨等級帶自動轉換。
  */
 import { migrateIdentityId, STARTING_IDENTITY_ID } from "./data/identities.js";
 import { normalizeHeroName } from "./data/characters.js";

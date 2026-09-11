@@ -519,14 +519,14 @@ export function renderAvatar(character, rankId = 0, size = "md", opts = {}) {
   if (stageArt) {
     return `
     <div class="avatar-art avatar-${size} outfit-${rank} stage-face" style="--accent:${accent};--glow:${GLOW[Math.min(rank, GLOW.length - 1)]};width:${dims}px;height:${h}px" role="img" aria-label="${character.name}">
-      <img src="${stageArt.src}?v=rad20" alt="${character.name}" width="${dims}" height="${h}" loading="lazy" />
+      <img src="${stageArt.src}?v=rad21" alt="${character.name}" width="${dims}" height="${h}" loading="lazy" />
     </div>`;
   }
 
   if (character.portrait) {
     return `
     <div class="avatar-art avatar-${size} outfit-${rank}" style="--accent:${accent};--glow:${GLOW[Math.min(rank, GLOW.length - 1)]};width:${dims}px;height:${h}px" role="img" aria-label="${character.name}">
-      <img src="${character.portrait}?v=rad20" alt="${character.name}" width="${dims}" height="${h}" loading="lazy" />
+      <img src="${character.portrait}?v=rad21" alt="${character.name}" width="${dims}" height="${h}" loading="lazy" />
     </div>`;
   }
 

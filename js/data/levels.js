@@ -1,6 +1,6 @@
 /**
- * 角色等級（靠經驗累積）——與身份晉升分開。
- * 小升級靠努力刷題；大晉升靠考核實力。
+ * 角色等級（靠經驗累積）
+ * 身份稱謂／頭像隨等級帶自動轉換（見 stageVisuals.stageIdFromLevel）
  */
 export const XP_REWARDS = {
   mcCorrect: 4,
@@ -18,10 +18,25 @@ export const XP_REWARDS = {
   trialPassBonus: 40,
 };
 
-/** Lv.1–20 經驗門檻（累計 XP） */
-export const LEVEL_THRESHOLDS = [
+/** Lv.1–20 維持舊門檻，免打亂現有進度；其後延伸至 Lv.100 */
+const LEVEL_THRESHOLDS_V1 = [
   0, 40, 90, 150, 220, 300, 400, 520, 660, 820, 1000, 1220, 1480, 1780, 2120, 2500, 2950, 3450, 4000, 4600,
 ];
+
+function buildLevelThresholds(maxLevel = 100) {
+  const t = [...LEVEL_THRESHOLDS_V1];
+  let total = t[t.length - 1];
+  for (let lv = t.length; lv < maxLevel; lv++) {
+    // lv 為「即將達到的等級索引」（0-based：t[19]=Lv20 門檻）
+    const cost = Math.round(90 + lv * 16 + Math.max(0, lv - 20) * 10);
+    total += cost;
+    t.push(total);
+  }
+  return t;
+}
+
+/** 累計 XP 門檻：THRESHOLDS[i] = 達到 Lv.(i+1) 所需 */
+export const LEVEL_THRESHOLDS = buildLevelThresholds(100);
 
 export function levelFromXp(xp) {
   const x = Math.max(0, xp || 0);

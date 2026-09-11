@@ -5,7 +5,7 @@
  */
 
 export const IDENTITY_DISCLAIMER =
-  "以下身份為《任平生》架空遊戲階級，並非中國歷史上通用的真實晉升制度。由庶民起步，靠考核晉升。";
+  "身份稱謂與頭像隨角色等級自動轉換：到達該階段等級即轉相（例如 Lv.6→學子）。試煉為加分挑戰，並非轉相必需。";
 
 export const STARTING_IDENTITY_ID = 0;
 
@@ -91,67 +91,61 @@ export const IDENTITIES = [
  */
 export const PROMOTION_GATES = {
   0: {
-    // 庶民 → 學子
-    minLevel: 4,
+    // 庶民 → 學子（自動：Lv.6；試煉可選）
+    minLevel: 6,
     chapters: ["ch1_escape", "ch2_figures"],
     mastery: { foundation: 0.65, figures: 0.7, chronology: 0.65 },
     skills: { recall: 0.65, timeline: 0.6 },
     trialId: "trial_to_student",
-    label: "求學考核",
+    label: "求學加分試（可選）",
   },
   1: {
-    // 學子 → 士人
-    minLevel: 6,
+    minLevel: 16,
     chapters: ["ch3_events"],
     mastery: { events: 0.75, chronology: 0.7 },
     skills: { timeline: 0.7, cause: 0.65 },
     trialId: "trial_to_shi",
-    label: "入仕預備試",
+    label: "入仕加分試（可選）",
   },
   2: {
-    // 士人 → 初仕
-    minLevel: 8,
+    minLevel: 26,
     chapters: ["ch4_cause"],
     mastery: { cause: 0.75, institutions: 0.7 },
     skills: { cause: 0.75, source: 0.65 },
     trialId: "trial_to_magistrate",
-    label: "初仕試煉",
+    label: "初仕加分試（可選）",
   },
   3: {
-    // 初仕 → 主政
-    minLevel: 10,
+    minLevel: 41,
     chapters: ["ch5_policy"],
     mastery: { policy: 0.8, sources: 0.8 },
     skills: { timeline: 0.8, cause: 0.8, source: 0.8 },
     trialId: "trial_to_prefect",
-    label: "主政晉升試煉",
+    label: "主政加分試（可選）",
   },
   4: {
-    // 主政 → 重臣
-    minLevel: 13,
+    minLevel: 56,
     chapters: ["ch6_compare"],
     mastery: { sources: 0.82, policy: 0.8 },
     skills: { source: 0.8, argue: 0.75 },
     trialId: "trial_to_minister",
-    label: "重臣試煉",
+    label: "重臣加分試（可選）",
   },
   5: {
-    // 重臣 → 諸侯
-    minLevel: 16,
+    minLevel: 71,
     chapters: ["ch7_synthesis"],
     mastery: { synthesis: 0.8, sources: 0.82 },
     skills: { source: 0.82, argue: 0.8, cause: 0.8 },
     trialId: "trial_to_lord",
-    label: "諸侯試煉",
+    label: "諸侯加分試（可選）",
   },
   6: {
-    // 諸侯 → 帝王：終章
-    minLevel: 18,
+    minLevel: 86,
     chapters: ["ch8_finale_prep"],
     mastery: { synthesis: 0.85, sources: 0.85, policy: 0.8 },
     skills: { timeline: 0.85, source: 0.85, argue: 0.85 },
     trialId: "trial_ascension",
-    label: "終章試煉：天下待定",
+    label: "終章加分試（可選）",
     isFinale: true,
   },
 };

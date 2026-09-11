@@ -53,12 +53,19 @@ function reward(amount, meta = {}) {
   const before = getCurrentUser();
   const prevRank = before ? rankFromXp(before.gender, before.xp).current.id : 0;
   let bonus = amount;
-  if (meta.correct && before?.streak >= 2) bonus += XP_REWARDS.streakBonus;
+  // 重複答同一題大幅減經驗，防止刷級
+  if (meta.qid && before?.answered?.[meta.qid]) {
+    bonus = Math.max(1, Math.round(bonus * XP_REWARDS.repeatScale));
+  }
+  // 連勝要連續 4 題才有小額加成
+  if (meta.correct && (before?.streak || 0) >= 3) bonus += XP_REWARDS.streakBonus;
   addXp(bonus, meta);
   const after = getCurrentUser();
   const nextRank = rankFromXp(after.gender, after.xp).current;
   if (nextRank.id > prevRank) {
     toast(`晉升為「${nextRank.name}」！+${bonus} 經驗`);
+  } else if (meta.qid && before?.answered?.[meta.qid]) {
+    toast(`+${bonus} 經驗（複習題減半再減）`);
   } else {
     toast(`+${bonus} 經驗`);
   }
@@ -97,22 +104,23 @@ function render() {
 function renderAuth() {
   const list = CHARACTERS[state.gender];
   const preview = list.find((c) => c.id === state.characterId) || list[0];
+  const parade = [...CHARACTERS.male.slice(0, 3), ...CHARACTERS.female.slice(0, 3)];
   return `
   <section class="hero-screen">
     <div class="brand-block">
       <p class="eyebrow">萬鈞伯裘中史科 · 角色成長遊戲</p>
       <h1>萬鈞伯裘<br>皇朝之路</h1>
       <p class="subtitle">化身古代人物，答題升級——從奴隸走到皇帝。每個帳號都是你的獨立傳奇。</p>
-      <div class="hero-preview ${state.authMode === "register" ? "show" : ""}">
+      <div class="hero-preview">
         <div class="hero-stage">
-          ${state.authMode === "register" ? renderAvatar(preview, 4, "lg") : ""}
           ${
             state.authMode === "register"
-              ? `<div class="hero-caption"><strong>${preview.name}</strong><span>${preview.era} · 「${preview.motto}」</span></div>`
-              : `<div class="hero-idle">
-                  <div class="lantern"></div>
-                  <p>註冊後選擇人物原型<br>衣裝樣貌各不相同</p>
-                </div>`
+              ? `${renderAvatar(preview, 5, "lg")}
+                 <div class="hero-caption"><strong>${preview.name}</strong><span>${preview.era} · 「${preview.motto}」</span></div>`
+              : `<div class="parade-row">
+                  ${parade.map((c) => `<div class="parade-item" title="${c.name}">${renderAvatar(c, 3, "sm")}<span>${c.name}</span></div>`).join("")}
+                </div>
+                <p class="hero-idle-note">每位人物樣貌、衣裝都不同 · 註冊後即可選角</p>`
           }
         </div>
       </div>
@@ -147,7 +155,7 @@ function renderAuth() {
               .map(
                 (c) => `
               <button type="button" class="char-card ${state.characterId === c.id ? "selected" : ""}" data-char="${c.id}" style="--accent:${c.color}">
-                <div class="char-portrait">${renderAvatar(c, 2, "sm")}</div>
+                <div class="char-portrait">${renderAvatar(c, 3, "md")}</div>
                 <div class="name">${c.name}</div>
                 <div class="era">${c.era}</div>
               </button>`
@@ -375,7 +383,7 @@ function renderProfile(user, ranks, current, char) {
       <div class="stat">小遊戲 ${user.stats?.games || 0}</div>
       <div class="stat">總經驗 ${user.xp}</div>
     </div>
-    <p class="lead" style="margin-top:1rem">升級提示：選擇題 +${XP_REWARDS.mcCorrect}、填充 +${XP_REWARDS.fillCorrect}、配對每對 +${XP_REWARDS.matchPair}；小遊戲獎勵更高。</p>
+    <p class="lead" style="margin-top:1rem">升級偏難：選擇題 +${XP_REWARDS.mcCorrect}、填充 +${XP_REWARDS.fillCorrect}、配對每對 +${XP_REWARDS.matchPair}；重複作答只得約 ${Math.round(XP_REWARDS.repeatScale * 100)}% 經驗。登上帝位需約 ${RANKS.male[8].xp} XP。</p>
   </section>`;
 }
 

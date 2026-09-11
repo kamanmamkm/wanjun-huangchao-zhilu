@@ -236,12 +236,10 @@ function frame(uid, L, era, glow, inner) {
       </linearGradient>
       <filter id="${uid}-s"><feDropShadow dx="0" dy="2" stdDeviation="1.5" flood-opacity=".2"/></filter>
     </defs>
-    <rect x="2" y="2" width="116" height="142" rx="18" fill="url(#${uid}-bg)" stroke="${L.accent}" stroke-width="3"/>
+    <rect x="2" y="2" width="116" height="142" rx="18" fill="url(#${uid}-bg)"/>
     <rect x="2" y="2" width="116" height="142" rx="18" fill="url(#${uid}-shine)"/>
-    <rect x="7" y="7" width="106" height="132" rx="14" fill="none" stroke="${L.robe}" stroke-width="1" opacity=".22"/>
     ${glow > 0.2 ? `<circle cx="60" cy="52" r="48" fill="${L.accent}" opacity="${glow * 0.12}"/>` : ""}
     <g filter="url(#${uid}-s)">${inner}</g>
-    <text x="60" y="138" text-anchor="middle" font-size="7.5" fill="${L.robe2}" font-family="sans-serif" letter-spacing="0.5">${era}</text>
   `;
 }
 
@@ -519,18 +517,15 @@ export function renderAvatar(character, rankId = 0, size = "md", opts = {}) {
   const stageArt = !opts.forcePortrait ? getStageArt(rank, gender) : null;
   if (stageArt) {
     return `
-    <div class="avatar-art avatar-${size} outfit-${rank} stage-face" style="--accent:${accent};--glow:${GLOW[Math.min(rank, GLOW.length - 1)]};width:${dims}px;height:${h}px" role="img" aria-label="${character.name} · ${stageArt.badge || outfit}">
-      <img src="${stageArt.src}?v=rad11" alt="${character.name}" width="${dims}" height="${h}" loading="lazy" />
-      <span class="avatar-art-outfit">${outfit}</span>
+    <div class="avatar-art avatar-${size} outfit-${rank} stage-face" style="--accent:${accent};--glow:${GLOW[Math.min(rank, GLOW.length - 1)]};width:${dims}px;height:${h}px" role="img" aria-label="${character.name}">
+      <img src="${stageArt.src}?v=rad12" alt="${character.name}" width="${dims}" height="${h}" loading="lazy" />
     </div>`;
   }
 
   if (character.portrait) {
     return `
-    <div class="avatar-art avatar-${size} outfit-${rank}" style="--accent:${accent};--glow:${GLOW[Math.min(rank, GLOW.length - 1)]};width:${dims}px;height:${h}px" role="img" aria-label="${character.name} · ${outfit}">
-      <img src="${character.portrait}?v=rad11" alt="${character.name}" width="${dims}" height="${h}" loading="lazy" />
-      <span class="avatar-art-outfit">${outfit}</span>
-      <span class="avatar-art-era">${character.era || ""}</span>
+    <div class="avatar-art avatar-${size} outfit-${rank}" style="--accent:${accent};--glow:${GLOW[Math.min(rank, GLOW.length - 1)]};width:${dims}px;height:${h}px" role="img" aria-label="${character.name}">
+      <img src="${character.portrait}?v=rad12" alt="${character.name}" width="${dims}" height="${h}" loading="lazy" />
     </div>`;
   }
 

@@ -599,12 +599,17 @@ h1, h2, h3,
   height: 44px;
   border-radius: 50%;
   overflow: hidden;
-  border: 2px solid rgba(196, 154, 70, 0.4);
-  background: #fffaf0;
+  border: 0;
+  background: transparent;
   padding: 0;
   cursor: pointer;
   display: grid;
   place-items: center;
+  box-shadow: none;
+}
+.growth-av.current {
+  box-shadow: none;
+  outline: none;
 }
 .growth-av .avatar-art,
 .growth-av .avatar-svg {
@@ -613,17 +618,12 @@ h1, h2, h3,
   transform: scale(1.35);
   transform-origin: center 20%;
 }
-.growth-av.current {
-  border-color: var(--cinnabar);
-  box-shadow: 0 0 0 2px rgba(184, 58, 47, 0.22);
-}
 .growth-av.locked {
   filter: grayscale(1) opacity(0.45);
   cursor: default;
 }
 .growth-av.next {
-  border-style: dashed;
-  border-color: var(--gold);
+  opacity: 0.85;
 }
 
 /* 一般舞台亦跟宮廷紙色 */

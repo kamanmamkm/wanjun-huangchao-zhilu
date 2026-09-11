@@ -360,10 +360,9 @@ select {
   display: grid;
   place-items: center;
   overflow: hidden;
-  background: #f7ecd8;
-  box-shadow:
-    inset 0 0 0 2px rgba(246, 230, 180, 0.55),
-    0 0 0 2px rgba(126, 36, 24, 0.35);
+  background: transparent;
+  box-shadow: none;
+  border: 0;
   flex-shrink: 0;
 }
 
@@ -390,17 +389,15 @@ select {
   animation: portraitPop 0.55s ease both;
 }
 
-/* 遊戲立繪風格頭像：衣裝隨等級簡樸→華麗 */
+/* 遊戲立繪風格頭像：無文字、無邊框 */
 .avatar-art {
   position: relative;
   display: block;
   border-radius: 14px;
   overflow: hidden;
-  border: 3px solid var(--accent, #c6a35a);
-  box-shadow:
-    0 10px 24px rgba(12, 8, 16, 0.35),
-    0 0 0 1px rgba(255, 248, 236, 0.35) inset;
-  background: linear-gradient(160deg, #ebe0cc, #cfc0a0);
+  border: 0;
+  box-shadow: none;
+  background: transparent;
   animation: portraitPop 0.55s ease both;
   flex-shrink: 0;
 }
@@ -414,57 +411,21 @@ select {
   transition: filter 0.35s ease;
 }
 
-.avatar-art::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 1;
-}
-
+.avatar-art::before,
 .avatar-art::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 2;
-  box-shadow: inset 0 0 28px rgba(212, 176, 106, calc(var(--glow, 0) * 0.55));
+  content: none;
+  display: none;
 }
 
-.avatar-art-outfit {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  z-index: 3;
-  padding: 0.28rem 0.35rem 0.35rem;
-  text-align: center;
-  font-size: 0.62rem;
-  letter-spacing: 0.08em;
-  color: #f4e6c4;
-  background: linear-gradient(180deg, rgba(20, 14, 12, 0.72), transparent);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
-}
-
+.avatar-art-outfit,
 .avatar-art-era {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 3;
-  padding: 0.2rem 0.35rem 0.28rem;
-  text-align: center;
-  font-size: 0.68rem;
-  letter-spacing: 0.12em;
-  color: #5a4030;
-  background: linear-gradient(180deg, transparent, rgba(255, 248, 236, 0.92));
+  display: none !important;
 }
 
 /* —— 衣裝階級：開局庶民明亮，唔再用粗布灰階 —— */
 .outfit-0 {
-  border-color: #c84436 !important;
-  border-width: 2px;
-  box-shadow: 0 6px 14px rgba(200, 68, 54, 0.18);
+  border: 0 !important;
+  box-shadow: none;
 }
 
 .outfit-0 img {
@@ -472,12 +433,7 @@ select {
 }
 
 .outfit-0::before {
-  background: linear-gradient(180deg, transparent 55%, rgba(200, 68, 54, 0.12) 100%);
-}
-
-.outfit-0 .avatar-art-era {
-  color: #243746;
-  background: linear-gradient(180deg, transparent, rgba(255, 248, 236, 0.95));
+  display: none;
 }
 
 /* 階段海報作頭像：裁切上半身／臉部 */
@@ -510,66 +466,52 @@ select {
   object-position: center 10%;
 }
 
-.outfit-1 {
-  border-color: #246b87 !important;
-  border-width: 2px;
+.outfit-1,
+.outfit-2,
+.outfit-3,
+.outfit-4,
+.outfit-5,
+.outfit-6,
+.outfit-7,
+.outfit-8 {
+  border: 0 !important;
+  box-shadow: none !important;
 }
 
 .outfit-1 img {
   filter: saturate(1.08) contrast(1.02) brightness(1.02);
 }
 
-.outfit-1::before {
-  background: linear-gradient(180deg, transparent 55%, rgba(36, 107, 135, 0.18) 100%);
+.outfit-1::before,
+.outfit-2::before,
+.outfit-3::before,
+.outfit-4::before,
+.outfit-6::before,
+.outfit-7::before,
+.outfit-8::before,
+.outfit-8::after {
+  display: none !important;
+  content: none !important;
 }
 
 .outfit-2 img {
   filter: saturate(1.08) hue-rotate(-6deg) contrast(1.02);
 }
 
-.outfit-2::before {
-  background: linear-gradient(180deg, transparent 48%, rgba(53, 102, 91, 0.25) 100%);
-}
-
 .outfit-3 img {
   filter: saturate(1) contrast(1.02);
-}
-
-.outfit-3::before {
-  background: linear-gradient(180deg, transparent 55%, rgba(74, 122, 110, 0.14) 100%);
 }
 
 .outfit-4 img {
   filter: saturate(1.12) contrast(1.06);
 }
 
-.outfit-4::before {
-  background: linear-gradient(180deg, transparent 45%, rgba(163, 49, 43, 0.22) 100%);
-}
-
 .outfit-5 img {
   filter: none;
 }
 
-.outfit-6 {
-  border-width: 3px;
-}
-
 .outfit-6 img {
   filter: saturate(1.05) contrast(1.03);
-}
-
-.outfit-6::before {
-  background: linear-gradient(180deg, rgba(212, 176, 106, 0.12), transparent 35%);
-}
-
-.outfit-7,
-.outfit-8 {
-  border-width: 3px;
-  border-color: #d4b06a !important;
-  box-shadow:
-    0 12px 28px rgba(0, 0, 0, 0.35),
-    0 0 18px rgba(212, 176, 106, 0.35);
 }
 
 .outfit-7 img,
@@ -577,24 +519,12 @@ select {
   filter: saturate(1.12) contrast(1.06) brightness(1.02);
 }
 
-.outfit-7::before,
-.outfit-8::before {
-  background:
-    radial-gradient(ellipse 80% 35% at 50% 0%, rgba(255, 220, 140, 0.35), transparent 70%),
-    linear-gradient(180deg, rgba(212, 176, 106, 0.18), transparent 40%);
-}
-
-.outfit-8::after {
-  box-shadow:
-    inset 0 0 36px rgba(212, 176, 106, 0.45),
-    inset 0 0 8px rgba(255, 240, 200, 0.25);
-}
-
 .avatar-ring .avatar-art {
   width: 80px !important;
   height: 96px !important;
-  border-width: 2px;
+  border: 0 !important;
   border-radius: 12px;
+  box-shadow: none !important;
 }
 
 .avatar-ring .avatar-art-era {

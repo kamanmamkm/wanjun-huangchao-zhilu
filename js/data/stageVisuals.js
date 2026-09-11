@@ -54,16 +54,16 @@ export const STAGE_VISUALS = {
   },
   3: {
     id: 3,
-    scene: "明亮官署",
+    scene: "朱門石階",
     sceneKey: "yamen",
-    pose: "從容持文書，白石階前",
+    pose: "持文書登階，回望前路",
     poseKey: "document",
-    prop: "文書",
+    prop: "文書／官牌",
     propKey: "docs",
-    accent: "#c84436",
-    bgHint: "朱紅與暖白",
-    quote: "治一方，先問證據與代價。",
-    vibe: "從容自信",
+    accent: "#246b87",
+    bgHint: "青袍與朱紅宮門",
+    quote: "初露鋒芒，志在天下。",
+    vibe: "初仕登門",
     priority: true,
   },
   4: {
@@ -148,6 +148,12 @@ export const STAGE_ART = {
     female: "assets/stages/shiren-female.jpg",
     badge: "③ 士人｜Lv.16–25",
     label: "士人登場",
+  },
+  3: {
+    male: "assets/stages/chushi-male.jpg",
+    female: "assets/stages/chushi-female.jpg",
+    badge: "④ 初仕｜Lv.26–40",
+    label: "初仕登場",
   },
 };
 

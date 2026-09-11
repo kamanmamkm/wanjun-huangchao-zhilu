@@ -41,11 +41,11 @@ export const IDENTITIES = [
   {
     id: 3,
     key: "magistrate",
-    name: "縣令",
+    name: "初仕",
     arc: "入仕篇",
-    color: "#8a6a3a",
-    outfit: { male: "官袍束帶", female: "青衫束帶" },
-    desc: "治一方民，開始比較政策與影響。",
+    color: "#246b87",
+    outfit: { male: "青袍官服", female: "青袍官服" },
+    desc: "初入公門，持文書治事——治一方民，比較政策與影響。",
   },
   {
     id: 4,
@@ -109,16 +109,16 @@ export const PROMOTION_GATES = {
     label: "入仕預備試",
   },
   2: {
-    // 士人 → 縣令
+    // 士人 → 初仕
     minLevel: 8,
     chapters: ["ch4_cause"],
     mastery: { cause: 0.75, institutions: 0.7 },
     skills: { cause: 0.75, source: 0.65 },
     trialId: "trial_to_magistrate",
-    label: "縣令試煉",
+    label: "初仕試煉",
   },
   3: {
-    // 縣令 → 太守
+    // 初仕 → 太守
     minLevel: 10,
     chapters: ["ch5_policy"],
     mastery: { policy: 0.8, sources: 0.8 },

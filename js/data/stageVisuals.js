@@ -155,6 +155,12 @@ export const STAGE_ART = {
     badge: "① 庶民｜Lv.1–5",
     label: "庶民登場",
   },
+  2: {
+    male: "assets/stages/xuezi-male.jpg",
+    female: "assets/stages/xuezi-female.jpg",
+    badge: "② 學子｜Lv.6–15",
+    label: "學子登場",
+  },
 };
 
 export function getStageArt(identityId, gender = "male") {

@@ -102,7 +102,7 @@ export const TRIALS = {
 
   trial_to_magistrate: {
     id: "trial_to_magistrate",
-    title: "縣令試煉",
+    title: "初仕試煉",
     passScore: 72,
     minSource: 40,
     minArgue: 0,
@@ -134,7 +134,7 @@ export const TRIALS = {
 
   trial_to_prefect: {
     id: "trial_to_prefect",
-    title: "太守晉升試煉",
+    title: "主政晉升試煉",
     passScore: 75,
     minSource: 50,
     minArgue: 50,

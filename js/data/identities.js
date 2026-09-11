@@ -50,11 +50,11 @@ export const IDENTITIES = [
   {
     id: 4,
     key: "prefect",
-    name: "太守",
+    name: "主政",
     arc: "治政篇",
-    color: "#8a3a3a",
-    outfit: { male: "緋袍佩印", female: "緋袍佩印" },
-    desc: "分析史料、處理事件，權責更重。",
+    color: "#246b87",
+    outfit: { male: "青袍玉印", female: "青袍玉印" },
+    desc: "一城之主——地圖在手，安民為重。",
   },
   {
     id: 5,
@@ -118,16 +118,16 @@ export const PROMOTION_GATES = {
     label: "初仕試煉",
   },
   3: {
-    // 初仕 → 太守
+    // 初仕 → 主政
     minLevel: 10,
     chapters: ["ch5_policy"],
     mastery: { policy: 0.8, sources: 0.8 },
     skills: { timeline: 0.8, cause: 0.8, source: 0.8 },
     trialId: "trial_to_prefect",
-    label: "太守晉升試煉",
+    label: "主政晉升試煉",
   },
   4: {
-    // 太守 → 重臣
+    // 主政 → 重臣
     minLevel: 13,
     chapters: ["ch6_compare"],
     mastery: { sources: 0.82, policy: 0.8 },

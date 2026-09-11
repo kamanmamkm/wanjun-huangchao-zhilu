@@ -68,17 +68,17 @@ export const STAGE_VISUALS = {
   },
   4: {
     id: 4,
-    scene: "寬闊議事廳",
+    scene: "高閣俯瞰城郭",
     sceneKey: "hall",
-    pose: "展開地圖，陽光入窗",
+    pose: "手按地圖與玉印，遠望城池",
     poseKey: "map",
-    prop: "地圖",
+    prop: "地圖／玉印",
     propKey: "map",
     accent: "#246b87",
-    bgHint: "深青與金色細節",
-    quote: "一城一事，皆關民生。",
-    vibe: "獨當一面",
-    priority: false,
+    bgHint: "青袍金繡與夕照城郭",
+    quote: "安民重任。",
+    vibe: "主政安民",
+    priority: true,
   },
   5: {
     id: 5,
@@ -154,6 +154,12 @@ export const STAGE_ART = {
     female: "assets/stages/chushi-female.jpg",
     badge: "④ 初仕｜Lv.26–40",
     label: "初仕登場",
+  },
+  4: {
+    male: "assets/stages/zhuzheng-male.jpg",
+    female: "assets/stages/zhuzheng-female.jpg",
+    badge: "⑤ 主政｜Lv.41–55",
+    label: "主政登場",
   },
 };
 

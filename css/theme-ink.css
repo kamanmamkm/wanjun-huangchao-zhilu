@@ -1,0 +1,525 @@
+/**
+ * 《任平生》視覺主題
+ * 日常：水墨書卷｜高潮：沉穩宮廷｜親切：古風手繪角色
+ */
+:root {
+  /* 配色規格 */
+  --paper: #f5f0e6;
+  --paper-warm: #fffcf5;
+  --ink: #252820;
+  --ink-soft: #3d4338;
+  --cinnabar: #a3312b;
+  --cinnabar-deep: #7e2418;
+  --jade: #35665b;
+  --gold: #b29455;
+  --gold-deep: #8a7340;
+  --court: #182321;
+  --court-soft: #24302c;
+
+  --paper-soft: var(--paper-warm);
+  --bronze: #8a7340;
+  --shadow: 0 12px 32px rgba(37, 40, 32, 0.12);
+  --radius: 8px;
+
+  --font-display: "Noto Serif TC", "Songti TC", serif;
+  --font-body: "Noto Serif TC", "Noto Sans TC", serif;
+  --font-ui: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+
+  --fs-hero: clamp(1.9rem, 4vw, 3.25rem); /* ~30–52 */
+  --fs-page: clamp(1.5rem, 2.5vw, 2rem); /* 24–32 */
+  --fs-card: clamp(1.25rem, 1.8vw, 1.5rem); /* 20–24 */
+  --fs-q: 1.25rem; /* 20 */
+  --fs-body: 1.125rem; /* 18 */
+  --fs-btn: 1.05rem; /* 16–18 */
+  --fs-label: 0.875rem; /* 14 */
+  --lh-body: 1.75;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 16px;
+  line-height: var(--lh-body);
+  background: var(--paper);
+}
+
+/* 日常：極淡水墨山水，唔搶閱讀 */
+body {
+  background:
+    radial-gradient(ellipse 90% 50% at 80% 0%, rgba(163, 49, 43, 0.05), transparent 50%),
+    radial-gradient(ellipse 70% 40% at 10% 100%, rgba(53, 102, 91, 0.06), transparent 55%),
+    linear-gradient(180deg, #f7f3ea 0%, var(--paper) 40%, #efe8da 100%);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='180' viewBox='0 0 320 180'%3E%3Cpath d='M0 140 Q60 100 120 120 T240 110 T320 130 V180 H0Z' fill='%23252820'/%3E%3Cpath d='M0 155 Q80 130 160 145 T320 140 V180 H0Z' fill='%2335665b' opacity='.5'/%3E%3C/svg%3E");
+  background-size: 320px 180px;
+  background-position: bottom;
+  background-repeat: repeat-x;
+}
+
+body::after {
+  display: none;
+}
+
+/* 宮廷高潮場景：深墨底 */
+body.theme-court {
+  background: var(--court);
+  color: var(--paper-warm);
+}
+body.theme-court::before {
+  opacity: 0.12;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cpath d='M10 40h60M40 10v60' stroke='%23B29455' stroke-width='.6' opacity='.35'/%3E%3C/svg%3E");
+  background-size: 80px 80px;
+}
+
+#app {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+}
+
+.hidden {
+  display: none !important;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+/* 標題體系 */
+h1,
+h2,
+.brand-block h1,
+.brand-mini,
+.brand-top,
+.section-title,
+.edict h3,
+.edict h4,
+.player-meta strong,
+.char-card .name,
+.chapter-card h3,
+.task-card h3,
+.next-shadow {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.brand-block h1,
+.brand-mini,
+.brand-top {
+  font-weight: 700;
+}
+
+h2,
+.panel-paper > h2,
+.scroll-view > h2 {
+  font-size: var(--fs-page);
+  color: var(--ink);
+  margin: 0.2rem 0 0.6rem;
+}
+
+.lead,
+.q-text,
+.story-box,
+.mission-box {
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+}
+
+.q-text {
+  font-size: var(--fs-q);
+  text-align: left;
+}
+
+.muted,
+.side-note,
+.pick-label,
+.avatar-art-era,
+.avatar-art-outfit {
+  font-size: var(--fs-label);
+}
+
+/* 身份階段視覺（架空美術，由簡入繁） */
+.stage-visual-0,
+.stage-visual-1 {
+  --decor-opacity: 0.2;
+  --frame-accent: #8a7a60;
+}
+.stage-visual-2,
+.stage-visual-3 {
+  --decor-opacity: 0.35;
+  --frame-accent: var(--jade);
+}
+.stage-visual-4,
+.stage-visual-5 {
+  --decor-opacity: 0.5;
+  --frame-accent: var(--cinnabar);
+}
+.stage-visual-6 {
+  --decor-opacity: 0.65;
+  --frame-accent: var(--gold);
+}
+.stage-visual-7,
+.stage-visual-8 {
+  --decor-opacity: 0.85;
+  --frame-accent: var(--gold);
+}
+
+.app-shell.paper-shell {
+  max-width: 1180px;
+}
+
+.panel-paper,
+.panel,
+.auth-panel,
+.topbar,
+.question-box {
+  background: linear-gradient(180deg, var(--paper-warm), #f3ecdf);
+  border: 1px solid rgba(37, 40, 32, 0.12);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.question-box,
+.mission-box,
+.note-card,
+.chapter-card,
+.stage-card {
+  background: var(--paper-warm);
+}
+
+/* 按鈕：朱紅主行動；暗金留高階 */
+.btn {
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 0.7rem 1.25rem;
+  cursor: pointer;
+  background: linear-gradient(180deg, #b83c35, var(--cinnabar));
+  color: #fffaf3;
+  font-weight: 600;
+  font-size: var(--fs-btn);
+  letter-spacing: 0.08em;
+  transition: transform 0.15s ease, filter 0.15s ease;
+  box-shadow: 0 6px 14px rgba(163, 49, 43, 0.25);
+  font-family: var(--font-ui);
+}
+.btn:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+.btn.ghost {
+  background: rgba(255, 252, 245, 0.8);
+  color: var(--ink-soft);
+  border: 1px solid rgba(37, 40, 32, 0.18);
+  box-shadow: none;
+}
+.btn.gold {
+  background: linear-gradient(180deg, #c9ad6a, var(--gold));
+  color: var(--court);
+  box-shadow: 0 6px 14px rgba(178, 148, 85, 0.28);
+}
+.app-shell .btn.ghost {
+  color: var(--ink);
+  background: rgba(255, 252, 245, 0.9);
+}
+
+/* 導覽：線條圖示＋文字，唔用 emoji */
+.nav.mobile-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.85rem;
+}
+.nav button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid rgba(37, 40, 32, 0.14);
+  background: rgba(255, 252, 245, 0.92);
+  color: var(--ink-soft);
+  border-radius: 6px;
+  padding: 0.5rem 0.85rem;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: var(--fs-btn);
+  letter-spacing: 0.04em;
+}
+.nav button.active {
+  background: var(--cinnabar);
+  color: #fffaf3;
+  border-color: var(--cinnabar);
+}
+.nav button .ico {
+  width: 1em;
+  height: 1em;
+  display: inline-block;
+  background: currentColor;
+  -webkit-mask: center / contain no-repeat;
+  mask: center / contain no-repeat;
+}
+.ico-home {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M4 11.5 12 4l8 7.5V20h-5v-5H9v5H4z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M4 11.5 12 4l8 7.5V20h-5v-5H9v5H4z'/%3E%3C/svg%3E");
+}
+.ico-scroll {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 0-3 3V4zm2 2v12.2A4.8 4.8 0 0 1 8.8 18H17V7a1 1 0 0 0-1-1H7z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 0-3 3V4zm2 2v12.2A4.8 4.8 0 0 1 8.8 18H17V7a1 1 0 0 0-1-1H7z'/%3E%3C/svg%3E");
+}
+.ico-seal {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M7 3h10v4H7zm1 6h8l1 12H7L8 9zm2 2v8h4v-8H10z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M7 3h10v4H7zm1 6h8l1 12H7L8 9zm2 2v8h4v-8H10z'/%3E%3C/svg%3E");
+}
+.ico-note {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M6 3h9l5 5v13H6V3zm8 1.5V9h4.5L14 4.5zM8 12h8v2H8zm0 4h8v2H8z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M6 3h9l5 5v13H6V3zm8 1.5V9h4.5L14 4.5zM8 12h8v2H8zm0 4h8v2H8z'/%3E%3C/svg%3E");
+}
+.ico-book {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M4 5a3 3 0 0 1 3-3h13v18H7a3 3 0 0 0-3 3V5zm2 0v12.2A4.9 4.9 0 0 1 7.9 17H18V4H7a1 1 0 0 0-1 1z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M4 5a3 3 0 0 1 3-3h13v18H7a3 3 0 0 0-3 3V5zm2 0v12.2A4.9 4.9 0 0 1 7.9 17H18V4H7a1 1 0 0 0-1 1z'/%3E%3C/svg%3E");
+}
+.ico-practice {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M4 4h16v4H4zm0 6h10v2H4zm0 4h16v2H4zm0 4h10v2H4z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M4 4h16v4H4zm0 6h10v2H4zm0 4h16v2H4zm0 4h10v2H4z'/%3E%3C/svg%3E");
+}
+.ico-game {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M6 8h12a4 4 0 0 1 4 4v2a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4v-2a4 4 0 0 1 4-4zm2 3v2h2v-2H8zm8.5 1a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M6 8h12a4 4 0 0 1 4 4v2a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4v-2a4 4 0 0 1 4-4zm2 3v2h2v-2H8zm8.5 1a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z'/%3E%3C/svg%3E");
+}
+.ico-teacher {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M12 3 2 8l10 5 8-4v7h2V8L12 3zm-6 9.2V15c0 2.2 2.7 4 6 4s6-1.8 6-4v-2.8l-6 3-6-3z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M12 3 2 8l10 5 8-4v7h2V8L12 3zm-6 9.2V15c0 2.2 2.7 4 6 4s6-1.8 6-4v-2.8l-6 3-6-3z'/%3E%3C/svg%3E");
+}
+.ico-battle {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M4 3h6v2H6v4H4V3zm10 0h6v6h-2V5h-4V3zM4 15h2v4h4v2H4v-6zm14 0h2v6h-6v-2h4v-4zM9 9h6v6H9z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M4 3h6v2H6v4H4V3zm10 0h6v6h-2V5h-4V3zM4 15h2v4h4v2H4v-6zm14 0h2v6h-6v-2h4v-4zM9 9h6v6H9z'/%3E%3C/svg%3E");
+}
+
+/* 宮廷頁：晉升／Boss／終章 */
+.theme-court .panel-paper,
+.theme-court .promote-view,
+.theme-court .topbar,
+.theme-court .auth-panel {
+  background: linear-gradient(180deg, #24302c, #1a2421);
+  border: 1px solid rgba(178, 148, 85, 0.45);
+  color: var(--paper-warm);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+.theme-court h2,
+.theme-court .lead,
+.theme-court .id-line,
+.theme-court .muted,
+.theme-court .disclaimer {
+  color: rgba(255, 252, 245, 0.92);
+}
+.theme-court .edict {
+  background: rgba(0, 0, 0, 0.25);
+  border-color: rgba(178, 148, 85, 0.4);
+}
+.theme-court .edict h3,
+.theme-court .next-shadow,
+.theme-court .ink-gold {
+  color: var(--gold) !important;
+}
+.theme-court .btn.ghost {
+  background: rgba(255, 252, 245, 0.08);
+  color: var(--paper-warm);
+  border-color: rgba(178, 148, 85, 0.4);
+}
+.theme-court .nav button {
+  background: rgba(255, 252, 245, 0.06);
+  color: var(--paper-warm);
+  border-color: rgba(178, 148, 85, 0.3);
+}
+.theme-court .nav button.active {
+  background: var(--gold);
+  color: var(--court);
+  border-color: var(--gold);
+}
+.theme-court .player-meta strong,
+.theme-court .brand-top {
+  color: var(--gold);
+}
+
+/* 登基華麗：僅終章／高身份 */
+.stage-visual-8.theme-court .promote-view,
+.theme-court .finale-board {
+  position: relative;
+}
+.stage-visual-8.theme-court .promote-view::before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border: 1px solid rgba(178, 148, 85, 0.55);
+  pointer-events: none;
+  border-radius: 6px;
+  box-shadow: inset 0 0 40px rgba(178, 148, 85, 0.12);
+}
+
+.route-dot.done {
+  color: var(--jade);
+}
+.route-dot.current {
+  color: var(--cinnabar);
+}
+.ink-red {
+  color: var(--cinnabar) !important;
+}
+.ink-gold {
+  color: var(--gold) !important;
+}
+.xp-bar > i {
+  background: linear-gradient(90deg, var(--jade), var(--gold));
+}
+
+.brand-block {
+  color: var(--ink);
+}
+.brand-block h1 {
+  font-size: var(--fs-hero);
+  color: var(--cinnabar);
+  text-shadow: none;
+}
+.brand-block .subtitle,
+.brand-block .eyebrow,
+.hero-caption,
+.hero-idle-note {
+  color: var(--ink-soft);
+}
+.brand-block::before {
+  content: "任";
+  color: #fffaf3;
+  background: var(--cinnabar);
+  border: 1px solid rgba(178, 148, 85, 0.5);
+}
+
+.tag {
+  background: var(--paper-warm);
+  border: 1px solid rgba(163, 49, 43, 0.25);
+  color: var(--cinnabar);
+}
+
+.finale-segs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+}
+.finale-board {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(178, 148, 85, 0.4);
+  border-radius: 8px;
+}
+.cuoshi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+.quest-icon .ico {
+  width: 1.5em;
+  height: 1.5em;
+  display: inline-block;
+  background: currentColor;
+  -webkit-mask: center / contain no-repeat;
+  mask: center / contain no-repeat;
+}
+.side-link {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: var(--ink-soft);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  padding: 0.55rem 0.7rem;
+  border-radius: 6px;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+}
+.side-link:hover,
+.side-link.active {
+  background: rgba(163, 49, 43, 0.1);
+  color: var(--cinnabar);
+}
+.option {
+  text-align: left;
+  background: var(--paper-warm);
+  border: 1px solid rgba(37, 40, 32, 0.14);
+  color: var(--ink);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  font-size: var(--fs-btn);
+  line-height: 1.5;
+}
+.option:hover {
+  border-color: var(--cinnabar);
+  background: #fff8ef;
+}
+.theme-court .option {
+  background: rgba(255, 252, 245, 0.06);
+  color: var(--paper-warm);
+  border-color: rgba(178, 148, 85, 0.35);
+}
+.theme-court .option:hover {
+  border-color: var(--gold);
+  background: rgba(178, 148, 85, 0.12);
+}
+
+.teacher-table-wrap {
+  overflow-x: auto;
+}
+.teacher-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.teacher-table th,
+.teacher-table td {
+  border: 1px solid rgba(37, 40, 32, 0.12);
+  padding: 0.45rem 0.55rem;
+  text-align: left;
+}
+.teacher-table th {
+  background: rgba(163, 49, 43, 0.08);
+  font-family: var(--font-display);
+}
+
+/* 答題頁：乾淨閱讀區 */
+.stage-play .q-text,
+.question-box .q-text {
+  max-width: 42em;
+}
+.stage-play {
+  background: var(--paper-warm);
+}
+
+.toast {
+  background: var(--court);
+  color: var(--paper-warm);
+  border: 1px solid rgba(178, 148, 85, 0.45);
+}

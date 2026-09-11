@@ -3,6 +3,7 @@
  */
 import { CHAPTERS, chapterList } from "./data/chapters.js";
 import { XP_REWARDS } from "./data/levels.js";
+import { CUOSHI_BATTLES, getCuoshi } from "./data/cuoshi.js";
 import { renderAvatar } from "./avatar.js";
 import {
   userSnapshot,
@@ -18,8 +19,13 @@ import {
   IDENTITY_DISCLAIMER,
   identityDisplayName,
   getIdentity,
+  queueReview,
+  getFinaleState,
+  saveFinaleSegment,
+  markCuoshiWon,
 } from "./progress.js";
 import { updateUser, addXp, pushRecent } from "./storage.js";
+import { getTrial } from "./data/trials.js";
 
 export function renderJourneyHome(user, char, ctx) {
   const snap = userSnapshot(user);
@@ -59,10 +65,12 @@ export function renderJourneyHome(user, char, ctx) {
       <button type="button" class="side-link active" data-nav="home">行旅首頁</button>
       <button type="button" class="side-link" data-nav="scroll">歷史長卷</button>
       <button type="button" class="side-link" data-nav="promote">晉升試煉</button>
+      <button type="button" class="side-link" data-nav="cuoshi">錯史之戰</button>
       <button type="button" class="side-link" data-nav="notes">待考札記</button>
       <button type="button" class="side-link" data-nav="practice">藏書閣·練習</button>
       <button type="button" class="side-link" data-nav="games">趣味關卡</button>
       <button type="button" class="side-link" data-nav="chronicle">我的史冊</button>
+      <button type="button" class="side-link" data-nav="teacher">老師頁</button>
       <p class="side-note">${IDENTITY_DISCLAIMER.slice(0, 42)}…</p>
     </aside>
 
@@ -211,6 +219,29 @@ function renderStagePlay(user, ch, stage) {
   </section>`;
 }
 
+export function renderCuoshi(user) {
+  const won = user.progress?.cuoshi || {};
+  const cards = CUOSHI_BATTLES.map(
+    (b) => `
+    <article class="chapter-card ${won[b.id]?.won ? "done" : ""}">
+      <p class="eyebrow">${b.difficulty || "關卡"}</p>
+      <h3>${b.title} ${won[b.id]?.won ? "✓" : ""}</h3>
+      <p>${b.blurb}</p>
+      <button type="button" class="btn ${won[b.id]?.won ? "ghost" : ""}" data-cuoshi="${b.id}">
+        ${won[b.id]?.won ? "再戰一回" : "進入戰場"}
+      </button>
+    </article>`
+  ).join("");
+  return `
+  <section class="panel-paper cuoshi-view">
+    <p class="eyebrow ink-red">錯史之戰</p>
+    <h2>修復被改亂的史頁</h2>
+    <p class="lead">Boss 是錯史本身：辨錯 → 修正 → 舉證。平時用書卷風；開戰時進入考場節奏。</p>
+    <div class="cuoshi-grid">${cards}</div>
+    <div id="cuoshi-panel" class="hidden"></div>
+  </section>`;
+}
+
 export function bindJourney(user, ctx) {
   const { render, toast, state, reward } = ctx;
 
@@ -251,6 +282,72 @@ export function bindJourney(user, ctx) {
   bindStageRuntime(user, ctx);
   bindPromote(user, ctx);
   bindNotes(user, ctx);
+  bindCuoshi(user, ctx);
+}
+
+function bindCuoshi(user, ctx) {
+  const { state, toast, render } = ctx;
+  appClick("[data-cuoshi]", (btn) => {
+    state.cuoshi = { id: btn.dataset.cuoshi, index: 0 };
+    paintCuoshi(ctx);
+  });
+  if (state.cuoshi?.id && document.getElementById("cuoshi-panel")) {
+    paintCuoshi(ctx);
+  }
+}
+
+function paintCuoshi(ctx) {
+  const { state, toast, render } = ctx;
+  const battle = getCuoshi(state.cuoshi.id);
+  const panel = document.getElementById("cuoshi-panel");
+  if (!panel || !battle) return;
+  panel.classList.remove("hidden");
+  const i = state.cuoshi.index;
+  const steps = battle.steps || [];
+  if (i >= steps.length) {
+    updateUser((u) => markCuoshiWon(u, battle.id));
+    pushRecent(`戰勝錯史：${battle.title}`);
+    addXp(XP_REWARDS.chapterBonus || 20, { correct: true });
+    panel.innerHTML = `
+      <div class="trial-result">
+        <h3>史頁已修復</h3>
+        <p>你完成了「${battle.title}」——辨錯、修正、舉證皆過。</p>
+        <button type="button" class="btn" data-goto="cuoshi">返回關卡列表</button>
+      </div>`;
+    toast("錯史之戰勝利！");
+    state.cuoshi = null;
+    return;
+  }
+  const step = steps[i];
+  panel.innerHTML = `
+    <div class="trial-q stage-play">
+      <p class="eyebrow">${battle.title} · ${step.title}（${i + 1}/${steps.length}）</p>
+      <div class="q-text">${step.q}</div>
+      <div class="options">
+        ${step.options.map((o, idx) => `<button type="button" class="option" data-cs="${idx}">${o}</button>`).join("")}
+      </div>
+    </div>`;
+  panel.querySelectorAll("[data-cs]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const ok = Number(btn.dataset.cs) === step.answer;
+      updateUser((u) =>
+        recordLearning(u, {
+          skill: step.skill,
+          correct: ok,
+          qid: `cuoshi-${battle.id}-${step.id}`,
+          qText: step.q,
+          chapterId: "cuoshi",
+        })
+      );
+      if (!ok) {
+        toast("未中——再讀一次選項（可重試）");
+        return;
+      }
+      ctx.reward?.(XP_REWARDS.mcCorrect || 8, { correct: true, keepView: true });
+      state.cuoshi.index++;
+      paintCuoshi(ctx);
+    });
+  });
 }
 
 function bindStageRuntime(user, ctx) {
@@ -390,6 +487,39 @@ export function renderPromote(user, char) {
     })
     .join("");
   const rem = openWeakRemedials(user);
+  const isFinale = order.gate?.isFinale || order.gate?.trialId === "trial_ascension";
+  const finale = isFinale || user.identityId >= 7 ? getFinaleState(user) : null;
+
+  const finaleBlock =
+    finale && (order.canChallenge || order.trialPassed || user.identityId >= 7)
+      ? `
+    <div class="finale-board">
+      <h3>終章任務：天下待定</h3>
+      <p class="lead">三部分可分開完成並儲存進度。全部通過後才可登基。</p>
+      <div class="finale-segs">
+        ${finale.segs
+          .map(
+            (s) => `
+          <article class="chapter-card ${s.done ? "done" : ""}">
+            <h3>${s.title} ${s.done ? "✓" : ""}</h3>
+            <p>${s.blurb}</p>
+            <p class="muted">${s.done ? `已通過（${Math.round(s.saved.avg)} 分）` : "尚未完成"}</p>
+            <button type="button" class="btn ${s.done ? "ghost" : ""}" data-finale-seg="${s.id}"
+              ${order.canChallenge || order.trialPassed || user.identityId >= 7 ? "" : "disabled"}>
+              ${s.done ? "重溫本段" : "開始本段"}
+            </button>
+          </article>`
+          )
+          .join("")}
+      </div>
+      ${
+        finale.allDone
+          ? `<p class="ink-gold">三段皆過——可確認晉升為帝王／女帝。</p>
+             <button type="button" class="btn gold" id="btn-confirm-promote">確認登基</button>`
+          : ""
+      }
+    </div>`
+      : "";
 
   return `
   <section class="panel-paper promote-view">
@@ -407,12 +537,16 @@ export function renderPromote(user, char) {
         <ul class="edict-list">${list}</ul>
         <div class="row-actions">
           <button type="button" class="btn ghost" data-goto="notes">前往補強</button>
-          <button type="button" class="btn" id="btn-trial" ${order.canChallenge ? "" : "disabled"}>
+          ${
+            isFinale
+              ? `<button type="button" class="btn" data-goto="promote">終章見下方三段</button>`
+              : `<button type="button" class="btn" id="btn-trial" ${order.canChallenge ? "" : "disabled"}>
             ${order.canChallenge ? `挑戰：${order.gate.label}` : order.trialPassed ? "試煉已通過，確認晉升" : "挑戰晉升：未解鎖"}
-          </button>
+          </button>`
+          }
         </div>
         ${
-          order.trialPassed && order.next
+          order.trialPassed && order.next && !isFinale
             ? `<button type="button" class="btn gold" id="btn-confirm-promote">確認晉升為「${identityDisplayName(order.next, user.gender)}」</button>`
             : ""
         }
@@ -425,6 +559,7 @@ export function renderPromote(user, char) {
         }
       </div>
     </div>
+    ${finaleBlock}
     <div id="trial-panel" class="hidden"></div>
   </section>`;
 }
@@ -456,7 +591,16 @@ function bindPromote(user, ctx) {
       toast("尚未解鎖試煉");
       return;
     }
-    state.trial = { id: order.trialId, index: 0, answers: [] };
+    state.trial = { id: order.trialId, index: 0, answers: [], segId: null };
+    paintTrial(ctx);
+  });
+  appClick("[data-finale-seg]", (btn) => {
+    state.trial = {
+      id: "trial_ascension",
+      segId: btn.dataset.finaleSeg,
+      index: 0,
+      answers: [],
+    };
     paintTrial(ctx);
   });
 }
@@ -467,41 +611,53 @@ function paintTrial(ctx) {
   const panel = document.getElementById("trial-panel");
   if (!panel || !trial) return;
   panel.classList.remove("hidden");
-  const parts = flattenTrialParts(trial);
+  const seg = state.trial.segId
+    ? (trial.segments || []).find((s) => s.id === state.trial.segId)
+    : null;
+  const scoringTrial = seg
+    ? { ...trial, segments: undefined, parts: seg.parts || [], title: `${trial.title} · ${seg.title}` }
+    : trial;
+  const parts = flattenTrialParts(scoringTrial);
   const i = state.trial.index;
   if (i >= parts.length) {
-    const result = scoreTrial(trial, state.trial.answers);
+    const result = scoreTrial(scoringTrial, state.trial.answers);
     panel.innerHTML = `
       <div class="trial-result">
-        <h3>${result.passed ? "試煉通過" : "尚未通過——進度保留"}</h3>
+        <h3>${result.passed ? (seg ? "本段通過" : "試煉通過") : "尚未通過——進度保留"}</h3>
         <p>總分 ${Math.round(result.avg)}｜史料 ${Math.round(result.sourceAvg)}｜論證 ${Math.round(result.argueAvg)}</p>
         ${
           result.passed
-            ? `<p>可按「確認晉升」完成身份躍升。</p>`
+            ? `<p>${seg ? "可繼續下一段，或返回晉升殿。" : "可按「確認晉升」完成身份躍升。"}</p>`
             : `<ul>${result.fails.map((f) => `<li>${f}</li>`).join("")}</ul>
                <p>完成補強後可再挑戰<strong>另一組同等難度</strong>（唔使等日數）。</p>`
         }
-        <button type="button" class="btn" data-goto="notes">前往待考札記／補強</button>
+        <button type="button" class="btn" data-goto="${seg ? "promote" : "notes"}">${
+          seg ? "返回終章" : "前往待考札記／補強"
+        }</button>
       </div>`;
     updateUser((u) => {
-      u.progress.trials[trial.id] = {
-        passed: result.passed,
-        avg: result.avg,
-        at: Date.now(),
-        fails: result.fails,
-      };
+      if (seg) {
+        saveFinaleSegment(u, seg.id, result, state.trial.answers);
+      } else {
+        u.progress.trials[trial.id] = {
+          passed: result.passed,
+          avg: result.avg,
+          at: Date.now(),
+          fails: result.fails,
+        };
+      }
     });
     if (result.passed) {
-      pushRecent(`通過${trial.title}`);
-      toast("試煉通過！可確認晉升");
+      pushRecent(seg ? `通過終章·${seg.title}` : `通過${trial.title}`);
+      toast(seg ? "本段通過！進度已儲存" : "試煉通過！可確認晉升");
     } else toast("未通過——看看弱項再練");
     return;
   }
   const part = parts[i];
   panel.innerHTML = `
-    <div class="trial-q">
+    <div class="trial-q stage-play">
       <p class="eyebrow">考核 ${i + 1}/${parts.length} · 提示較少</p>
-      <h3>${trial.title}</h3>
+      <h3>${seg ? seg.title : trial.title}</h3>
       <div class="q-text">${part.q}</div>
       ${
         part.options
@@ -514,6 +670,16 @@ function paintTrial(ctx) {
     </div>`;
   const submit = (ans) => {
     state.trial.answers[i] = ans;
+    if (part.type === "argue" || (!part.options && part.skill === "argue")) {
+      updateUser((u) =>
+        queueReview(u, {
+          trialId: trial.id,
+          trialTitle: seg ? seg.title : trial.title,
+          q: part.q,
+          answer: ans,
+        })
+      );
+    }
     state.trial.index++;
     paintTrial(ctx);
   };

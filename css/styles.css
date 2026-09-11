@@ -1,24 +1,24 @@
 :root {
-  /* 戰國風：暮色城郭、戰幡、青銅朱漆 */
-  --ink: #1f1610;
-  --ink-soft: #4a3428;
-  --paper: #f3e6c8;
-  --paper-soft: #fff6e8;
-  --silk: #efe0c0;
-  --sky: #3a2a48;
-  --dawn: #e8a060;
+  /* 水墨書卷基底（細節見 theme-ink.css） */
+  --ink: #252820;
+  --ink-soft: #3d4338;
+  --paper: #f5f0e6;
+  --paper-soft: #fffcf5;
+  --silk: #efe8da;
+  --sky: #35665b;
+  --dawn: #b29455;
   --mist-blue: #5a6a88;
-  --mountain: #2a3830;
-  --cinnabar: #c45a3a;
-  --cinnabar-deep: #8e2e1e;
-  --gold: #d4b06a;
-  --gold-deep: #a67c3a;
-  --jade: #3d7a62;
-  --bronze: #8a6a40;
-  --shadow: 0 18px 42px rgba(12, 8, 16, 0.35);
-  --radius: 10px;
-  --font-display: "Ma Shan Zheng", "ZCOOL XiaoWei", "Noto Serif TC", cursive;
-  --font-body: "Noto Serif TC", "Noto Sans TC", "Songti TC", serif;
+  --mountain: #182321;
+  --cinnabar: #a3312b;
+  --cinnabar-deep: #7e2418;
+  --gold: #b29455;
+  --gold-deep: #8a7340;
+  --jade: #35665b;
+  --bronze: #8a7340;
+  --shadow: 0 12px 32px rgba(37, 40, 32, 0.12);
+  --radius: 8px;
+  --font-display: "Noto Serif TC", "Songti TC", serif;
+  --font-body: "Noto Serif TC", "Noto Sans TC", serif;
   --font-ui: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
 }
 
@@ -32,50 +32,23 @@ body {
   min-height: 100%;
   color: var(--ink);
   font-family: var(--font-ui);
-  background: #1a1420;
+  background: var(--paper);
 }
 
-/* 戰國暮色城郭背景 */
+/* 戰國暮色城郭背景 —— 已由 theme-ink.css 水墨書卷覆蓋；保留變數相容舊規則 */
 body {
-  background:
-    linear-gradient(
-      180deg,
-      rgba(28, 18, 40, 0.55) 0%,
-      rgba(40, 24, 28, 0.42) 35%,
-      rgba(20, 14, 18, 0.58) 75%,
-      rgba(12, 10, 14, 0.72) 100%
-    ),
-    url("../assets/bg/zhanguo.jpg") center top / cover no-repeat fixed;
-  background-color: #1a1420;
+  background: var(--paper, #f5f0e6);
 }
 
-/* 戰幡紋樣疊層 */
+/* 舊戰幡疊層：改為關閉，以免壓過宣紙感 */
 body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.18;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='220' viewBox='0 0 160 220'%3E%3Crect x='76' y='8' width='8' height='200' fill='%23e8d7b0'/%3E%3Cpath d='M80 20 L128 28 L128 120 L80 132 Z' fill='%23f4efe4' stroke='%231a1410' stroke-width='2'/%3E%3Cpath d='M96 48 L112 56 L96 64 L80 56 Z' fill='%231a1410'/%3E%3Cpath d='M80 20 L32 28 L32 120 L80 132 Z' fill='%23f4efe4' stroke='%231a1410' stroke-width='2' opacity='.35'/%3E%3C/svg%3E");
-  background-size: 160px 220px;
-  background-position: 8% 12%;
-  animation: none;
+  content: none;
+  display: none;
 }
 
-/* 底部霧氣／城腳暗影，讓內容區更易讀 */
 body::after {
-  content: "";
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: min(38vh, 340px);
-  pointer-events: none;
-  z-index: 0;
-  background:
-    linear-gradient(180deg, transparent 0%, rgba(12, 8, 14, 0.55) 70%, rgba(8, 6, 10, 0.75) 100%);
-  opacity: 1;
+  content: none;
+  display: none;
 }
 
 #app {
@@ -149,11 +122,11 @@ select {
 }
 
 .btn.ghost {
-  background: rgba(20, 14, 18, 0.4);
-  color: #f0e2c8;
+  background: rgba(255, 252, 245, 0.9);
+  color: var(--ink-soft);
   box-shadow: none;
-  border: 1px solid rgba(212, 176, 106, 0.45);
-  backdrop-filter: blur(6px);
+  border: 1px solid rgba(37, 40, 32, 0.18);
+  backdrop-filter: none;
 }
 
 .app-shell .btn.ghost {

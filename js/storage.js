@@ -26,8 +26,12 @@ function blankProgress() {
     wrongNotes: [],
     remedials: {},
     trials: {},
+    pendingReviews: [],
+    cuoshi: {},
+    finale: { segments: {} },
     chronicle: { promotions: [], restored: [], quotes: [] },
     recent: [],
+    assignments: [],
   };
 }
 

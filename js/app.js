@@ -1,11 +1,11 @@
-import { CHARACTERS, getCharacter } from "./data/characters.js?v=rps1";
-import { QUESTIONS, checkFill } from "./data/questions.js?v=rps1";
-import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rps1";
-import { levelFromXp } from "./data/levels.js?v=rps1";
-import { DIALOGUES } from "./data/dialogues.js?v=rps1";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rps1";
-import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=rps1";
-import { renderAvatar } from "./avatar.js?v=rps1";
+import { CHARACTERS, getCharacter } from "./data/characters.js?v=ink1";
+import { QUESTIONS, checkFill } from "./data/questions.js?v=ink1";
+import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=ink1";
+import { levelFromXp } from "./data/levels.js?v=ink1";
+import { DIALOGUES } from "./data/dialogues.js?v=ink1";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=ink1";
+import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=ink1";
+import { renderAvatar } from "./avatar.js?v=ink1";
 import {
   CARD_TYPES,
   createBattle,
@@ -15,7 +15,7 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=rps1";
+} from "./data/shizhan.js?v=ink1";
 import {
   getCurrentUser,
   registerUser,
@@ -23,13 +23,13 @@ import {
   clearSession,
   addXp,
   updateUser,
-} from "./storage.js?v=rps1";
+} from "./storage.js?v=ink1";
 import {
   userSnapshot,
   buildPromotionOrder,
   recordLearning,
   IDENTITY_DISCLAIMER,
-} from "./progress.js?v=rps1";
+} from "./progress.js?v=ink1";
 import {
   renderJourneyHome,
   renderScroll,
@@ -37,8 +37,10 @@ import {
   renderPromote,
   renderNotes,
   renderChronicle,
+  renderCuoshi,
   bindJourney,
-} from "./journey.js?v=rps1";
+} from "./journey.js?v=ink1";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=ink1";
 
 const app = document.getElementById("app");
 let toastTimer = null;
@@ -58,6 +60,7 @@ let state = {
   stageQuiz: null,
   bossStep: 0,
   trial: null,
+  cuoshi: null,
 };
 
 function toast(msg) {
@@ -152,10 +155,19 @@ function journeyCtx() {
 function render() {
   const user = getCurrentUser();
   if (!user) {
+    document.body.className = "";
     app.innerHTML = renderAuth();
     bindAuth();
     return;
   }
+  const id = user.identityId || 0;
+  const courtViews = ["promote", "cuoshi"];
+  const isCourt =
+    courtViews.includes(state.view) ||
+    (state.view === "chapter" &&
+      !!state.scrollStage &&
+      /boss|試煉|錯史/i.test(String(state.scrollStage)));
+  document.body.className = `stage-visual-${id}${isCourt ? " theme-court" : ""}`;
   app.innerHTML = renderShell(user);
   bindShell(user);
 }
@@ -186,10 +198,11 @@ function renderAuth() {
         </div>
       </div>
       <div class="tags">
-        <span class="tag">📝 選擇 · 填充 · 配對</span>
-        <span class="tag">🎯 趣味小遊戲</span>
-        <span class="tag">💬 與古人對話</span>
-        <span class="tag">🎬 影片學習</span>
+        <span class="tag">選擇 · 填充 · 配對</span>
+        <span class="tag">晉升靠考核</span>
+        <span class="tag">水墨書卷</span>
+        <span class="tag">錯史之戰</span>
+        <span class="tag">與古人對話</span>
       </div>
     </div>
     <div class="auth-panel">
@@ -299,25 +312,41 @@ function renderShell(user) {
               ? renderNotes(user)
               : state.view === "chronicle"
                 ? renderChronicle(user, char)
-                : state.view === "practice"
-                  ? renderPractice()
-                  : state.view === "games"
-                    ? renderGamesHub()
-                    : state.view === "videos"
-                      ? renderVideos()
-                      : state.view === "profile"
-                        ? renderProfile(user, char, snap)
-                        : state.view === "wordwall"
-                          ? renderWordwall()
-                          : state.view === "timeline"
-                            ? renderTimeline()
-                            : state.view === "dialogue"
-                              ? renderDialogue()
-                              : state.view === "shizhan"
-                                ? renderShizhan(user, char, idn)
-                                : "";
+                : state.view === "cuoshi"
+                  ? renderCuoshi(user)
+                  : state.view === "teacher"
+                    ? renderTeacherPage()
+                    : state.view === "practice"
+                      ? renderPractice()
+                      : state.view === "games"
+                        ? renderGamesHub()
+                        : state.view === "videos"
+                          ? renderVideos()
+                          : state.view === "profile"
+                            ? renderProfile(user, char, snap)
+                            : state.view === "wordwall"
+                              ? renderWordwall()
+                              : state.view === "timeline"
+                                ? renderTimeline()
+                                : state.view === "dialogue"
+                                  ? renderDialogue()
+                                  : state.view === "shizhan"
+                                    ? renderShizhan(user, char, idn)
+                                    : "";
 
   const topNav = null; // nav built below
+
+  const navItems = [
+    ["home", "行旅", "ico-home"],
+    ["scroll", "長卷", "ico-scroll"],
+    ["promote", "晉升", "ico-seal"],
+    ["cuoshi", "錯史", "ico-battle"],
+    ["notes", "札記", "ico-note"],
+    ["chronicle", "史冊", "ico-book"],
+    ["practice", "練習", "ico-practice"],
+    ["games", "遊戲", "ico-game"],
+    ["teacher", "老師", "ico-teacher"],
+  ];
 
   return `
   <div class="app-shell paper-shell">
@@ -336,21 +365,13 @@ function renderShell(user) {
       </div>
     </header>
     <nav class="nav mobile-nav">
-      ${[
-        ["home", "行旅"],
-        ["scroll", "長卷"],
-        ["promote", "晉升"],
-        ["notes", "札記"],
-        ["chronicle", "史冊"],
-        ["practice", "練習"],
-        ["games", "遊戲"],
-      ]
-        .map(([id, label]) => {
+      ${navItems
+        .map(([id, label, ico]) => {
           const active =
             state.view === id ||
             (id === "scroll" && state.view === "chapter") ||
             (id === "games" && ["wordwall", "timeline", "dialogue", "shizhan"].includes(state.view));
-          return `<button type="button" data-nav="${id}" class="${active ? "active" : ""}">${label}</button>`;
+          return `<button type="button" data-nav="${id}" class="${active ? "active" : ""}"><span class="ico ${ico}" aria-hidden="true"></span>${label}</button>`;
         })
         .join("")}
     </nav>
@@ -390,6 +411,7 @@ function bindShell(user) {
   });
 
   bindJourney(user, journeyCtx());
+  if (state.view === "teacher") bindTeacher({ render, toast });
 
   if (state.view === "practice") bindPractice();
   if (state.view === "wordwall") bindWordwall();
@@ -682,27 +704,32 @@ function bindPractice() {
 /* ========== Games ========== */
 function renderGamesHub() {
   return `
-  <section class="panel">
-    <h2>小遊戲大廳</h2>
+  <section class="panel panel-paper">
+    <h2>趣味關卡</h2>
     <p class="lead">挑一關挑戰吧！破關經驗比普通練習更高。</p>
     <div class="quest-grid games-quest">
-      <article class="quest-card tone-cinnabar" data-goto="shizhan" style="--i:0">
-        <div class="quest-icon">⚔️</div>
-        <div class="quest-body"><h3>史戰風雲</h3><p>靈感自三國殺節奏：體力、出牌、答題攻防</p></div>
+      <article class="quest-card tone-cinnabar" data-goto="cuoshi" style="--i:0">
+        <div class="quest-icon"><span class="ico ico-battle" style="width:1.4em;height:1.4em"></span></div>
+        <div class="quest-body"><h3>錯史之戰</h3><p>辨錯 → 修正 → 舉證，修復被改亂的史頁</p></div>
+        <span class="quest-xp">多關</span>
+      </article>
+      <article class="quest-card tone-gold" data-goto="shizhan" style="--i:1">
+        <div class="quest-icon"><span class="ico ico-seal" style="width:1.4em;height:1.4em"></span></div>
+        <div class="quest-body"><h3>史戰風雲</h3><p>體力、出牌、答題攻防</p></div>
         <span class="quest-xp">+${XP_REWARDS.shizhanWin}</span>
       </article>
-      <article class="quest-card tone-gold" data-goto="wordwall" style="--i:1">
-        <div class="quest-icon">🎯</div>
-        <div class="quest-body"><h3>機緣翻牌</h3><p>Wordwall 風 · 翻牌配對／問答</p></div>
+      <article class="quest-card tone-jade" data-goto="wordwall" style="--i:2">
+        <div class="quest-icon"><span class="ico ico-game" style="width:1.4em;height:1.4em"></span></div>
+        <div class="quest-body"><h3>機緣翻牌</h3><p>翻牌配對／問答</p></div>
         <span class="quest-xp">+${XP_REWARDS.wordwallRound}</span>
       </article>
-      <article class="quest-card tone-jade" data-goto="timeline" style="--i:2">
-        <div class="quest-icon">⏳</div>
+      <article class="quest-card tone-indigo" data-goto="timeline" style="--i:3">
+        <div class="quest-icon"><span class="ico ico-scroll" style="width:1.4em;height:1.4em"></span></div>
         <div class="quest-body"><h3>時光長河</h3><p>把事件放回正確年代</p></div>
         <span class="quest-xp">+${XP_REWARDS.timelineComplete}</span>
       </article>
-      <article class="quest-card tone-indigo" data-goto="dialogue" style="--i:3">
-        <div class="quest-icon">💬</div>
+      <article class="quest-card tone-cinnabar" data-goto="dialogue" style="--i:4">
+        <div class="quest-icon"><span class="ico ico-note" style="width:1.4em;height:1.4em"></span></div>
         <div class="quest-body"><h3>古人問答</h3><p>與名君對話，考你史識</p></div>
         <span class="quest-xp">+${XP_REWARDS.dialogueGood}</span>
       </article>

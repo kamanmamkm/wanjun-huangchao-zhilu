@@ -354,3 +354,65 @@ export function openWeakRemedials(user) {
 export function getTrialData(id) {
   return getTrial(id);
 }
+
+/** 儲存論證短答供老師覆核 */
+export function queueReview(user, { trialId, trialTitle, q, answer }) {
+  const p = ensureProgress(user);
+  p.pendingReviews = p.pendingReviews || [];
+  p.pendingReviews.unshift({
+    id: `rv-${Date.now()}`,
+    trialId,
+    trialTitle,
+    q: String(q).slice(0, 200),
+    answer: String(answer).slice(0, 500),
+    status: "pending",
+    at: Date.now(),
+  });
+  p.pendingReviews = p.pendingReviews.slice(0, 30);
+}
+
+/** 終章分段進度 */
+export function getFinaleState(user) {
+  const p = ensureProgress(user);
+  p.finale = p.finale || { segments: {} };
+  const trial = getTrial("trial_ascension");
+  const segs = (trial?.segments || []).map((s) => ({
+    ...s,
+    saved: p.finale.segments[s.id] || null,
+    done: !!p.finale.segments[s.id]?.passed,
+  }));
+  const allDone = segs.length > 0 && segs.every((s) => s.done);
+  return { trial, segs, allDone };
+}
+
+export function saveFinaleSegment(user, segId, result, answers) {
+  const p = ensureProgress(user);
+  p.finale = p.finale || { segments: {} };
+  p.finale.segments[segId] = {
+    passed: result.passed,
+    avg: result.avg,
+    sourceAvg: result.sourceAvg,
+    argueAvg: result.argueAvg,
+    fails: result.fails,
+    answers,
+    at: Date.now(),
+  };
+  // 三段皆通過 → 標記終章試煉通過
+  const st = getFinaleState(user);
+  if (st.allDone) {
+    p.trials.trial_ascension = {
+      passed: true,
+      avg: 100,
+      at: Date.now(),
+      finale: true,
+    };
+  }
+}
+
+export function markCuoshiWon(user, battleId) {
+  const p = ensureProgress(user);
+  p.cuoshi = p.cuoshi || {};
+  p.cuoshi[battleId] = { won: true, at: Date.now() };
+  p.chronicle = p.chronicle || { promotions: [], restored: [], quotes: [] };
+  p.chronicle.restored.push({ chapterId: "cuoshi", stageId: battleId, at: Date.now() });
+}

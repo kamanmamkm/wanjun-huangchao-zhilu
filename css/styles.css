@@ -373,9 +373,9 @@ select {
 }
 
 .avatar-ring {
-  width: 72px;
-  height: 72px;
-  border-radius: 12px;
+  width: 80px;
+  height: 80px;
+  border-radius: 14px;
   display: grid;
   place-items: center;
   overflow: hidden;
@@ -387,8 +387,8 @@ select {
 }
 
 .avatar-ring .avatar-svg {
-  width: 72px;
-  height: 81px;
+  width: 80px;
+  height: 96px;
   display: block;
 }
 
@@ -497,8 +497,8 @@ select {
 }
 
 .parade-item .avatar-svg {
-  width: 76px;
-  height: 86px;
+  width: 88px;
+  height: 106px;
 }
 
 .hero-idle-note {
@@ -569,12 +569,12 @@ select {
   display: grid;
   place-items: center;
   margin-bottom: 0.35rem;
-  min-height: 96px;
+  min-height: 118px;
 }
 
 .char-portrait .avatar-svg {
-  width: 96px;
-  height: 108px;
+  width: 112px;
+  height: 134px;
 }
 
 .char-card .name {

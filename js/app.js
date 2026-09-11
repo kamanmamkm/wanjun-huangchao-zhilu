@@ -1,10 +1,10 @@
-import { CHARACTERS, getCharacter } from "./data/characters.js?v=zhan1";
-import { QUESTIONS, checkFill } from "./data/questions.js?v=zhan1";
-import { RANKS, XP_REWARDS, rankFromXp } from "./data/ranks.js?v=zhan1";
-import { DIALOGUES } from "./data/dialogues.js?v=zhan1";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=zhan1";
-import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=zhan1";
-import { renderAvatar } from "./avatar.js?v=zhan1";
+import { CHARACTERS, getCharacter } from "./data/characters.js?v=fit1";
+import { QUESTIONS, checkFill } from "./data/questions.js?v=fit1";
+import { RANKS, XP_REWARDS, rankFromXp, outfitOf } from "./data/ranks.js?v=fit1";
+import { DIALOGUES } from "./data/dialogues.js?v=fit1";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=fit1";
+import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=fit1";
+import { renderAvatar } from "./avatar.js?v=fit1";
 import {
   CARD_TYPES,
   createBattle,
@@ -14,7 +14,7 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=zhan1";
+} from "./data/shizhan.js?v=fit1";
 import {
   getCurrentUser,
   registerUser,
@@ -22,7 +22,7 @@ import {
   clearSession,
   addXp,
   updateUser,
-} from "./storage.js?v=zhan1";
+} from "./storage.js?v=fit1";
 
 const app = document.getElementById("app");
 let toastTimer = null;
@@ -128,12 +128,12 @@ function renderAuth() {
         <div class="hero-stage">
           ${
             state.authMode === "register"
-              ? `${renderAvatar(preview, 5, "lg")}
-                 <div class="hero-caption"><strong>${preview.name}</strong><span>${preview.era} · 「${preview.motto}」</span></div>`
+              ? `${renderAvatar(preview, 0, "lg")}
+                 <div class="hero-caption"><strong>${preview.name}</strong><span>${preview.era} · 起步衣裝「${outfitOf(state.gender, 0)}」· 「${preview.motto}」</span></div>`
               : `<div class="parade-row" id="parade-row">
-                  ${parade.map((c) => `<div class="parade-item" title="${c.name} · ${c.era}">${renderAvatar(c, 3, "sm")}<span>${c.name}</span></div>`).join("")}
+                  ${parade.map((c) => `<div class="parade-item" title="${c.name} · ${c.era}">${renderAvatar(c, 0, "sm")}<span>${c.name}</span></div>`).join("")}
                 </div>
-                <p class="hero-idle-note">共 ${parade.length} 位人物 · 按「註冊角色」即可選角（可向下／向右滑動睇晒）</p>`
+                <p class="hero-idle-note">共 ${parade.length} 位人物 · 起步為粗布簡樸，升級後衣裝漸華麗</p>`
           }
         </div>
       </div>
@@ -162,15 +162,15 @@ function renderAuth() {
           </select>
         </label>
         <div>
-          <div class="pick-label">點選人物（${list.length} 位）· 向下滑動睇更多</div>
+          <div class="pick-label">點選人物（${list.length} 位）· 起步衣裝簡樸，升級先變華麗</div>
           <div class="char-pick" id="char-pick">
             ${list
               .map(
                 (c) => `
               <button type="button" class="char-card ${state.characterId === c.id ? "selected" : ""}" data-char="${c.id}" style="--accent:${c.color}">
-                <div class="char-portrait">${renderAvatar(c, 3, "md")}</div>
+                <div class="char-portrait">${renderAvatar(c, 0, "md")}</div>
                 <div class="name">${c.name}</div>
-                <div class="era">${c.era}</div>
+                <div class="era">${c.era} · ${outfitOf(state.gender, 0)}</div>
               </button>`
               )
               .join("")}
@@ -351,7 +351,7 @@ function renderHome(user, char, rank) {
         <p class="eyebrow">今日挑戰 · 任平生</p>
         <h2>${char?.name}，繼續你的傳奇</h2>
         <p class="motto">「${char?.motto}」</p>
-        <p class="lead">${char?.era}人物原型 · 現職<strong>${rank.name}</strong>。答岩題、破關卡，衣裝會隨等級更華麗！</p>
+        <p class="lead">${char?.era}人物原型 · 現職<strong>${rank.name}</strong> · 衣裝「${rank.outfit || outfitOf(user.gender, rank.id)}」。答岩題升級，衣裝會由粗布漸變華麗！</p>
         <div class="progress-card">
           <div class="progress-head">
             <span>升級進度</span>
@@ -394,7 +394,7 @@ function renderProfile(user, ranks, current, char) {
       ${renderAvatar(char, current.id, "lg")}
       <div>
         <h2>${char?.name} 的登基之路</h2>
-        <p class="lead">${current.desc}　連勝 ${user.streak || 0} 題可獲額外經驗。等級愈高，衣裝飾物愈華麗。</p>
+        <p class="lead">${current.desc}　現着「${current.outfit || outfitOf(user.gender, current.id)}」。連勝 ${user.streak || 0} 題可獲額外經驗。奴隸／婢女為粗布簡樸，等級愈高衣裝愈華麗。</p>
       </div>
     </div>
     <h3 class="section-title"><span>更換人物（${roster.length} 位）</span></h3>
@@ -415,7 +415,7 @@ function renderProfile(user, ranks, current, char) {
       ${ranks
         .map(
           (r) =>
-            `<span class="rank-pill ${user.xp >= r.xp ? "reached" : ""}" style="${user.xp >= r.xp ? `background:${r.color}` : ""}">${r.name}<br><small>${r.xp}XP</small></span>`
+            `<span class="rank-pill ${user.xp >= r.xp ? "reached" : ""}" style="${user.xp >= r.xp ? `background:${r.color}` : ""}">${r.name}<br><small>${r.outfit || ""} · ${r.xp}XP</small></span>`
         )
         .join("")}
     </div>

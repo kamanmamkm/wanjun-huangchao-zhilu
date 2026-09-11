@@ -1,12 +1,83 @@
 /**
- * 日漫風角色肖像：大亮眼、尖臉、柔膚腮紅、有型髮與衣裝
+ * 日漫／立繪頭像：衣裝隨等級由簡樸→華麗
  */
 let avatarSeq = 0;
 
-const GLOW = [0, 0.06, 0.12, 0.18, 0.25, 0.32, 0.4, 0.5, 0.58];
+const GLOW = [0, 0.02, 0.06, 0.1, 0.16, 0.24, 0.34, 0.46, 0.58];
+
+/** 低階改為粗布色；高階保留角色本色 */
+function dressLook(L, rank) {
+  if (!L) return L;
+  const r = Math.min(8, Math.max(0, rank));
+  if (r >= 5) return { ...L };
+  if (r <= 1) {
+    return {
+      ...L,
+      robe: "#9a8b72",
+      robe2: "#6e6250",
+      accent: "#8a7a60",
+    };
+  }
+  if (r === 2) {
+    return {
+      ...L,
+      robe: mixHex(L.robe, "#8a7a68", 0.55),
+      robe2: mixHex(L.robe2, "#5c5040", 0.5),
+      accent: mixHex(L.accent, "#9a8a70", 0.55),
+    };
+  }
+  if (r === 3) {
+    return {
+      ...L,
+      robe: mixHex(L.robe, "#9a8b72", 0.3),
+      robe2: mixHex(L.robe2, "#6e6250", 0.25),
+      accent: mixHex(L.accent, "#a09070", 0.3),
+    };
+  }
+  // rank 4：略低調
+  return {
+    ...L,
+    accent: mixHex(L.accent, "#b0a080", 0.15),
+  };
+}
+
+function mixHex(a, b, t) {
+  const pa = parseHex(a);
+  const pb = parseHex(b);
+  if (!pa || !pb) return a;
+  const m = (x, y) => Math.round(x + (y - x) * t);
+  return `#${[m(pa[0], pb[0]), m(pa[1], pb[1]), m(pa[2], pb[2])]
+    .map((n) => n.toString(16).padStart(2, "0"))
+    .join("")}`;
+}
+
+function parseHex(h) {
+  if (!h || typeof h !== "string") return null;
+  const s = h.replace("#", "");
+  if (s.length !== 6) return null;
+  return [parseInt(s.slice(0, 2), 16), parseInt(s.slice(2, 4), 16), parseInt(s.slice(4, 6), 16)];
+}
 
 function isFemale(L) {
   return L.gender === "female";
+}
+
+/** 奴隸／婢女級：簡樸粗布，無華飾兵器 */
+function drawPlain(uid, L) {
+  const female = isFemale(L);
+  return `
+    <path d="M36 100 Q48 90 60 88 Q72 90 84 100 L80 136 H40 Z" fill="${L.robe}" stroke="#2a1810" stroke-width="1.2"/>
+    <path d="M48 96 L60 108 L72 96" fill="${L.robe2}" opacity=".5"/>
+    ${
+      female
+        ? `<path d="M34 118 Q60 128 86 118 L84 136 H36 Z" fill="${L.robe2}" opacity=".65"/>`
+        : `<path d="M44 112 H76" stroke="${L.robe2}" stroke-width="2" opacity=".5"/>`
+    }
+    ${scalp(uid, L)}
+    ${mangaFace(uid, L, { mood: "gentle", mouth: "dot", noBangs: false })}
+    <!-- 簡樸束髮，無冠無釵 -->
+    <path d="M42 40 Q60 28 78 40" fill="none" stroke="${L.hair}" stroke-width="3" stroke-linecap="round"/>
+  `;
 }
 
 /** 日漫大眼：多層虹膜＋雙高光＋睫毛 */
@@ -418,19 +489,27 @@ const DRAW = {
   banzhao: drawBanzhao,
 };
 
-export function renderAvatar(character, rankId = 0, size = "md") {
+export function renderAvatar(character, rankId = 0, size = "md", opts = {}) {
   if (!character) {
     return `<div class="avatar-fallback">?</div>`;
   }
   const rank = Math.min(8, Math.max(0, rankId));
   const dims = size === "lg" ? 248 : size === "sm" ? 104 : 148;
   const h = Math.round(dims * 1.24);
-  const accent = character.look?.accent || character.color || "#c6a35a";
+  const gender = character.look?.gender || character.gender || "male";
+  const outfit =
+    opts.outfitLabel ||
+    (gender === "female"
+      ? ["粗布襖裙", "布裙短襖", "戎裝布甲", "羅衫青裙", "青衫束帶", "錦甲華服", "錦裙珠釵", "翟衣華飾", "鳳袍珠冠"][rank]
+      : ["粗布短褐", "布衣短褐", "戎服布甲", "青衫儒服", "官袍束帶", "錦甲戎裝", "錦衣玉帶", "蟒袍華冠", "龍袍冕旒"][rank]);
+  const baseAccent = character.look?.accent || character.color || "#c6a35a";
+  const accent = rank <= 1 ? "#8a7a60" : rank <= 3 ? "#a09070" : baseAccent;
 
   if (character.portrait) {
     return `
-    <div class="avatar-art avatar-${size}" style="--accent:${accent};--glow:${GLOW[rank]};width:${dims}px;height:${h}px" role="img" aria-label="${character.name}">
-      <img src="${character.portrait}?v=zhan1" alt="${character.name}" width="${dims}" height="${h}" loading="lazy" />
+    <div class="avatar-art avatar-${size} outfit-${rank}" style="--accent:${accent};--glow:${GLOW[rank]};width:${dims}px;height:${h}px" role="img" aria-label="${character.name} · ${outfit}">
+      <img src="${character.portrait}?v=fit1" alt="${character.name}" width="${dims}" height="${h}" loading="lazy" />
+      <span class="avatar-art-outfit">${outfit}</span>
       <span class="avatar-art-era">${character.era || ""}</span>
     </div>`;
   }
@@ -438,11 +517,11 @@ export function renderAvatar(character, rankId = 0, size = "md") {
   if (!character.look) {
     return `<div class="avatar-fallback" style="background:${character.color || "#444"}">${character.name?.[0] || "?"}</div>`;
   }
-  const L = character.look;
+  const L = dressLook(character.look, rank);
   const uid = `av-${character.id}-${++avatarSeq}`;
-  const draw = DRAW[character.id] || drawHanxin;
+  const drawFn = rank <= 1 ? drawPlain : DRAW[character.id] || drawHanxin;
   return `
-  <svg class="avatar-svg avatar-${size}" viewBox="0 -10 120 156" width="${dims}" height="${h}" aria-label="${character.name}" role="img">
-    ${frame(uid, L, character.era, GLOW[rank], draw(uid, L))}
+  <svg class="avatar-svg avatar-${size} outfit-${rank}" viewBox="0 -10 120 156" width="${dims}" height="${h}" aria-label="${character.name} · ${outfit}" role="img">
+    ${frame(uid, L, outfit, GLOW[rank], drawFn(uid, L))}
   </svg>`;
 }

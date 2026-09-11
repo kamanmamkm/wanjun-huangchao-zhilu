@@ -1,10 +1,10 @@
-import { CHARACTERS, getCharacter } from "./data/characters.js?v=ren2";
-import { QUESTIONS, checkFill } from "./data/questions.js?v=ren2";
-import { RANKS, XP_REWARDS, rankFromXp } from "./data/ranks.js?v=ren2";
-import { DIALOGUES } from "./data/dialogues.js?v=ren2";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=ren2";
-import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=ren2";
-import { renderAvatar } from "./avatar.js?v=ren2";
+import { CHARACTERS, getCharacter } from "./data/characters.js?v=zhan1";
+import { QUESTIONS, checkFill } from "./data/questions.js?v=zhan1";
+import { RANKS, XP_REWARDS, rankFromXp } from "./data/ranks.js?v=zhan1";
+import { DIALOGUES } from "./data/dialogues.js?v=zhan1";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=zhan1";
+import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=zhan1";
+import { renderAvatar } from "./avatar.js?v=zhan1";
 import {
   CARD_TYPES,
   createBattle,
@@ -14,7 +14,7 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=ren2";
+} from "./data/shizhan.js?v=zhan1";
 import {
   getCurrentUser,
   registerUser,
@@ -22,7 +22,7 @@ import {
   clearSession,
   addXp,
   updateUser,
-} from "./storage.js?v=ren2";
+} from "./storage.js?v=zhan1";
 
 const app = document.getElementById("app");
 let toastTimer = null;

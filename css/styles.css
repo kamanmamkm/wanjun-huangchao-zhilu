@@ -403,12 +403,83 @@ select {
   place-items: center;
   color: #fff;
   font-weight: 700;
+  font-size: 1.4rem;
+  border-radius: 12px;
 }
 
 .avatar-svg {
   display: block;
   filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.25));
   animation: portraitPop 0.55s ease both;
+}
+
+/* 遊戲立繪風格頭像 */
+.avatar-art {
+  position: relative;
+  display: block;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 3px solid var(--accent, #c6a35a);
+  box-shadow:
+    0 10px 24px rgba(90, 60, 30, 0.18),
+    0 0 0 1px rgba(255, 248, 236, 0.5) inset;
+  background: linear-gradient(160deg, #fff8ec, #e8d4b0);
+  animation: portraitPop 0.55s ease both;
+  flex-shrink: 0;
+}
+
+.avatar-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 18%;
+  display: block;
+}
+
+.avatar-art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 28px rgba(212, 176, 106, calc(var(--glow, 0) * 0.55));
+}
+
+.avatar-art-era {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0.2rem 0.35rem 0.28rem;
+  text-align: center;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  color: #5a4030;
+  background: linear-gradient(180deg, transparent, rgba(255, 248, 236, 0.92));
+}
+
+.avatar-ring .avatar-art {
+  width: 80px !important;
+  height: 96px !important;
+  border-width: 2px;
+  border-radius: 12px;
+}
+
+.avatar-ring .avatar-art-era {
+  font-size: 0.55rem;
+}
+
+.char-portrait .avatar-art {
+  width: 112px !important;
+  height: 140px !important;
+}
+
+.parade-item .avatar-art {
+  width: 88px !important;
+  height: 110px !important;
+}
+
+.hero-stage .avatar-art.avatar-lg {
+  animation: floatY 3.5s ease-in-out infinite;
 }
 
 .eyebrow {

@@ -1,10 +1,10 @@
-import { CHARACTERS, getCharacter } from "./data/characters.js?v=tang1";
-import { QUESTIONS, checkFill } from "./data/questions.js?v=tang1";
-import { RANKS, XP_REWARDS, rankFromXp } from "./data/ranks.js?v=tang1";
-import { DIALOGUES } from "./data/dialogues.js?v=tang1";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=tang1";
-import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=tang1";
-import { renderAvatar } from "./avatar.js?v=tang1";
+import { CHARACTERS, getCharacter } from "./data/characters.js?v=art1";
+import { QUESTIONS, checkFill } from "./data/questions.js?v=art1";
+import { RANKS, XP_REWARDS, rankFromXp } from "./data/ranks.js?v=art1";
+import { DIALOGUES } from "./data/dialogues.js?v=art1";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=art1";
+import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=art1";
+import { renderAvatar } from "./avatar.js?v=art1";
 import {
   CARD_TYPES,
   createBattle,
@@ -14,14 +14,14 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=tang1";
+} from "./data/shizhan.js?v=art1";
 import {
   getCurrentUser,
   registerUser,
   loginUser,
   clearSession,
   addXp,
-} from "./storage.js?v=tang1";
+} from "./storage.js?v=art1";
 
 const app = document.getElementById("app");
 let toastTimer = null;

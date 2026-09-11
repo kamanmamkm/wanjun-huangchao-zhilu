@@ -10,6 +10,7 @@ export const CHARACTERS = {
       era: "秦漢",
       motto: "多多益善，決勝千里",
       color: "#3d5a80",
+      portrait: "assets/portraits/hanxin.png",
       look: {
         gender: "male",
         skin: "#f0c8a8",
@@ -28,17 +29,18 @@ export const CHARACTERS = {
       name: "諸葛亮",
       era: "三國",
       motto: "鞠躬盡瘁，死而後已",
-      color: "#2d6a4f",
+      color: "#2a6f8f",
+      portrait: "assets/portraits/zhuge.jpg",
       look: {
         gender: "male",
         skin: "#f2d2b4",
         hair: "#1a1410",
-        eye: "#5c3a22",
+        eye: "#3a2a18",
         lip: "#a87868",
         style: "scholar",
-        robe: "#2d6a4f",
-        robe2: "#1a4534",
-        accent: "#e8d7b0",
+        robe: "#f4f1ea",
+        robe2: "#1e3a5f",
+        accent: "#3db8c4",
         hat: "lunjin",
         beard: true,
       },
@@ -49,6 +51,7 @@ export const CHARACTERS = {
       era: "宋",
       motto: "精忠報國，還我河山",
       color: "#9b2226",
+      portrait: "assets/portraits/yuefei.png",
       look: {
         gender: "male",
         skin: "#ecc0a0",
@@ -68,6 +71,7 @@ export const CHARACTERS = {
       era: "明",
       motto: "七下西洋，揚威遠洋",
       color: "#0077b6",
+      portrait: "assets/portraits/zhenghe.png",
       look: {
         gender: "male",
         skin: "#d4a878",
@@ -87,6 +91,7 @@ export const CHARACTERS = {
       era: "漢",
       motto: "究天人之際，通古今之變",
       color: "#6d597a",
+      portrait: "assets/portraits/simaqian.png",
       look: {
         gender: "male",
         skin: "#f0d0b0",
@@ -107,6 +112,7 @@ export const CHARACTERS = {
       era: "春秋",
       motto: "知己知彼，百戰不殆",
       color: "#bc6c25",
+      portrait: "assets/portraits/sunwu.png",
       look: {
         gender: "male",
         skin: "#ecc4a4",
@@ -128,6 +134,7 @@ export const CHARACTERS = {
       era: "唐",
       motto: "臨朝稱制，開創新局",
       color: "#9b2226",
+      portrait: "assets/portraits/wuzetian.png",
       look: {
         gender: "female",
         skin: "#f6d8c4",
@@ -148,6 +155,7 @@ export const CHARACTERS = {
       era: "南北朝",
       motto: "代父從軍，忠孝兩全",
       color: "#3d5a80",
+      portrait: "assets/portraits/mulan.png",
       look: {
         gender: "female",
         skin: "#f2ccb4",
@@ -168,6 +176,7 @@ export const CHARACTERS = {
       era: "漢",
       motto: "胡笳十八拍，才情絕代",
       color: "#6d597a",
+      portrait: "assets/portraits/caiwenji.png",
       look: {
         gender: "female",
         skin: "#f8dcc8",
@@ -188,6 +197,7 @@ export const CHARACTERS = {
       era: "宋",
       motto: "生當作人傑，死亦為鬼雄",
       color: "#2d6a4f",
+      portrait: "assets/portraits/liqingzhao.png",
       look: {
         gender: "female",
         skin: "#f6d8c0",
@@ -208,6 +218,7 @@ export const CHARACTERS = {
       era: "漢",
       motto: "出塞和親，安定邊疆",
       color: "#0077b6",
+      portrait: "assets/portraits/wangzhaojun.png",
       look: {
         gender: "female",
         skin: "#f6d4bc",
@@ -228,6 +239,7 @@ export const CHARACTERS = {
       era: "漢",
       motto: "續成漢書，女史典範",
       color: "#bc6c25",
+      portrait: "assets/portraits/banzhao.png",
       look: {
         gender: "female",
         skin: "#f2d0b8",

@@ -202,19 +202,43 @@ function drawHanxin(uid, L) {
 }
 
 function drawZhuge(uid, L) {
+  // 對照立繪：白袍、深藍內襯、青綸巾、羽毛扇
+  const cyan = L.accent || "#3db8c4";
+  const navy = L.robe2 || "#1e3a5f";
+  const white = L.robe || "#f4f1ea";
   return `
-    ${bodyRobe(L)}
-    <path d="M26 104 Q6 120 20 132 L36 110 Z" fill="${L.robe2}" stroke="#2a1810" stroke-width="1"/>
-    <path d="M94 104 Q114 120 100 132 L84 110 Z" fill="${L.robe2}" stroke="#2a1810" stroke-width="1"/>
+    <!-- 白袍寬袖 -->
+    <path d="M22 136 Q28 96 44 88 L60 92 L76 88 Q92 96 98 136 Z" fill="${white}" stroke="#2a1810" stroke-width="1.2"/>
+    <path d="M18 118 Q8 128 14 136 L34 120 Z" fill="${white}" stroke="#2a1810" stroke-width="1"/>
+    <path d="M102 118 Q112 128 106 136 L86 120 Z" fill="${white}" stroke="#2a1810" stroke-width="1"/>
+    <path d="M44 90 L60 108 L76 90" fill="${navy}" opacity=".9"/>
+    <path d="M48 112 H72" stroke="#2a1810" stroke-width="5" stroke-linecap="round" opacity=".55"/>
+    <path d="M56 112 L52 136 M64 112 L68 136" stroke="${navy}" stroke-width="1.4" opacity=".7"/>
+    <!-- 長髮 -->
+    <path d="M24 52 Q18 90 22 124" fill="url(#${uid}-hair)" stroke="#2a1810" stroke-width="0.8"/>
+    <path d="M96 52 Q102 90 98 124" fill="url(#${uid}-hair)" stroke="#2a1810" stroke-width="0.8"/>
     ${scalp(uid, L)}
-    ${mangaFace(uid, L, { mood: "gentle", mouth: "smile", beard: true })}
-    <ellipse cx="60" cy="30" rx="40" ry="16" fill="${L.robe}" stroke="#2a1810" stroke-width="1.4"/>
-    <path d="M30 32 Q60 2 90 32" fill="none" stroke="${L.accent}" stroke-width="2.8"/>
-    <circle cx="60" cy="10" r="5.5" fill="${L.accent}" stroke="#2a1810" stroke-width="1"/>
-    <g transform="translate(92,92) rotate(-24)">
-      <rect x="0" y="10" width="4" height="28" fill="#6b4a20" stroke="#2a1810" stroke-width="0.8"/>
-      <path d="M-16 10 Q2 -12 20 10 Z" fill="${L.accent}" stroke="#2a1810" stroke-width="1"/>
-      <path d="M-10 10 L2 0 L14 10" fill="none" stroke="#2a1810" stroke-width="0.8"/>
+    ${mangaFace(uid, L, { mood: "cool", mouth: "dot", beard: true, noBangs: true })}
+    <!-- 額前髮 -->
+    <path d="M36 44 Q48 30 58 42 Q60 28 62 42 Q72 30 84 44" fill="url(#${uid}-hair)"/>
+    <!-- 青綸巾 -->
+    <path d="M28 46 L34 8 H86 L92 46 Z" fill="${cyan}" stroke="#2a1810" stroke-width="1.3"/>
+    <path d="M40 10 L42 42 M50 8 L52 44 M60 6 L60 44 M70 8 L68 44 M80 10 L78 42" stroke="#2a8a94" stroke-width="1.2" opacity=".55"/>
+    <path d="M34 40 H86" stroke="#d4b06a" stroke-width="3"/>
+    <circle cx="60" cy="40" r="5" fill="#d4b06a" stroke="#2a1810" stroke-width="0.8"/>
+    <circle cx="60" cy="40" r="2.2" fill="#3d8a62"/>
+    <path d="M32 12 Q28 0 36 8 M88 12 Q92 0 84 8" fill="none" stroke="${cyan}" stroke-width="3" stroke-linecap="round"/>
+    <!-- 羽毛扇＋太極 -->
+    <g transform="translate(78,86) rotate(-18)">
+      <ellipse cx="18" cy="2" rx="4" ry="14" fill="#f8f6f0" stroke="#2a1810" stroke-width="0.6" transform="rotate(-28 18 2)"/>
+      <ellipse cx="24" cy="0" rx="4" ry="15" fill="#fff" stroke="#2a1810" stroke-width="0.6" transform="rotate(-8 24 0)"/>
+      <ellipse cx="30" cy="0" rx="4" ry="15" fill="#f8f6f0" stroke="#2a1810" stroke-width="0.6" transform="rotate(12 30 0)"/>
+      <ellipse cx="35" cy="2" rx="3.5" ry="13" fill="#fff" stroke="#2a1810" stroke-width="0.6" transform="rotate(28 35 2)"/>
+      <path d="M8 8 Q22 -6 36 8 Q22 18 8 8 Z" fill="${navy}" stroke="#2a1810" stroke-width="1"/>
+      <circle cx="22" cy="8" r="5" fill="#eee"/>
+      <path d="M22 3 A5 5 0 0 1 22 13 A2.5 2.5 0 0 1 22 8 A2.5 2.5 0 0 0 22 3" fill="#1a1a1a"/>
+      <circle cx="22" cy="5.5" r="0.9" fill="#1a1a1a"/>
+      <circle cx="22" cy="10.5" r="0.9" fill="#eee"/>
     </g>
   `;
 }
@@ -395,16 +419,30 @@ const DRAW = {
 };
 
 export function renderAvatar(character, rankId = 0, size = "md") {
-  if (!character?.look) {
-    return `<div class="avatar-fallback" style="background:${character?.color || "#444"}">${character?.name?.[0] || "?"}</div>`;
+  if (!character) {
+    return `<div class="avatar-fallback">?</div>`;
   }
-  const L = character.look;
   const rank = Math.min(8, Math.max(0, rankId));
   const dims = size === "lg" ? 248 : size === "sm" ? 104 : 148;
+  const h = Math.round(dims * 1.24);
+  const accent = character.look?.accent || character.color || "#c6a35a";
+
+  if (character.portrait) {
+    return `
+    <div class="avatar-art avatar-${size}" style="--accent:${accent};--glow:${GLOW[rank]};width:${dims}px;height:${h}px" role="img" aria-label="${character.name}">
+      <img src="${character.portrait}?v=art1" alt="${character.name}" width="${dims}" height="${h}" loading="lazy" />
+      <span class="avatar-art-era">${character.era || ""}</span>
+    </div>`;
+  }
+
+  if (!character.look) {
+    return `<div class="avatar-fallback" style="background:${character.color || "#444"}">${character.name?.[0] || "?"}</div>`;
+  }
+  const L = character.look;
   const uid = `av-${character.id}-${++avatarSeq}`;
   const draw = DRAW[character.id] || drawHanxin;
   return `
-  <svg class="avatar-svg avatar-${size}" viewBox="0 -10 120 156" width="${dims}" height="${Math.round(dims * 1.24)}" aria-label="${character.name}" role="img">
+  <svg class="avatar-svg avatar-${size}" viewBox="0 -10 120 156" width="${dims}" height="${h}" aria-label="${character.name}" role="img">
     ${frame(uid, L, character.era, GLOW[rank], draw(uid, L))}
   </svg>`;
 }

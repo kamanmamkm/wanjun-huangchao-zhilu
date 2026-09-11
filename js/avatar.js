@@ -1,201 +1,240 @@
 /**
- * 可愛 Q 版古代人物（大頭大眼、粉嫩臉頰；衣裝帽子各不相同）
- * 繪製順序：身體 → 後髮 → 臉 → 帽／前髮 → 道具
+ * 漫畫風角色肖像（日系／港漫感：大眼、俐落線條、有型髮型與衣裝）
  */
 let avatarSeq = 0;
 
-function sparkleEyes(y, eyeColor) {
+const GLOW = [0, 0.06, 0.12, 0.18, 0.25, 0.32, 0.4, 0.5, 0.58];
+
+function mangaEyes(L, mood = "bright") {
+  // mood: bright | cool | gentle | fierce
+  const y = 58;
+  const open = mood === "fierce" ? 9 : mood === "gentle" ? 11.5 : 10.5;
+  const iris = mood === "cool" ? 5.2 : 6.2;
+  const brow =
+    mood === "fierce"
+      ? `<path d="M32 44 L50 40" stroke="${L.hair}" stroke-width="2.8" stroke-linecap="round"/>
+         <path d="M88 44 L70 40" stroke="${L.hair}" stroke-width="2.8" stroke-linecap="round"/>`
+      : mood === "cool"
+        ? `<path d="M34 46 Q42 42 50 45" fill="none" stroke="${L.hair}" stroke-width="2.4" stroke-linecap="round"/>
+           <path d="M86 46 Q78 42 70 45" fill="none" stroke="${L.hair}" stroke-width="2.4" stroke-linecap="round"/>`
+        : `<path d="M34 45 Q42 40 51 45" fill="none" stroke="${L.hair}" stroke-width="2.2" stroke-linecap="round"/>
+           <path d="M86 45 Q78 40 69 45" fill="none" stroke="${L.hair}" stroke-width="2.2" stroke-linecap="round"/>`;
+
   return `
-    <ellipse cx="42" cy="${y}" rx="11" ry="12" fill="#fff" stroke="#f0d0c0" stroke-width="0.6"/>
-    <ellipse cx="78" cy="${y}" rx="11" ry="12" fill="#fff" stroke="#f0d0c0" stroke-width="0.6"/>
-    <circle cx="44" cy="${y + 1}" r="6.5" fill="${eyeColor}"/>
-    <circle cx="80" cy="${y + 1}" r="6.5" fill="${eyeColor}"/>
-    <circle cx="41" cy="${y - 2.5}" r="3.4" fill="#fff"/>
-    <circle cx="77" cy="${y - 2.5}" r="3.4" fill="#fff"/>
-    <circle cx="47.5" cy="${y + 4}" r="1.7" fill="#fff" opacity=".95"/>
-    <circle cx="83.5" cy="${y + 4}" r="1.7" fill="#fff" opacity=".95"/>
+    ${brow}
+    <!-- 左眼 -->
+    <ellipse cx="43" cy="${y}" rx="12" ry="${open}" fill="#fff" stroke="#2a1810" stroke-width="1.6"/>
+    <ellipse cx="44" cy="${y + 0.5}" rx="${iris}" ry="${iris + 0.8}" fill="${L.eye}"/>
+    <ellipse cx="44" cy="${y + 0.5}" rx="3.2" ry="3.6" fill="#0d0a08"/>
+    <circle cx="40" cy="${y - 3}" r="3.8" fill="#fff"/>
+    <circle cx="47" cy="${y + 3}" r="1.6" fill="#fff" opacity=".85"/>
+    ${mood === "gentle" ? `<path d="M33 ${y + 2} Q43 ${y + 8} 53 ${y + 2}" fill="none" stroke="#2a1810" stroke-width="1.2"/>` : ""}
+    <!-- 右眼 -->
+    <ellipse cx="77" cy="${y}" rx="12" ry="${open}" fill="#fff" stroke="#2a1810" stroke-width="1.6"/>
+    <ellipse cx="78" cy="${y + 0.5}" rx="${iris}" ry="${iris + 0.8}" fill="${L.eye}"/>
+    <ellipse cx="78" cy="${y + 0.5}" rx="3.2" ry="3.6" fill="#0d0a08"/>
+    <circle cx="74" cy="${y - 3}" r="3.8" fill="#fff"/>
+    <circle cx="81" cy="${y + 3}" r="1.6" fill="#fff" opacity=".85"/>
+    ${mood === "gentle" ? `<path d="M67 ${y + 2} Q77 ${y + 8} 87 ${y + 2}" fill="none" stroke="#2a1810" stroke-width="1.2"/>` : ""}
   `;
 }
 
-function cuteFace(L, opts = {}) {
-  const y = opts.eyeY || 60;
+function mangaFace(L, opts = {}) {
+  const mood = opts.mood || "bright";
   const mouth = opts.mouth || "smile";
-  let mouthPath = `M49 ${y + 20} Q60 ${y + 28} 71 ${y + 20}`;
-  if (mouth === "grin") mouthPath = `M46 ${y + 20} Q60 ${y + 31} 74 ${y + 20}`;
-  if (mouth === "tiny") mouthPath = `M54 ${y + 22} Q60 ${y + 26} 66 ${y + 22}`;
-  if (mouth === "cat") mouthPath = `M50 ${y + 20} Q55 ${y + 27} 60 ${y + 20} Q65 ${y + 27} 70 ${y + 20}`;
+  let mouthSvg = `<path d="M50 78 Q60 86 70 78" fill="none" stroke="${L.lip}" stroke-width="2.6" stroke-linecap="round"/>`;
+  if (mouth === "grin") {
+    mouthSvg = `<path d="M48 77 Q60 90 72 77" fill="${L.lip}" opacity=".35"/><path d="M48 77 Q60 88 72 77" fill="none" stroke="${L.lip}" stroke-width="2.4" stroke-linecap="round"/>`;
+  } else if (mouth === "smirk") {
+    mouthSvg = `<path d="M52 80 Q62 84 72 76" fill="none" stroke="${L.lip}" stroke-width="2.5" stroke-linecap="round"/>`;
+  } else if (mouth === "dot") {
+    mouthSvg = `<ellipse cx="60" cy="80" rx="3" ry="2.2" fill="${L.lip}"/>`;
+  } else if (mouth === "cat") {
+    mouthSvg = `<path d="M50 78 Q55 85 60 78 Q65 85 70 78" fill="none" stroke="${L.lip}" stroke-width="2.4" stroke-linecap="round"/>`;
+  }
 
   return `
-    <ellipse cx="60" cy="58" rx="33" ry="35" fill="${L.skin}"/>
-    <ellipse cx="27" cy="60" rx="6.5" ry="8.5" fill="${L.skin}"/>
-    <ellipse cx="93" cy="60" rx="6.5" ry="8.5" fill="${L.skin}"/>
-    <ellipse cx="30" cy="72" rx="10" ry="5.5" fill="#ff8fa3" opacity=".5"/>
-    <ellipse cx="90" cy="72" rx="10" ry="5.5" fill="#ff8fa3" opacity=".5"/>
-    <path d="M36 47 Q45 40 53 47" fill="none" stroke="${L.hair}" stroke-width="2.6" stroke-linecap="round"/>
-    <path d="M67 47 Q75 40 84 47" fill="none" stroke="${L.hair}" stroke-width="2.6" stroke-linecap="round"/>
-    ${sparkleEyes(y, L.eye)}
-    <ellipse cx="60" cy="${y + 11}" rx="3.2" ry="2.4" fill="${L.skin}" stroke="${L.eye}" stroke-width="0.6" opacity=".3"/>
-    <path d="${mouthPath}" fill="none" stroke="${L.lip}" stroke-width="3" stroke-linecap="round"/>
+    <!-- 臉型（略尖下巴＝漫畫感） -->
+    <path d="M28 50 Q30 22 60 18 Q90 22 92 50 Q94 78 60 96 Q26 78 28 50 Z" fill="${L.skin}" stroke="#2a1810" stroke-width="1.4"/>
+    <ellipse cx="26" cy="58" rx="5" ry="7" fill="${L.skin}" stroke="#2a1810" stroke-width="1"/>
+    <ellipse cx="94" cy="58" rx="5" ry="7" fill="${L.skin}" stroke="#2a1810" stroke-width="1"/>
+    <ellipse cx="34" cy="72" rx="8" ry="4.5" fill="#ff7a90" opacity=".4"/>
+    <ellipse cx="86" cy="72" rx="8" ry="4.5" fill="#ff7a90" opacity=".4"/>
+    ${mangaEyes(L, mood)}
+    <!-- 鼻子 -->
+    <path d="M60 64 L58 72" fill="none" stroke="#c48a78" stroke-width="1.3" stroke-linecap="round"/>
+    ${mouthSvg}
     ${
       opts.beard
-        ? `<path d="M38 88 Q60 112 82 88 Q60 100 38 88" fill="${L.hair}" opacity=".88"/><ellipse cx="60" cy="86" rx="5" ry="4" fill="${L.hair}"/>`
+        ? `<path d="M40 86 Q60 112 80 86" fill="none" stroke="${L.hair}" stroke-width="3" stroke-linecap="round"/>
+           <path d="M56 82 Q60 92 64 82" fill="${L.hair}"/>`
         : ""
     }
   `;
 }
 
-function card(uid, L, era, glow, inner) {
+function frame(uid, L, era, glow, inner) {
   return `
     <defs>
-      <linearGradient id="${uid}-g" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#fffef8"/>
-        <stop offset="100%" stop-color="#f5e4c0"/>
+      <linearGradient id="${uid}-bg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#fffef9"/>
+        <stop offset="100%" stop-color="#efe0c0"/>
       </linearGradient>
-      <filter id="${uid}-s"><feDropShadow dx="0" dy="2" stdDeviation="1.5" flood-opacity=".2"/></filter>
+      <linearGradient id="${uid}-shine" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#fff" stop-opacity=".5"/>
+        <stop offset="40%" stop-color="#fff" stop-opacity="0"/>
+      </linearGradient>
+      <filter id="${uid}-s"><feDropShadow dx="0" dy="2" stdDeviation="1.4" flood-opacity=".22"/></filter>
     </defs>
-    <rect x="2" y="2" width="116" height="140" rx="24" fill="url(#${uid}-g)" stroke="${L.accent}" stroke-width="3.2"/>
-    <rect x="8" y="8" width="104" height="128" rx="20" fill="none" stroke="${L.robe}" stroke-width="1.2" opacity=".22"/>
-    ${glow > 0.2 ? `<circle cx="60" cy="58" r="44" fill="${L.accent}" opacity="${glow * 0.14}"/>` : ""}
+    <rect x="2" y="2" width="116" height="142" rx="18" fill="url(#${uid}-bg)" stroke="${L.accent}" stroke-width="3"/>
+    <rect x="2" y="2" width="116" height="142" rx="18" fill="url(#${uid}-shine)"/>
+    <rect x="7" y="7" width="106" height="132" rx="14" fill="none" stroke="${L.robe}" stroke-width="1" opacity=".2"/>
+    ${glow > 0.2 ? `<circle cx="60" cy="55" r="46" fill="${L.accent}" opacity="${glow * 0.14}"/>` : ""}
     <g filter="url(#${uid}-s)">${inner}</g>
-    <text x="60" y="136" text-anchor="middle" font-size="8" fill="${L.robe2}" font-family="sans-serif">${era}</text>
+    <text x="60" y="138" text-anchor="middle" font-size="7.5" fill="${L.robe2}" font-family="sans-serif" letter-spacing="0.5">${era}</text>
   `;
 }
 
 function bodyArmor(L) {
   return `
-    <path d="M34 102 L46 93 L60 97 L74 93 L86 102 L82 134 H38 Z" fill="${L.robe2}"/>
-    <path d="M40 106 H80" stroke="${L.accent}" stroke-width="3.2"/>
-    <path d="M42 114 H78" stroke="${L.accent}" stroke-width="2.2"/>
-    <ellipse cx="30" cy="106" rx="11" ry="9" fill="${L.accent}"/>
-    <ellipse cx="90" cy="106" rx="11" ry="9" fill="${L.accent}"/>
+    <path d="M32 100 L46 90 L60 94 L74 90 L88 100 L84 136 H36 Z" fill="${L.robe2}" stroke="#2a1810" stroke-width="1.2"/>
+    <path d="M40 104 H80" stroke="${L.accent}" stroke-width="3.5"/>
+    <path d="M42 112 H78" stroke="${L.accent}" stroke-width="2.4"/>
+    <path d="M44 120 H76" stroke="${L.accent}" stroke-width="2"/>
+    <path d="M28 98 L16 108 L34 114 Z" fill="${L.accent}" stroke="#2a1810" stroke-width="1"/>
+    <path d="M92 98 L104 108 L86 114 Z" fill="${L.accent}" stroke="#2a1810" stroke-width="1"/>
   `;
 }
 
 function bodyRobe(L) {
   return `
-    <path d="M36 102 Q48 92 60 90 Q72 92 84 102 L80 134 H40 Z" fill="${L.robe}"/>
-    <path d="M48 98 L60 112 L72 98" fill="${L.robe2}" opacity=".7"/>
+    <path d="M34 100 Q48 88 60 86 Q72 88 86 100 L82 136 H38 Z" fill="${L.robe}" stroke="#2a1810" stroke-width="1.2"/>
+    <path d="M48 94 L60 112 L72 94" fill="${L.robe2}" opacity=".75"/>
+    <path d="M38 108 Q60 100 82 108" fill="none" stroke="${L.accent}" stroke-width="1.6"/>
   `;
 }
-
-const GLOW = [0, 0.05, 0.1, 0.15, 0.22, 0.3, 0.38, 0.48, 0.55];
 
 function drawHanxin(L) {
   return `
     ${bodyArmor(L)}
-    <path d="M30 52 C34 22 86 22 90 52" fill="${L.hair}"/>
-    ${cuteFace(L, { mouth: "grin" })}
-    <path d="M28 48 C32 16 88 16 92 48 L84 58 H36 Z" fill="${L.robe2}" stroke="${L.accent}" stroke-width="2.2"/>
-    <path d="M52 18 L60 2 L68 18" fill="${L.accent}"/>
-    <rect x="54" y="18" width="12" height="12" rx="2" fill="${L.accent}"/>
-    <rect x="97" y="90" width="7" height="38" rx="2" fill="${L.accent}"/>
+    <path d="M26 48 C32 14 88 14 94 48" fill="${L.hair}" stroke="#2a1810" stroke-width="1"/>
+    ${mangaFace(L, { mood: "cool", mouth: "smirk" })}
+    <path d="M24 46 C30 12 90 12 96 46 L88 56 H32 Z" fill="${L.robe2}" stroke="#2a1810" stroke-width="1.4"/>
+    <path d="M50 16 L60 0 L70 16" fill="${L.accent}" stroke="#2a1810" stroke-width="1"/>
+    <rect x="53" y="16" width="14" height="12" rx="1" fill="${L.accent}" stroke="#2a1810" stroke-width="1"/>
+    <!-- 劍 -->
+    <rect x="98" y="86" width="6" height="42" rx="1" fill="${L.accent}" stroke="#2a1810" stroke-width="1"/>
+    <rect x="94" y="82" width="14" height="8" rx="2" fill="${L.robe2}" stroke="#2a1810" stroke-width="1"/>
   `;
 }
 
 function drawZhuge(L) {
   return `
     ${bodyRobe(L)}
-    <path d="M28 104 Q8 120 22 130 L38 110 Z" fill="${L.robe2}"/>
-    <path d="M92 104 Q112 120 98 130 L82 110 Z" fill="${L.robe2}"/>
-    <path d="M32 50 C36 24 84 24 88 50" fill="${L.hair}"/>
-    ${cuteFace(L, { mouth: "smile", beard: true })}
-    <ellipse cx="60" cy="34" rx="38" ry="17" fill="${L.robe}" stroke="${L.accent}" stroke-width="2.2"/>
-    <path d="M32 36 Q60 8 88 36" fill="none" stroke="${L.accent}" stroke-width="2.6"/>
-    <circle cx="60" cy="14" r="5.5" fill="${L.accent}"/>
-    <g transform="translate(92,94) rotate(-22)">
-      <rect x="0" y="10" width="4" height="26" fill="#8B6914"/>
-      <path d="M-14 10 Q2 -10 18 10 Z" fill="${L.accent}"/>
+    <path d="M26 104 Q6 120 20 132 L36 110 Z" fill="${L.robe2}" stroke="#2a1810" stroke-width="1"/>
+    <path d="M94 104 Q114 120 100 132 L84 110 Z" fill="${L.robe2}" stroke="#2a1810" stroke-width="1"/>
+    <path d="M28 48 C34 18 86 18 92 48" fill="${L.hair}" stroke="#2a1810" stroke-width="1"/>
+    ${mangaFace(L, { mood: "gentle", mouth: "smile", beard: true })}
+    <ellipse cx="60" cy="32" rx="40" ry="16" fill="${L.robe}" stroke="#2a1810" stroke-width="1.4"/>
+    <path d="M30 34 Q60 4 90 34" fill="none" stroke="${L.accent}" stroke-width="2.8"/>
+    <circle cx="60" cy="12" r="5.5" fill="${L.accent}" stroke="#2a1810" stroke-width="1"/>
+    <g transform="translate(92,92) rotate(-24)">
+      <rect x="0" y="10" width="4" height="28" fill="#6b4a20" stroke="#2a1810" stroke-width="0.8"/>
+      <path d="M-16 10 Q2 -12 20 10 Z" fill="${L.accent}" stroke="#2a1810" stroke-width="1"/>
+      <path d="M-10 10 L2 0 L14 10" fill="none" stroke="#2a1810" stroke-width="0.8"/>
     </g>
   `;
 }
 
 function drawYuefei(L) {
   return `
-    <path d="M18 132 Q28 90 46 88 L60 94 L74 88 Q92 90 102 132 Z" fill="${L.robe}"/>
+    <path d="M16 134 Q28 88 46 84 L60 90 L74 84 Q92 88 104 134 Z" fill="${L.robe}" stroke="#2a1810" stroke-width="1.2"/>
     ${bodyArmor(L)}
-    <path d="M30 50 C34 22 86 22 90 50" fill="${L.hair}"/>
-    ${cuteFace(L, { mouth: "grin" })}
-    <path d="M26 50 L36 10 H84 L94 50 Z" fill="${L.robe2}" stroke="${L.accent}" stroke-width="2.2"/>
-    <path d="M52 10 L60 -4 L68 10" fill="${L.accent}"/>
-    <line x1="104" y1="48" x2="108" y2="124" stroke="#6e5430" stroke-width="4.5"/>
-    <path d="M99 44 L108 24 L117 44 Z" fill="${L.accent}"/>
+    <path d="M28 48 C34 16 86 16 92 48" fill="${L.hair}" stroke="#2a1810" stroke-width="1"/>
+    ${mangaFace(L, { mood: "fierce", mouth: "grin" })}
+    <path d="M22 48 L34 8 H86 L98 48 Z" fill="${L.robe2}" stroke="#2a1810" stroke-width="1.4"/>
+    <path d="M50 8 L60 -6 L70 8" fill="${L.accent}" stroke="#2a1810" stroke-width="1"/>
+    <line x1="104" y1="44" x2="108" y2="126" stroke="#4a3020" stroke-width="4.5"/>
+    <path d="M99 40 L108 18 L117 40 Z" fill="${L.accent}" stroke="#2a1810" stroke-width="1"/>
   `;
 }
 
 function drawZhenghe(L) {
   return `
     ${bodyRobe(L)}
-    <path d="M34 110 H86" stroke="${L.accent}" stroke-width="3.5"/>
-    <ellipse cx="24" cy="114" rx="11" ry="15" fill="${L.robe2}"/>
-    <ellipse cx="96" cy="114" rx="11" ry="15" fill="${L.robe2}"/>
-    <path d="M32 50 C36 24 84 24 88 50" fill="${L.hair}"/>
-    ${cuteFace(L, { mouth: "smile" })}
-    <rect x="34" y="26" width="52" height="22" rx="7" fill="${L.robe2}" stroke="${L.accent}" stroke-width="1.6"/>
-    <path d="M34 32 L10 14 L38 40" fill="${L.accent}"/>
-    <path d="M86 32 L110 14 L82 40" fill="${L.accent}"/>
-    <circle cx="29" cy="68" r="4" fill="${L.accent}"/>
-    <circle cx="91" cy="68" r="4" fill="${L.accent}"/>
+    <path d="M32 110 H88" stroke="${L.accent}" stroke-width="3.5"/>
+    <ellipse cx="22" cy="114" rx="12" ry="16" fill="${L.robe2}" stroke="#2a1810" stroke-width="1"/>
+    <ellipse cx="98" cy="114" rx="12" ry="16" fill="${L.robe2}" stroke="#2a1810" stroke-width="1"/>
+    <path d="M28 48 C34 18 86 18 92 48" fill="${L.hair}" stroke="#2a1810" stroke-width="1"/>
+    ${mangaFace(L, { mood: "cool", mouth: "smile" })}
+    <rect x="32" y="24" width="56" height="22" rx="5" fill="${L.robe2}" stroke="#2a1810" stroke-width="1.4"/>
+    <path d="M32 30 L8 12 L36 38" fill="${L.accent}" stroke="#2a1810" stroke-width="1"/>
+    <path d="M88 30 L112 12 L84 38" fill="${L.accent}" stroke="#2a1810" stroke-width="1"/>
+    <circle cx="28" cy="66" r="3.5" fill="${L.accent}" stroke="#2a1810" stroke-width="0.8"/>
+    <circle cx="92" cy="66" r="3.5" fill="${L.accent}" stroke="#2a1810" stroke-width="0.8"/>
   `;
 }
 
 function drawSimaqian(L) {
   return `
     ${bodyRobe(L)}
-    <path d="M32 50 C36 24 84 24 88 50" fill="${L.hair}"/>
-    ${cuteFace(L, { mouth: "tiny", beard: true })}
-    <rect x="44" y="12" width="32" height="30" rx="7" fill="${L.hair}"/>
-    <rect x="50" y="4" width="20" height="13" rx="3" fill="${L.robe2}"/>
-    <rect x="54" y="-2" width="12" height="10" rx="2" fill="${L.accent}"/>
-    <rect x="90" y="98" width="15" height="26" rx="3" fill="${L.accent}"/>
+    <path d="M28 48 C34 18 86 18 92 48" fill="${L.hair}" stroke="#2a1810" stroke-width="1"/>
+    ${mangaFace(L, { mood: "gentle", mouth: "dot", beard: true })}
+    <rect x="42" y="10" width="36" height="30" rx="5" fill="${L.hair}" stroke="#2a1810" stroke-width="1.2"/>
+    <rect x="48" y="2" width="24" height="14" rx="3" fill="${L.robe2}" stroke="#2a1810" stroke-width="1"/>
+    <rect x="54" y="-4" width="12" height="10" rx="2" fill="${L.accent}" stroke="#2a1810" stroke-width="1"/>
+    <rect x="90" y="96" width="16" height="28" rx="2" fill="${L.accent}" stroke="#2a1810" stroke-width="1"/>
+    <line x1="94" y1="104" x2="102" y2="104" stroke="${L.robe2}" stroke-width="1.2"/>
+    <line x1="94" y1="110" x2="102" y2="110" stroke="${L.robe2}" stroke-width="1.2"/>
   `;
 }
 
 function drawSunwu(L) {
   return `
     ${bodyArmor(L)}
-    <path d="M32 50 C36 22 84 22 88 50" fill="${L.hair}"/>
-    ${cuteFace(L, { mouth: "tiny" })}
-    <path d="M28 50 Q60 6 92 50" fill="${L.robe2}" stroke="${L.accent}" stroke-width="2.6"/>
-    <circle cx="60" cy="26" r="9" fill="${L.accent}"/>
-    <circle cx="60" cy="26" r="4" fill="${L.robe}"/>
-    <g transform="translate(8,80) rotate(-8)">
-      <rect width="18" height="24" rx="4" fill="${L.accent}"/>
-      <text x="9" y="16" text-anchor="middle" font-size="9" fill="${L.robe2}">兵</text>
+    <path d="M28 48 C34 16 86 16 92 48" fill="${L.hair}" stroke="#2a1810" stroke-width="1"/>
+    ${mangaFace(L, { mood: "cool", mouth: "smirk" })}
+    <path d="M26 48 Q60 2 94 48" fill="${L.robe2}" stroke="#2a1810" stroke-width="1.5"/>
+    <circle cx="60" cy="24" r="9" fill="${L.accent}" stroke="#2a1810" stroke-width="1.2"/>
+    <circle cx="60" cy="24" r="4" fill="${L.robe}"/>
+    <g transform="translate(6,78) rotate(-10)">
+      <rect width="18" height="26" rx="3" fill="${L.accent}" stroke="#2a1810" stroke-width="1"/>
+      <text x="9" y="17" text-anchor="middle" font-size="9" fill="${L.robe2}" font-family="sans-serif">兵</text>
     </g>
   `;
 }
 
 function drawWuzetian(L) {
   return `
-    <path d="M20 134 Q38 94 60 90 Q82 94 100 134 Z" fill="${L.robe}"/>
-    <path d="M34 102 Q60 122 86 102" fill="${L.robe2}" opacity=".88"/>
-    <circle cx="48" cy="106" r="4.5" fill="#fff3c4"/>
-    <circle cx="72" cy="106" r="4.5" fill="#fff3c4"/>
-    <path d="M28 50 C34 22 86 22 92 50" fill="${L.hair}"/>
-    <ellipse cx="60" cy="18" rx="15" ry="17" fill="${L.hair}"/>
-    <path d="M20 56 Q6 98 16 128" fill="${L.hair}"/>
-    <path d="M100 56 Q114 98 104 128" fill="${L.hair}"/>
-    ${cuteFace(L, { mouth: "grin" })}
-    <path d="M38 34 Q60 -6 82 34" fill="${L.accent}"/>
-    <circle cx="60" cy="12" r="6.5" fill="#fff6c8"/>
-    <path d="M28 30 L6 2 L42 28" fill="${L.robe}"/>
-    <path d="M92 30 L114 2 L78 28" fill="${L.robe}"/>
+    <path d="M18 136 Q36 90 60 86 Q84 90 102 136 Z" fill="${L.robe}" stroke="#2a1810" stroke-width="1.2"/>
+    <path d="M34 100 Q60 122 86 100" fill="${L.robe2}" opacity=".9"/>
+    <circle cx="46" cy="106" r="4.5" fill="#fff3c4" stroke="#2a1810" stroke-width="0.8"/>
+    <circle cx="74" cy="106" r="4.5" fill="#fff3c4" stroke="#2a1810" stroke-width="0.8"/>
+    <path d="M26 48 C34 14 86 14 94 48" fill="${L.hair}" stroke="#2a1810" stroke-width="1"/>
+    <ellipse cx="60" cy="16" rx="16" ry="18" fill="${L.hair}" stroke="#2a1810" stroke-width="1"/>
+    <path d="M18 54 Q4 100 14 132" fill="${L.hair}" stroke="#2a1810" stroke-width="1"/>
+    <path d="M102 54 Q116 100 106 132" fill="${L.hair}" stroke="#2a1810" stroke-width="1"/>
+    ${mangaFace(L, { mood: "fierce", mouth: "smirk" })}
+    <path d="M38 32 Q60 -8 82 32" fill="${L.accent}" stroke="#2a1810" stroke-width="1.2"/>
+    <circle cx="60" cy="10" r="7" fill="#fff6c8" stroke="#2a1810" stroke-width="1"/>
+    <path d="M28 28 L4 0 L42 26" fill="${L.robe}" stroke="#2a1810" stroke-width="1"/>
+    <path d="M92 28 L116 0 L78 26" fill="${L.robe}" stroke="#2a1810" stroke-width="1"/>
   `;
 }
 
 function drawMulan(L) {
   return `
     ${bodyArmor(L)}
-    <path d="M32 50 C36 24 84 24 88 50" fill="${L.hair}"/>
-    <ellipse cx="60" cy="24" rx="10" ry="12" fill="${L.hair}"/>
-    <path d="M26 58 Q16 92 24 118" fill="${L.hair}"/>
-    <path d="M94 58 Q104 92 96 118" fill="${L.hair}"/>
-    ${cuteFace(L, { mouth: "grin" })}
-    <path d="M30 48 L40 12 H80 L90 48 Z" fill="${L.robe2}" stroke="${L.accent}" stroke-width="2.2"/>
-    <rect x="52" y="8" width="16" height="11" rx="2" fill="${L.accent}"/>
-    <g transform="translate(98,82) rotate(10)">
-      <rect width="7" height="42" rx="2" fill="${L.accent}"/>
-      <path d="M-1 0 L3.5 -14 L8 0 Z" fill="${L.robe2}"/>
+    <path d="M28 48 C34 18 86 18 92 48" fill="${L.hair}" stroke="#2a1810" stroke-width="1"/>
+    <ellipse cx="60" cy="22" rx="10" ry="12" fill="${L.hair}" stroke="#2a1810" stroke-width="1"/>
+    <path d="M24 56 Q12 95 22 122" fill="${L.hair}" stroke="#2a1810" stroke-width="1"/>
+    <path d="M96 56 Q108 95 98 122" fill="${L.hair}" stroke="#2a1810" stroke-width="1"/>
+    ${mangaFace(L, { mood: "bright", mouth: "grin" })}
+    <path d="M28 46 L40 10 H80 L92 46 Z" fill="${L.robe2}" stroke="#2a1810" stroke-width="1.4"/>
+    <rect x="52" y="6" width="16" height="12" rx="2" fill="${L.accent}" stroke="#2a1810" stroke-width="1"/>
+    <g transform="translate(98,80) rotate(12)">
+      <rect width="7" height="44" rx="1" fill="${L.accent}" stroke="#2a1810" stroke-width="1"/>
+      <path d="M-2 0 L3.5 -16 L9 0 Z" fill="${L.robe2}" stroke="#2a1810" stroke-width="1"/>
     </g>
   `;
 }
@@ -203,63 +242,66 @@ function drawMulan(L) {
 function drawCaiwenji(L) {
   return `
     ${bodyRobe(L)}
-    <path d="M32 50 C36 24 84 24 88 50" fill="${L.hair}"/>
-    <circle cx="26" cy="58" r="11" fill="${L.hair}"/>
-    <circle cx="94" cy="58" r="11" fill="${L.hair}"/>
-    <path d="M18 58 Q2 96 12 124" fill="${L.hair}"/>
-    <path d="M102 58 Q118 96 108 124" fill="${L.hair}"/>
-    ${cuteFace(L, { mouth: "cat" })}
-    <circle cx="24" cy="48" r="4.5" fill="${L.accent}"/>
-    <circle cx="96" cy="48" r="4.5" fill="${L.accent}"/>
-    <ellipse cx="16" cy="110" rx="13" ry="17" fill="${L.accent}" opacity=".92"/>
-    <rect x="12" y="94" width="8" height="18" rx="2" fill="${L.robe2}"/>
+    <path d="M28 48 C34 18 86 18 92 48" fill="${L.hair}" stroke="#2a1810" stroke-width="1"/>
+    <circle cx="24" cy="56" r="12" fill="${L.hair}" stroke="#2a1810" stroke-width="1"/>
+    <circle cx="96" cy="56" r="12" fill="${L.hair}" stroke="#2a1810" stroke-width="1"/>
+    <path d="M14 58 Q0 100 10 128" fill="${L.hair}" stroke="#2a1810" stroke-width="1"/>
+    <path d="M106 58 Q120 100 110 128" fill="${L.hair}" stroke="#2a1810" stroke-width="1"/>
+    ${mangaFace(L, { mood: "gentle", mouth: "cat" })}
+    <circle cx="22" cy="46" r="4.5" fill="${L.accent}" stroke="#2a1810" stroke-width="0.8"/>
+    <circle cx="98" cy="46" r="4.5" fill="${L.accent}" stroke="#2a1810" stroke-width="0.8"/>
+    <ellipse cx="14" cy="110" rx="14" ry="18" fill="${L.accent}" stroke="#2a1810" stroke-width="1" opacity=".95"/>
+    <rect x="10" y="92" width="8" height="20" rx="2" fill="${L.robe2}" stroke="#2a1810" stroke-width="0.8"/>
   `;
 }
 
 function drawLiqingzhao(L) {
   return `
     ${bodyRobe(L)}
-    <path d="M32 50 C36 24 84 24 88 50" fill="${L.hair}"/>
-    <ellipse cx="38" cy="30" rx="13" ry="11" fill="${L.hair}"/>
-    <ellipse cx="82" cy="30" rx="13" ry="11" fill="${L.hair}"/>
-    <path d="M20 58 Q8 96 16 122" fill="${L.hair}"/>
-    <path d="M100 58 Q112 96 104 122" fill="${L.hair}"/>
-    ${cuteFace(L, { mouth: "smile" })}
-    <circle cx="38" cy="30" r="4" fill="${L.accent}"/>
-    <circle cx="82" cy="30" r="4" fill="${L.accent}"/>
-    <g transform="translate(88,96) rotate(12)">
-      <rect width="17" height="24" rx="3" fill="#fffef8" stroke="${L.accent}" stroke-width="1.5"/>
-      <rect x="19" y="0" width="3.5" height="28" fill="#2a2018"/>
+    <path d="M28 48 C34 18 86 18 92 48" fill="${L.hair}" stroke="#2a1810" stroke-width="1"/>
+    <ellipse cx="36" cy="28" rx="14" ry="12" fill="${L.hair}" stroke="#2a1810" stroke-width="1"/>
+    <ellipse cx="84" cy="28" rx="14" ry="12" fill="${L.hair}" stroke="#2a1810" stroke-width="1"/>
+    <path d="M18 56 Q6 98 14 124" fill="${L.hair}" stroke="#2a1810" stroke-width="1"/>
+    <path d="M102 56 Q114 98 106 124" fill="${L.hair}" stroke="#2a1810" stroke-width="1"/>
+    ${mangaFace(L, { mood: "gentle", mouth: "smile" })}
+    <circle cx="36" cy="28" r="4" fill="${L.accent}" stroke="#2a1810" stroke-width="0.8"/>
+    <circle cx="84" cy="28" r="4" fill="${L.accent}" stroke="#2a1810" stroke-width="0.8"/>
+    <g transform="translate(88,94) rotate(14)">
+      <rect width="18" height="26" rx="2" fill="#fffef8" stroke="#2a1810" stroke-width="1.2"/>
+      <rect x="20" y="0" width="3.5" height="30" fill="#1a120c"/>
+      <path d="M20 0 L23.5 -8 L27 0" fill="${L.accent}" stroke="#2a1810" stroke-width="0.8"/>
     </g>
   `;
 }
 
 function drawWangzhaojun(L) {
   return `
-    <path d="M28 104 Q42 92 60 90 Q78 92 92 104 L88 134 H32 Z" fill="${L.robe}"/>
-    <path d="M24 108 Q60 94 96 108 L100 134 H20 Z" fill="${L.robe2}" opacity=".8"/>
-    <path d="M30 50 C36 22 84 22 90 50" fill="${L.hair}"/>
-    <path d="M16 56 Q0 102 10 130" fill="${L.hair}"/>
-    <path d="M104 56 Q120 102 110 130" fill="${L.hair}"/>
-    ${cuteFace(L, { mouth: "tiny" })}
-    <path d="M22 48 Q60 4 98 48" fill="${L.robe2}"/>
-    <path d="M30 48 Q60 16 90 48" fill="${L.accent}" opacity=".55"/>
-    <path d="M98 42 Q110 34 106 50" fill="none" stroke="#fff8e8" stroke-width="2.8"/>
+    <path d="M26 102 Q42 88 60 86 Q78 88 94 102 L90 136 H30 Z" fill="${L.robe}" stroke="#2a1810" stroke-width="1.2"/>
+    <path d="M22 108 Q60 92 98 108 L102 136 H18 Z" fill="${L.robe2}" opacity=".85" stroke="#2a1810" stroke-width="1"/>
+    <path d="M28 48 C34 16 86 16 92 48" fill="${L.hair}" stroke="#2a1810" stroke-width="1"/>
+    <path d="M14 54 Q0 102 10 134" fill="${L.hair}" stroke="#2a1810" stroke-width="1"/>
+    <path d="M106 54 Q120 102 110 134" fill="${L.hair}" stroke="#2a1810" stroke-width="1"/>
+    ${mangaFace(L, { mood: "gentle", mouth: "dot" })}
+    <path d="M20 46 Q60 0 100 46" fill="${L.robe2}" stroke="#2a1810" stroke-width="1.3"/>
+    <path d="M28 46 Q60 14 92 46" fill="${L.accent}" opacity=".55"/>
+    <path d="M98 40 Q112 30 108 48" fill="none" stroke="#fff8e8" stroke-width="3"/>
   `;
 }
 
 function drawBanzhao(L) {
   return `
     ${bodyRobe(L)}
-    <path d="M32 50 C36 24 84 24 88 50" fill="${L.hair}"/>
-    <circle cx="60" cy="24" r="15" fill="${L.hair}"/>
-    <path d="M22 58 Q10 96 18 120" fill="${L.hair}"/>
-    <path d="M98 58 Q110 96 102 120" fill="${L.hair}"/>
-    ${cuteFace(L, { mouth: "smile" })}
-    <circle cx="60" cy="20" r="4.5" fill="${L.accent}"/>
+    <path d="M28 48 C34 18 86 18 92 48" fill="${L.hair}" stroke="#2a1810" stroke-width="1"/>
+    <circle cx="60" cy="22" r="16" fill="${L.hair}" stroke="#2a1810" stroke-width="1"/>
+    <path d="M20 56 Q8 98 16 122" fill="${L.hair}" stroke="#2a1810" stroke-width="1"/>
+    <path d="M100 56 Q112 98 104 122" fill="${L.hair}" stroke="#2a1810" stroke-width="1"/>
+    ${mangaFace(L, { mood: "bright", mouth: "smile" })}
+    <circle cx="60" cy="18" r="4.5" fill="${L.accent}" stroke="#2a1810" stroke-width="0.8"/>
     <g transform="translate(86,96)">
-      <rect width="20" height="28" rx="4" fill="${L.accent}"/>
-      <rect x="3" y="4" width="14" height="20" fill="#fffef8"/>
+      <rect width="22" height="30" rx="3" fill="${L.accent}" stroke="#2a1810" stroke-width="1.2"/>
+      <rect x="3" y="4" width="16" height="22" fill="#fffef8"/>
+      <line x1="6" y1="10" x2="16" y2="10" stroke="${L.robe2}" stroke-width="1"/>
+      <line x1="6" y1="16" x2="16" y2="16" stroke="${L.robe2}" stroke-width="1"/>
     </g>
   `;
 }
@@ -285,11 +327,11 @@ export function renderAvatar(character, rankId = 0, size = "md") {
   }
   const L = character.look;
   const rank = Math.min(8, Math.max(0, rankId));
-  const dims = size === "lg" ? 240 : size === "sm" ? 100 : 140;
+  const dims = size === "lg" ? 248 : size === "sm" ? 104 : 148;
   const uid = `av-${character.id}-${++avatarSeq}`;
   const draw = DRAW[character.id] || drawHanxin;
   return `
-  <svg class="avatar-svg avatar-${size}" viewBox="0 -8 120 152" width="${dims}" height="${Math.round(dims * 1.22)}" aria-label="${character.name}" role="img">
-    ${card(uid, L, character.era, GLOW[rank], draw(L))}
+  <svg class="avatar-svg avatar-${size}" viewBox="0 -10 120 156" width="${dims}" height="${Math.round(dims * 1.24)}" aria-label="${character.name}" role="img">
+    ${frame(uid, L, character.era, GLOW[rank], draw(L))}
   </svg>`;
 }

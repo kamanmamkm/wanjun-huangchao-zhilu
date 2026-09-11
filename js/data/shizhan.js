@@ -2,8 +2,8 @@
  * 史戰風雲 —— 靈感來自回合制卡牌對戰（如三國殺的體力／出牌節奏）
  * 原創中史科教學玩法，並非三國殺複製品，不含官方牌面／技能原文
  */
-import { QUESTIONS, checkFill } from "./questions.js?v=shizhan1";
-import { CHARACTERS } from "./characters.js?v=shizhan1";
+import { QUESTIONS, checkFill } from "./questions.js?v=manga1";
+import { CHARACTERS } from "./characters.js?v=manga1";
 
 export const SHIZHAN_MAX_HP = 4;
 

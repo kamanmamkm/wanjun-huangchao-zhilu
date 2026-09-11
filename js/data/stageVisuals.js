@@ -96,17 +96,17 @@ export const STAGE_VISUALS = {
   },
   6: {
     id: 6,
-    scene: "城樓晴空",
+    scene: "城牆旌旗",
     sceneKey: "tower",
-    pose: "立於城樓，目光遠望",
+    pose: "立於城垣，望城河山",
     poseKey: "gaze",
-    prop: "旗幟一角",
+    prop: "諸侯旗／披風",
     propKey: "cape",
     accent: "#c84436",
-    bgHint: "遼闊天空",
+    bgHint: "紅甲金飾與晴空城郭",
     quote: "天下未定，先定己心。",
-    vibe: "逼近終章",
-    priority: false,
+    vibe: "諸侯臨城",
+    priority: true,
   },
   7: {
     id: 7,
@@ -166,6 +166,12 @@ export const STAGE_ART = {
     female: "assets/stages/zhongchen-female.jpg",
     badge: "⑥ 重臣｜Lv.56–70",
     label: "重臣登場",
+  },
+  6: {
+    male: "assets/stages/zhuhou-male.jpg",
+    female: "assets/stages/zhuhou-female.jpg",
+    badge: "⑦ 諸侯｜Lv.71–85",
+    label: "諸侯登場",
   },
 };
 

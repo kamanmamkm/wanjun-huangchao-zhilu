@@ -70,9 +70,9 @@ export const IDENTITIES = [
     key: "lord",
     name: "諸侯",
     arc: "天下篇",
-    color: "#b8860b",
-    outfit: { male: "蟒袍華冠", female: "翟衣華飾" },
-    desc: "跨章節綜合運用，逼近終章試煉。",
+    color: "#c84436",
+    outfit: { male: "紅甲金冠", female: "紅甲鳳氅" },
+    desc: "臨城執旗——河山在望，逼近終章試煉。",
   },
   {
     id: 7,

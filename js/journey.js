@@ -6,6 +6,7 @@ import { XP_REWARDS } from "./data/levels.js";
 import { CUOSHI_BATTLES, getCuoshi } from "./data/cuoshi.js";
 import { IDENTITIES } from "./data/identities.js";
 import { getStageVisual, SKILL_BARS, skillFill, STAGE_RELIC, realmLabel } from "./data/stageVisuals.js";
+import { heroDisplayName } from "./data/characters.js";
 import { renderAvatar } from "./avatar.js";
 import { renderHeroStage, renderStudyCompanion, renderPromoteReveal } from "./heroStage.js";
 import {
@@ -95,7 +96,7 @@ export function renderJourneyHome(user, char) {
       <h2 class="realm-title">${snap.identityName}</h2>
       <hr class="realm-rule" />
       <p class="realm-quote">${vis.quote}</p>
-      <p class="poster-char">${char?.name || "行者"} · Lv.${snap.level.level} · ${vis.vibe}</p>
+      <p class="poster-char">${heroDisplayName(user, char)} · Lv.${snap.level.level} · ${vis.vibe}</p>
       <div class="poster-skills">${skillBars}</div>
       <div class="poster-actions">
         <button type="button" class="btn" data-goto="scroll">${chProg.done ? "重溫長卷" : "繼續旅程"}</button>
@@ -103,7 +104,7 @@ export function renderJourneyHome(user, char) {
       </div>
       <p class="muted" style="font-size:.8rem;margin:0">當前任務：${nextStage?.title || "—"}</p>
     </div>
-    <div class="poster-art" aria-label="${char?.name} 立繪">
+    <div class="poster-art" aria-label="${heroDisplayName(user, char)} 立繪">
       ${renderHeroStage(char, snap.identity.id, "hero", {
         gender: user.gender,
         priorityBoost: true,
@@ -869,7 +870,7 @@ export function renderChronicle(user, char) {
       <div class="book-page">
         <h3>行者檔案</h3>
         ${renderAvatar(char, snap.identity.id, "md")}
-        <p>${char?.name} · ${snap.identityName} · Lv.${snap.level.level}</p>
+        <p>${heroDisplayName(user, char)} · ${snap.identityName} · Lv.${snap.level.level}</p>
         <p>衣裝：${snap.outfit}</p>
       </div>
       <div class="book-page">

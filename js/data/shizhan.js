@@ -3,7 +3,7 @@
  * 原創中史科教學玩法，並非三國殺複製品，不含官方牌面／技能原文
  */
 import { QUESTIONS, checkFill } from "./questions.js?v=rps1";
-import { CHARACTERS } from "./characters.js?v=rps1";
+import { RIVALS } from "./characters.js?v=rps1";
 
 export const SHIZHAN_MAX_HP = 4;
 
@@ -53,9 +53,8 @@ function pickFill() {
   return list[Math.floor(Math.random() * list.length)];
 }
 
-export function randomEnemy(excludeId) {
-  const all = [...CHARACTERS.male, ...CHARACTERS.female].filter((c) => c.id !== excludeId);
-  return all[Math.floor(Math.random() * all.length)];
+export function randomEnemy() {
+  return RIVALS[Math.floor(Math.random() * RIVALS.length)];
 }
 
 export function createHand() {
@@ -69,7 +68,7 @@ export function createHand() {
 }
 
 export function createBattle(playerChar) {
-  const enemy = randomEnemy(playerChar?.id);
+  const enemy = randomEnemy();
   return {
     phase: "player", // player | quiz | enemy | end
     turn: 1,

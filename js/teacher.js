@@ -4,6 +4,7 @@
  */
 import { chapterList, CHAPTERS } from "./data/chapters.js";
 import { identityDisplayName, getIdentity } from "./data/identities.js";
+import { getCharacter, heroDisplayName } from "./data/characters.js";
 import { levelFromXp } from "./data/levels.js";
 
 const TEACHER_KEY = "rps_teacher_v1";
@@ -63,6 +64,7 @@ export function listStudents() {
     const ch1 = chapters.ch1_escape;
     return {
       username: u.username,
+      heroName: heroDisplayName(u, getCharacter(u.gender, u.characterId)),
       gender: u.gender,
       characterId: u.characterId,
       xp: u.xp || 0,
@@ -198,7 +200,7 @@ export function renderTeacherPage() {
       <table class="teacher-table">
         <thead>
           <tr>
-            <th>帳號</th><th>身份</th><th>等級</th><th>答對/錯</th><th>第一章</th><th>弱項</th><th>未修錯題</th>
+            <th>帳號</th><th>角色名</th><th>身份</th><th>等級</th><th>答對/錯</th><th>第一章</th><th>弱項</th><th>未修錯題</th>
           </tr>
         </thead>
         <tbody>
@@ -208,6 +210,7 @@ export function renderTeacherPage() {
                 (s) => `
             <tr>
               <td>${s.username}</td>
+              <td>${s.heroName || "—"}</td>
               <td>${s.identityName}</td>
               <td>Lv.${s.level}</td>
               <td>${s.correct}/${s.wrong}</td>

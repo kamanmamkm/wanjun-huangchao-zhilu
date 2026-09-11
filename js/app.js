@@ -1,11 +1,11 @@
-import { CHARACTERS, getCharacter } from "./data/characters.js?v=rad14";
-import { QUESTIONS, checkFill } from "./data/questions.js?v=rad14";
-import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad14";
-import { levelFromXp } from "./data/levels.js?v=rad14";
-import { DIALOGUES } from "./data/dialogues.js?v=rad14";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad14";
-import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=rad14";
-import { renderAvatar } from "./avatar.js?v=rad14";
+import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad16";
+import { QUESTIONS, checkFill } from "./data/questions.js?v=rad16";
+import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad16";
+import { levelFromXp } from "./data/levels.js?v=rad16";
+import { DIALOGUES } from "./data/dialogues.js?v=rad16";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad16";
+import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=rad16";
+import { renderAvatar } from "./avatar.js?v=rad16";
 import {
   CARD_TYPES,
   createBattle,
@@ -15,7 +15,7 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=rad14";
+} from "./data/shizhan.js?v=rad16";
 import {
   getCurrentUser,
   registerUser,
@@ -23,7 +23,7 @@ import {
   clearSession,
   addXp,
   updateUser,
-} from "./storage.js?v=rad14";
+} from "./storage.js?v=rad16";
 import {
   userSnapshot,
   buildPromotionOrder,
@@ -31,7 +31,7 @@ import {
   IDENTITY_DISCLAIMER,
   identityDisplayName,
   getIdentity,
-} from "./progress.js?v=rad14";
+} from "./progress.js?v=rad16";
 import {
   renderJourneyHome,
   renderScroll,
@@ -42,10 +42,10 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad14";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad14";
-import { renderPromoteReveal } from "./heroStage.js?v=rad14";
-import { getStageVisual } from "./data/stageVisuals.js?v=rad14";
+} from "./journey.js?v=rad16";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad16";
+import { renderPromoteReveal } from "./heroStage.js?v=rad16";
+import { getStageVisual } from "./data/stageVisuals.js?v=rad16";
 
 const app = document.getElementById("app");
 let toastTimer = null;
@@ -53,7 +53,7 @@ let state = {
   view: "home",
   authMode: "login",
   gender: "male",
-  characterId: CHARACTERS.male[0].id,
+  heroName: "",
   practice: { mode: "mc", grade: "全部", index: 0 },
   match: { selectedLeft: null, selectedRight: null, solved: new Set() },
   flip: { cards: [], flipped: [], matched: new Set(), lock: false },
@@ -143,7 +143,7 @@ function refreshTopbarOnly() {
   badge.innerHTML = `
     <div class="avatar-ring">${renderAvatar(char, snap.identity.id, "sm", { gender: user.gender })}</div>
     <div class="player-meta">
-      <strong>${char?.name || "行者"} · ${snap.identityName}</strong>
+      <strong>${heroDisplayName(user, char)} · ${snap.identityName}</strong>
       <span>${user.username}　Lv.${snap.level.level}　XP ${user.xp}</span>
       <div class="xp-bar"><i style="width:${snap.level.progress}%"></i></div>
     </div>`;
@@ -205,10 +205,8 @@ function render() {
 
 /* ========== Auth ========== */
 function renderAuth() {
-  const list = CHARACTERS[state.gender];
-  const preview = list.find((c) => c.id === state.characterId) || list[0];
-  // 登入頁展示全部人物（可橫向滑動），唔好只顯示前幾個
-  const parade = [...CHARACTERS.male, ...CHARACTERS.female];
+  const preview = getCharacter(state.gender);
+  const previewName = String(state.heroName || "").trim() || "行者";
   return `
   <section class="hero-screen">
     <div class="brand-block">
@@ -219,12 +217,10 @@ function renderAuth() {
         <div class="hero-stage">
           ${
             state.authMode === "register"
-              ? `${renderAvatar(preview, 0, "lg", { forcePortrait: true, gender: state.gender })}
-                 <div class="hero-caption"><strong>${preview.name}</strong><span>${preview.era} · 起步衣裝「${outfitOf(state.gender, 0)}」· 「${preview.motto}」</span></div>`
-              : `<div class="parade-row" id="parade-row">
-                  ${parade.map((c) => `<div class="parade-item" title="${c.name} · ${c.era}">${renderAvatar(c, 0, "sm", { forcePortrait: true, gender: c.look?.gender || c.gender })}<span>${c.name}</span></div>`).join("")}
-                </div>
-                <p class="hero-idle-note">共 ${parade.length} 位人物 · 開局為庶民樣貌，考核晉升後衣裝與場景漸開闊</p>`
+              ? `${renderAvatar(preview, 0, "lg", { gender: state.gender })}
+                 <div class="hero-caption"><strong>${previewName}</strong><span>自訂角色名 · ${state.gender === "female" ? "女" : "男"} · 起步「${outfitOf(state.gender, 0)}」</span></div>`
+              : `${renderAvatar(getCharacter("male"), 0, "lg", { gender: "male" })}
+                 <p class="hero-idle-note">開局自訂角色名 · 選男女樣貌 · 考核晉升後衣裝與場景漸開闊</p>`
           }
         </div>
       </div>
@@ -246,27 +242,17 @@ function renderAuth() {
         ${
           state.authMode === "register"
             ? `
+        <label>角色名（自訂）
+          <input name="heroName" id="hero-name-input" required maxlength="8" autocomplete="nickname"
+            value="${escapeAttr(state.heroName)}" placeholder="例如：任平生、阿文" />
+        </label>
         <label>性別
           <select name="gender" id="gender-select">
             <option value="male" ${state.gender === "male" ? "selected" : ""}>男（開局：庶民 · Lv.1 起步）</option>
             <option value="female" ${state.gender === "female" ? "selected" : ""}>女（開局：庶民 · Lv.1 起步）</option>
           </select>
         </label>
-        <div>
-          <div class="pick-label">點選人物（${list.length} 位）· 起步衣裝簡樸，升級先變華麗</div>
-          <div class="char-pick" id="char-pick">
-            ${list
-              .map(
-                (c) => `
-              <button type="button" class="char-card ${state.characterId === c.id ? "selected" : ""}" data-char="${c.id}" style="--accent:${c.color}">
-                <div class="char-portrait">${renderAvatar(c, 0, "md", { forcePortrait: true, gender: state.gender })}</div>
-                <div class="name">${c.name}</div>
-                <div class="era">${c.era} · ${outfitOf(state.gender, 0)}</div>
-              </button>`
-              )
-              .join("")}
-          </div>
-        </div>`
+        <p class="muted" style="margin:0;font-size:.88rem">已取消歷史人物原型——只選男女樣貌，角色名完全自訂。</p>`
             : ""
         }
         <p class="form-error" id="auth-error"></p>
@@ -276,29 +262,38 @@ function renderAuth() {
   </section>`;
 }
 
+function escapeAttr(s) {
+  return String(s || "")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;");
+}
+
+function rememberAuthDraft() {
+  const hero = app.querySelector("#hero-name-input");
+  if (hero) state.heroName = hero.value;
+}
+
 function bindAuth() {
   app.querySelectorAll("[data-auth]").forEach((btn) => {
     btn.addEventListener("click", () => {
+      rememberAuthDraft();
       state.authMode = btn.dataset.auth;
-      if (state.authMode === "register") {
-        state.characterId = CHARACTERS[state.gender][0].id;
-      }
       render();
     });
   });
   const gender = app.querySelector("#gender-select");
   if (gender) {
     gender.addEventListener("change", (e) => {
+      rememberAuthDraft();
       state.gender = e.target.value;
-      state.characterId = CHARACTERS[state.gender][0].id;
       render();
     });
   }
-  app.querySelectorAll("[data-char]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      state.characterId = btn.dataset.char;
-      render();
-    });
+  app.querySelector("#hero-name-input")?.addEventListener("input", (e) => {
+    state.heroName = e.target.value;
+    const strong = app.querySelector(".hero-caption strong");
+    if (strong) strong.textContent = String(e.target.value).trim() || "行者";
   });
   app.querySelector("#auth-form")?.addEventListener("submit", (e) => {
     e.preventDefault();
@@ -312,8 +307,9 @@ function bindAuth() {
           username: fd.get("username"),
           password: fd.get("password"),
           gender: state.gender,
-          characterId: state.characterId,
+          heroName: fd.get("heroName"),
         });
+        state.heroName = "";
       }
       state.view = "home";
       render();
@@ -387,7 +383,7 @@ function renderShell(user) {
       <div class="player-badge">
         <div class="avatar-ring">${renderAvatar(char, idn.id, "sm", { gender: user.gender })}</div>
         <div class="player-meta">
-          <strong>${char?.name || "行者"} · ${snap.identityName}</strong>
+          <strong>${heroDisplayName(user, char)} · ${snap.identityName}</strong>
           <span>${user.username}　Lv.${snap.level.level}　XP ${user.xp}</span>
           <div class="xp-bar"><i style="width:${snap.level.progress}%"></i></div>
         </div>
@@ -433,15 +429,6 @@ function bindShell(user) {
       render();
     });
   });
-  app.querySelectorAll("[data-switch-char]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      updateUser((u) => {
-        u.characterId = btn.dataset.switchChar;
-      });
-      toast(`已切換為「${btn.querySelector(".name")?.textContent || "新角色"}」`);
-      render();
-    });
-  });
 
   bindJourney(user, journeyCtx());
   if (state.view === "teacher") bindTeacher({ render, toast });
@@ -458,14 +445,14 @@ function renderHome(user, char) {
 }
 
 function renderProfile(user, char, snap) {
-  const roster = CHARACTERS[user.gender] || [];
   const order = buildPromotionOrder(user);
+  const name = heroDisplayName(user, char);
   return `
   <section class="panel-paper profile-panel">
     <div class="profile-hero">
       ${renderAvatar(char, snap.identity.id, "lg", { gender: user.gender })}
       <div>
-        <h2>${char?.name}</h2>
+        <h2>${name}</h2>
         <p class="lead">身份「${snap.identityName}」· Lv.${snap.level.level} · 衣裝「${snap.outfit}」。${snap.identity.desc}</p>
         <p class="muted">${IDENTITY_DISCLAIMER}</p>
       </div>
@@ -479,20 +466,6 @@ function renderProfile(user, char, snap) {
           .join("")}
       </ul>
       <button type="button" class="btn" data-goto="promote">前往晉升殿</button>
-    </div>
-    <h3 class="section-title"><span>更換人物原型（${roster.length}）</span></h3>
-    <p class="lead" style="margin-top:0">進度與身份保留，只改立繪原型。</p>
-    <div class="char-pick profile-char-pick">
-      ${roster
-        .map(
-          (c) => `
-        <button type="button" class="char-card ${user.characterId === c.id ? "selected" : ""}" data-switch-char="${c.id}" style="--accent:${c.color}">
-          <div class="char-portrait">${renderAvatar(c, snap.identity.id, "md", { forcePortrait: true, gender: user.gender })}</div>
-          <div class="name">${c.name}</div>
-          <div class="era">${c.era}</div>
-        </button>`
-        )
-        .join("")}
     </div>
     <div class="stat-row">
       <div class="stat">答對 ${user.stats?.correct || 0}</div>
@@ -880,9 +853,9 @@ function renderShizhan(user, char, rank) {
       <div class="sz-fighter me">
         ${renderAvatar(char, rank.id, "md")}
         <div>
-          <strong>${char.name}</strong>
+          <strong>${heroDisplayName(user, char)}</strong>
           <div class="sz-hp">${hearts(b.playerHp)}</div>
-          <small>${char.era} · 你${b.skillReady ? " · 技可用" : ""}</small>
+          <small>你${b.skillReady ? " · 技可用" : ""}</small>
         </div>
       </div>
     </div>

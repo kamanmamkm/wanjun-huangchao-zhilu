@@ -3,6 +3,7 @@
  * 舊帳號自動遷移，唔會因為舊 XP 直接登基。
  */
 import { migrateIdentityId, STARTING_IDENTITY_ID } from "./data/identities.js";
+import { normalizeHeroName } from "./data/characters.js";
 
 const USERS_KEY = "huangchao_users_v1";
 const SESSION_KEY = "huangchao_session_v1";
@@ -77,7 +78,12 @@ export function migrateUser(u) {
   if (typeof u.identityId !== "number" || u.identityId < 0) {
     u.identityId = STARTING_IDENTITY_ID;
   }
-  if (u.characterId === "wuzetian") u.characterId = "fengyi";
+  // 已取消歷史人物原型：統一為男女樣貌殼
+  u.characterId = u.gender === "female" ? "hero_female" : "hero_male";
+  if (!String(u.heroName || "").trim()) {
+    // 舊帳號無自訂名：暫用「行者」
+    u.heroName = u.heroName || "";
+  }
   return u;
 }
 
@@ -97,17 +103,20 @@ export function clearSession() {
   localStorage.removeItem(SESSION_KEY);
 }
 
-export function registerUser({ username, password, gender, characterId }) {
+export function registerUser({ username, password, gender, characterId, heroName }) {
   const name = String(username || "").trim();
   if (!name || name.length < 2) throw new Error("帳號至少兩個字");
   if (!password || String(password).length < 3) throw new Error("密碼至少三個字");
+  const hero = normalizeHeroName(heroName);
   const users = readUsers();
   if (users[name]) throw new Error("此帳號已被使用");
+  const g = gender === "female" ? "female" : "male";
   users[name] = {
     username: name,
     password: String(password),
-    gender,
-    characterId,
+    gender: g,
+    characterId: g === "female" ? "hero_female" : "hero_male",
+    heroName: hero,
     xp: 0,
     streak: 0,
     answered: {},

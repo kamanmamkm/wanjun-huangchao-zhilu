@@ -4,6 +4,7 @@
  */
 import { migrateIdentityId, STARTING_IDENTITY_ID } from "./data/identities.js";
 import { normalizeHeroName } from "./data/characters.js";
+import { syncIdentityToLevel } from "./progress.js";
 
 const USERS_KEY = "huangchao_users_v1";
 const SESSION_KEY = "huangchao_session_v1";
@@ -65,6 +66,7 @@ export function migrateUser(u) {
     u.streak = u.streak || 0;
     u.xp = u.xp || 0;
     u.identitySchema = IDENTITY_SCHEMA;
+    syncIdentityToLevel(u);
     return u;
   }
 
@@ -81,9 +83,10 @@ export function migrateUser(u) {
   // 已取消歷史人物原型：統一為男女樣貌殼
   u.characterId = u.gender === "female" ? "hero_female" : "hero_male";
   if (!String(u.heroName || "").trim()) {
-    // 舊帳號無自訂名：暫用「行者」
     u.heroName = u.heroName || "";
   }
+  // 已達等級帶（如 Lv.6）而身份仍落後 → 補升形象
+  syncIdentityToLevel(u);
   return u;
 }
 

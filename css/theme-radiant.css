@@ -655,12 +655,78 @@ h1, h2, h3,
     var(--pattern-grain),
     #fffaf0 !important;
   border: var(--border-gold);
-  color: var(--ink);
+  color: var(--ink) !important;
+}
+.study-mode .q-text,
+.stage-play .q-text,
+.question-box .q-text,
+.trial-q .q-text,
+.cuoshi-view .q-text {
+  color: #1a1612 !important;
+  font-weight: 700;
+}
+.study-mode .option,
+.stage-play .option,
+.question-box .option,
+.trial-q .option,
+.cuoshi-view .option {
+  background: #fffef8 !important;
+  color: #1a1612 !important;
+  border: 1px solid rgba(42, 36, 28, 0.28) !important;
+  text-shadow: none !important;
+}
+.study-mode .option:hover,
+.stage-play .option:hover,
+.question-box .option:hover,
+.trial-q .option:hover,
+.cuoshi-view .option:hover {
+  border-color: var(--cinnabar) !important;
+  background: #fff5ea !important;
+  color: #1a1612 !important;
 }
 .study-bubble {
   background: rgba(255, 250, 240, 0.96);
   border: 1px solid rgba(196, 154, 70, 0.3);
   color: var(--ink);
+}
+
+/* 宮廷深底頁：答題卡仍用深墨字＋象牙紙，避免淺字睇唔清 */
+.theme-court .trial-q,
+.theme-court .stage-play,
+.theme-court .question-box,
+.theme-court .study-mode {
+  background: #fffaf0 !important;
+  color: #1a1612 !important;
+  border: var(--border-gold) !important;
+}
+.theme-court .q-text,
+.theme-court .trial-q .eyebrow,
+.theme-court .stage-play .eyebrow,
+.theme-court .feedback,
+.theme-court .lead {
+  color: #1a1612 !important;
+}
+.theme-court .trial-q .eyebrow,
+.theme-court .stage-play .eyebrow {
+  color: var(--gold-deep) !important;
+}
+.theme-court .option {
+  background: #fffef8 !important;
+  color: #1a1612 !important;
+  border-color: rgba(42, 36, 28, 0.28) !important;
+}
+.theme-court .option:hover {
+  background: #fff5ea !important;
+  color: #1a1612 !important;
+  border-color: var(--cinnabar) !important;
+}
+.theme-court .option.correct {
+  background: rgba(47, 107, 85, 0.14) !important;
+  color: #1a1612 !important;
+}
+.theme-court .option.wrong {
+  background: rgba(184, 58, 47, 0.12) !important;
+  color: #1a1612 !important;
 }
 
 .growth-card,

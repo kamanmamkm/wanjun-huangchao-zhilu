@@ -129,6 +129,30 @@ export function getStageVisual(identityId) {
   return STAGE_VISUALS[id] || STAGE_VISUALS[0];
 }
 
+/**
+ * 海報標籤等級帶 → 階段 id（與實際角色 Lv 對齊）
+ * ①1–5 庶民｜②6–15 學子｜③16–25 士人｜…
+ */
+export function stageIdFromLevel(level) {
+  const lv = Math.max(1, Number(level) || 1);
+  if (lv <= 5) return 0;
+  if (lv <= 15) return 1;
+  if (lv <= 25) return 2;
+  if (lv <= 40) return 3;
+  if (lv <= 55) return 4;
+  if (lv <= 70) return 5;
+  if (lv <= 85) return 6;
+  return 7;
+}
+
+/** 立繪／形象：取身份與等級帶較高者 */
+export function effectiveStageId(identityId, level) {
+  return Math.max(
+    Math.min(7, Math.max(0, Number(identityId) || 0)),
+    stageIdFromLevel(level)
+  );
+}
+
 /** 階段專屬海報（key = 新身份 id） */
 export const STAGE_ART = {
   0: {

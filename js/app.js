@@ -1,11 +1,11 @@
-import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad17";
-import { QUESTIONS, checkFill } from "./data/questions.js?v=rad17";
-import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad17";
-import { levelFromXp } from "./data/levels.js?v=rad17";
-import { DIALOGUES } from "./data/dialogues.js?v=rad17";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad17";
-import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=rad17";
-import { renderAvatar } from "./avatar.js?v=rad17";
+import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad18";
+import { QUESTIONS, checkFill } from "./data/questions.js?v=rad18";
+import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad18";
+import { levelFromXp } from "./data/levels.js?v=rad18";
+import { DIALOGUES } from "./data/dialogues.js?v=rad18";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad18";
+import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=rad18";
+import { renderAvatar } from "./avatar.js?v=rad18";
 import {
   CARD_TYPES,
   createBattle,
@@ -15,7 +15,7 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=rad17";
+} from "./data/shizhan.js?v=rad18";
 import {
   getCurrentUser,
   registerUser,
@@ -23,7 +23,7 @@ import {
   clearSession,
   addXp,
   updateUser,
-} from "./storage.js?v=rad17";
+} from "./storage.js?v=rad18";
 import {
   userSnapshot,
   buildPromotionOrder,
@@ -31,7 +31,8 @@ import {
   IDENTITY_DISCLAIMER,
   identityDisplayName,
   getIdentity,
-} from "./progress.js?v=rad17";
+  syncIdentityToLevel,
+} from "./progress.js?v=rad18";
 import {
   renderJourneyHome,
   renderScroll,
@@ -42,10 +43,10 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad17";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad17";
-import { renderPromoteReveal } from "./heroStage.js?v=rad17";
-import { getStageVisual } from "./data/stageVisuals.js?v=rad17";
+} from "./journey.js?v=rad18";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad18";
+import { renderPromoteReveal } from "./heroStage.js?v=rad18";
+import { getStageVisual } from "./data/stageVisuals.js?v=rad18";
 
 const app = document.getElementById("app");
 let toastTimer = null;
@@ -126,7 +127,18 @@ function reward(amount, meta = {}) {
   addXp(bonus, meta);
   const after = getCurrentUser();
   const nextLv = levelFromXp(after.xp).level;
-  if (nextLv > prevLv) toast(`角色升至 Lv.${nextLv}！+${bonus} 經驗（身份需經晉升殿考核）`);
+  let stageUp = null;
+  if (nextLv > prevLv) {
+    updateUser((u) => {
+      stageUp = syncIdentityToLevel(u);
+    });
+  }
+  const synced = getCurrentUser();
+  if (stageUp) {
+    const name = identityDisplayName(getIdentity(stageUp.to), synced?.gender);
+    state.promoteReveal = { fromId: stageUp.from, toId: stageUp.to };
+    toast(`升至 Lv.${nextLv}！形象晉升為「${name}」· +${bonus} 經驗`);
+  } else if (nextLv > prevLv) toast(`角色升至 Lv.${nextLv}！+${bonus} 經驗`);
   else if (meta.qid && before?.answered?.[meta.qid]) toast(`+${bonus} 經驗（複習減幅）`);
   else if (bonus) toast(`+${bonus} 經驗`);
   if (!meta.keepView) render();
@@ -172,12 +184,12 @@ function render() {
     return;
   }
   const id = user.identityId || 0;
-  const courtViews = ["promote", "cuoshi"];
+  const courtViews = ["promote"];
   const isCourt =
     courtViews.includes(state.view) ||
     (state.view === "chapter" &&
       !!state.scrollStage &&
-      /boss|試煉|錯史/i.test(String(state.scrollStage)));
+      /boss|試煉/i.test(String(state.scrollStage)));
   document.body.className = `stage-visual-${id}${isCourt ? " theme-court" : ""}`;
   app.innerHTML = renderShell(user);
   bindShell(user);

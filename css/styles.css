@@ -1,18 +1,21 @@
 :root {
-  --ink: #1a120c;
-  --ink-soft: #3a2a1c;
-  --paper: #f0e2c8;
-  --paper-soft: #f7ecd8;
-  --lacquer: #0c1018;
-  --mist-blue: #1e2a38;
-  --mountain: #243040;
-  --cinnabar: #b33a2b;
-  --cinnabar-deep: #7e2418;
-  --gold: #c6a35a;
-  --gold-deep: #8a6a2e;
-  --jade: #2d6b52;
-  --bronze: #6e5430;
-  --shadow: 0 20px 48px rgba(8, 10, 16, 0.45);
+  /* 唐朝宮廷：朱砂、鎏金、青玉、素絹 */
+  --ink: #2a1c12;
+  --ink-soft: #5a4030;
+  --paper: #f8efd8;
+  --paper-soft: #fff8ec;
+  --silk: #f3e6c8;
+  --sky: #c9dff0;
+  --dawn: #f7d9b8;
+  --mist-blue: #7a9eb8;
+  --mountain: #7d9a88;
+  --cinnabar: #c45a3a;
+  --cinnabar-deep: #9a3424;
+  --gold: #d4b06a;
+  --gold-deep: #a67c3a;
+  --jade: #3d7a62;
+  --bronze: #8a6a40;
+  --shadow: 0 16px 40px rgba(90, 60, 30, 0.14);
   --radius: 10px;
   --font-display: "Ma Shan Zheng", "ZCOOL XiaoWei", "Noto Serif TC", cursive;
   --font-body: "Noto Serif TC", "Noto Sans TC", "Songti TC", serif;
@@ -29,46 +32,47 @@ body {
   min-height: 100%;
   color: var(--ink);
   font-family: var(--font-ui);
-  background: var(--lacquer);
+  background: var(--paper-soft);
 }
 
-/* 水墨夜空底 */
+/* 唐朝晝景：曉霞天光 · 素絹宮廷 */
 body {
   background:
-    radial-gradient(ellipse 90% 60% at 50% -10%, rgba(90, 110, 140, 0.35), transparent 55%),
-    radial-gradient(ellipse 50% 40% at 85% 20%, rgba(179, 58, 43, 0.12), transparent 50%),
-    radial-gradient(ellipse 40% 35% at 10% 30%, rgba(198, 163, 90, 0.08), transparent 45%),
-    linear-gradient(180deg, #0a0e16 0%, #141c28 42%, #1a2433 70%, #243040 100%);
+    radial-gradient(ellipse 100% 70% at 50% -5%, rgba(255, 236, 210, 0.95), transparent 55%),
+    radial-gradient(ellipse 55% 45% at 90% 12%, rgba(196, 90, 58, 0.1), transparent 50%),
+    radial-gradient(ellipse 45% 40% at 8% 18%, rgba(212, 176, 106, 0.18), transparent 48%),
+    radial-gradient(ellipse 70% 50% at 50% 100%, rgba(125, 154, 136, 0.16), transparent 55%),
+    linear-gradient(180deg, #d8eaf6 0%, #e8f0f4 18%, #f5e8d0 48%, #f8efd8 78%, #efe4c8 100%);
 }
 
-/* 祥雲紋 */
+/* 唐風祥雲紋（淡金） */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  opacity: 0.22;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='120' viewBox='0 0 220 120'%3E%3Cpath d='M20 70c12-22 38-28 58-18 8-18 32-28 52-16 14-10 34-8 46 6 18 2 34 16 30 34H28c-8-6-12-14-8-22z' fill='none' stroke='%23c6a35a' stroke-width='1.2' opacity='.7'/%3E%3Cpath d='M40 88c8-10 24-14 36-8 6-10 20-14 32-8 10-6 24-4 32 6' fill='none' stroke='%239ab0c8' stroke-width='.8' opacity='.5'/%3E%3C/svg%3E");
-  background-size: 220px 120px;
-  animation: cloudDrift 80s linear infinite;
+  opacity: 0.28;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='130' viewBox='0 0 240 130'%3E%3Cpath d='M24 78c14-24 42-30 62-18 9-20 34-30 56-16 15-12 36-9 48 6 20 2 36 18 32 36H32c-9-6-13-16-8-24z' fill='%23fff8ec' stroke='%23c9a050' stroke-width='1.1' opacity='.85'/%3E%3Cpath d='M48 96c9-11 26-15 38-8 7-11 22-15 34-8 11-7 26-4 34 7' fill='none' stroke='%23a8c4d8' stroke-width='1' opacity='.55'/%3E%3C/svg%3E");
+  background-size: 240px 130px;
+  animation: cloudDrift 90s linear infinite;
 }
 
-/* 遠山剪影 */
+/* 青绿遠山（淡彩，非夜色） */
 body::after {
   content: "";
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
-  height: min(42vh, 380px);
+  height: min(40vh, 360px);
   pointer-events: none;
   z-index: 0;
   background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320' preserveAspectRatio='none'%3E%3Cpath fill='%2318212e' d='M0 224L48 208C96 192 192 160 288 154.7C384 149 480 171 576 186.7C672 203 768 213 864 197.3C960 181 1056 139 1152 128C1248 117 1344 139 1392 149.3L1440 160V320H0Z'/%3E%3Cpath fill='%230f1620' d='M0 256L60 245C120 234 240 213 360 208C480 203 600 213 720 229.3C840 245 960 267 1080 261.3C1200 256 1320 224 1380 208L1440 192V320H0Z'/%3E%3C/svg%3E")
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320' preserveAspectRatio='none'%3E%3Cpath fill='%23a8c4b8' fill-opacity='.55' d='M0 224L48 208C96 192 192 160 288 154.7C384 149 480 171 576 186.7C672 203 768 213 864 197.3C960 181 1056 139 1152 128C1248 117 1344 139 1392 149.3L1440 160V320H0Z'/%3E%3Cpath fill='%238eae9a' fill-opacity='.7' d='M0 256L60 245C120 234 240 213 360 208C480 203 600 213 720 229.3C840 245 960 267 1080 261.3C1200 256 1320 224 1380 208L1440 192V320H0Z'/%3E%3Cpath fill='%23d4e4c8' fill-opacity='.85' d='M0 288L80 280C160 272 320 256 480 256C640 256 800 272 960 277C1120 283 1280 277 1360 274L1440 272V320H0Z'/%3E%3C/svg%3E")
       bottom / 100% 100% no-repeat,
-    linear-gradient(180deg, transparent 0%, rgba(8, 12, 18, 0.55) 100%);
-  opacity: 0.95;
+    linear-gradient(180deg, transparent 0%, rgba(243, 230, 200, 0.35) 100%);
+  opacity: 0.9;
 }
 
 #app {
@@ -142,10 +146,10 @@ select {
 }
 
 .btn.ghost {
-  background: rgba(240, 226, 200, 0.15);
-  color: var(--paper-soft);
+  background: rgba(255, 248, 236, 0.72);
+  color: var(--ink-soft);
   box-shadow: none;
-  border: 1px solid rgba(198, 163, 90, 0.4);
+  border: 1px solid rgba(166, 124, 58, 0.35);
   backdrop-filter: blur(6px);
 }
 
@@ -185,7 +189,7 @@ select {
 }
 
 .brand-block {
-  color: var(--paper-soft);
+  color: var(--ink);
   position: relative;
   padding-left: 1.2rem;
 }
@@ -201,10 +205,10 @@ select {
   place-items: center;
   font-family: var(--font-display);
   font-size: 1.1rem;
-  color: #f7e7c8;
-  background: radial-gradient(circle at 40% 35%, #d45a48, var(--cinnabar-deep));
-  border: 1px solid rgba(246, 220, 160, 0.45);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+  color: #fff6e4;
+  background: radial-gradient(circle at 40% 35%, #e07058, var(--cinnabar-deep));
+  border: 1px solid rgba(212, 176, 106, 0.65);
+  box-shadow: 0 6px 16px rgba(154, 52, 36, 0.22);
   transform: rotate(-8deg);
   animation: sealIn 0.8s 0.2s ease both;
 }
@@ -216,10 +220,10 @@ select {
   line-height: 1.15;
   margin: 0 0 0.7rem;
   letter-spacing: 0.14em;
-  color: #f4e6c4;
+  color: var(--cinnabar-deep);
   text-shadow:
-    0 2px 0 rgba(0, 0, 0, 0.35),
-    0 0 28px rgba(198, 163, 90, 0.25);
+    0 1px 0 rgba(255, 248, 236, 0.9),
+    0 2px 12px rgba(212, 176, 106, 0.35);
   animation: brandIn 0.9s ease both;
 }
 
@@ -228,7 +232,7 @@ select {
   font-size: 1.08rem;
   max-width: 34ch;
   line-height: 1.85;
-  color: rgba(240, 226, 200, 0.88);
+  color: var(--ink-soft);
   animation: fadeUp 0.8s 0.15s ease both;
 }
 
@@ -243,9 +247,9 @@ select {
 .tag {
   padding: 0.35rem 0.75rem;
   border-radius: 4px;
-  background: rgba(20, 28, 40, 0.45);
-  border: 1px solid rgba(198, 163, 90, 0.35);
-  color: #e8d7b0;
+  background: rgba(255, 248, 236, 0.75);
+  border: 1px solid rgba(196, 90, 58, 0.28);
+  color: var(--cinnabar-deep);
   font-size: 0.82rem;
   letter-spacing: 0.06em;
 }
@@ -298,9 +302,9 @@ select {
 }
 
 .auth-tabs button.active {
-  background: linear-gradient(180deg, #2a384c, #1a2433);
-  color: #f0e2c8;
-  border-color: rgba(198, 163, 90, 0.45);
+  background: linear-gradient(180deg, #d4684c, var(--cinnabar-deep));
+  color: #fff8ef;
+  border-color: rgba(212, 176, 106, 0.55);
 }
 
 .form-grid {
@@ -416,7 +420,7 @@ select {
 }
 
 .brand-block .eyebrow {
-  color: #e6c96a;
+  color: var(--gold-deep);
 }
 
 .btn-wide {
@@ -455,11 +459,11 @@ select {
   font-size: 1.6rem;
   font-weight: 400;
   letter-spacing: 0.1em;
-  color: #f4e6c4;
+  color: var(--cinnabar-deep);
 }
 
 .hero-caption span {
-  color: rgba(240, 226, 200, 0.8);
+  color: var(--ink-soft);
   font-size: 0.92rem;
   line-height: 1.5;
 }
@@ -468,7 +472,7 @@ select {
   display: flex;
   align-items: center;
   gap: 1rem;
-  color: rgba(240, 226, 200, 0.85);
+  color: var(--ink-soft);
   line-height: 1.6;
 }
 
@@ -486,13 +490,14 @@ select {
   gap: 0.3rem;
   padding: 0.35rem;
   border-radius: 10px;
-  background: rgba(247, 236, 216, 0.12);
-  border: 1px solid rgba(198, 163, 90, 0.3);
+  background: rgba(255, 248, 236, 0.72);
+  border: 1px solid rgba(166, 124, 58, 0.3);
+  box-shadow: 0 4px 14px rgba(90, 60, 30, 0.06);
 }
 
 .parade-item span {
   font-size: 0.75rem;
-  color: #e8d7b0;
+  color: var(--ink-soft);
   letter-spacing: 0.06em;
 }
 
@@ -503,7 +508,7 @@ select {
 
 .hero-idle-note {
   margin: 0.75rem 0 0;
-  color: rgba(240, 226, 200, 0.8);
+  color: var(--ink-soft);
   font-size: 0.92rem;
 }
 
@@ -921,15 +926,16 @@ select {
 }
 
 .nav button {
-  border: 1px solid rgba(198, 163, 90, 0.35);
-  background: rgba(20, 28, 40, 0.55);
+  border: 1px solid rgba(166, 124, 58, 0.35);
+  background: rgba(255, 248, 236, 0.78);
   border-radius: 6px;
   padding: 0.55rem 1rem;
   cursor: pointer;
   font-weight: 700;
   letter-spacing: 0.08em;
-  color: #e8d7b0;
+  color: var(--ink-soft);
   backdrop-filter: blur(8px);
+  box-shadow: 0 4px 12px rgba(90, 60, 30, 0.06);
 }
 
 .nav button.active {
@@ -1169,11 +1175,11 @@ select {
 .flip-card {
   aspect-ratio: 1 / 1.05;
   border-radius: 8px;
-  border: 1px solid rgba(198, 163, 90, 0.35);
+  border: 1px solid rgba(166, 124, 58, 0.4);
   cursor: pointer;
   background:
-    linear-gradient(145deg, #2a384c, #141c28);
-  color: #f0e2c8;
+    linear-gradient(145deg, #e8c078, #c45a3a);
+  color: #fff8ef;
   font-weight: 700;
   font-family: var(--font-display);
   letter-spacing: 0.12em;
@@ -1309,11 +1315,11 @@ select {
   left: 50%;
   bottom: 1.5rem;
   transform: translateX(-50%) translateY(120%);
-  background: linear-gradient(180deg, #2a384c, #141c28);
-  color: #f0e2c8;
+  background: linear-gradient(180deg, #fff8ec, #f0dcb8);
+  color: var(--ink);
   padding: 0.75rem 1.25rem;
   border-radius: 6px;
-  border: 1px solid rgba(198, 163, 90, 0.45);
+  border: 1px solid rgba(196, 90, 58, 0.35);
   z-index: 50;
   transition: transform 0.3s ease;
   box-shadow: var(--shadow);

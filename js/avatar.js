@@ -508,7 +508,7 @@ export function renderAvatar(character, rankId = 0, size = "md", opts = {}) {
   if (character.portrait) {
     return `
     <div class="avatar-art avatar-${size} outfit-${rank}" style="--accent:${accent};--glow:${GLOW[rank]};width:${dims}px;height:${h}px" role="img" aria-label="${character.name} · ${outfit}">
-      <img src="${character.portrait}?v=fit1" alt="${character.name}" width="${dims}" height="${h}" loading="lazy" />
+      <img src="${character.portrait}?v=rps1" alt="${character.name}" width="${dims}" height="${h}" loading="lazy" />
       <span class="avatar-art-outfit">${outfit}</span>
       <span class="avatar-art-era">${character.era || ""}</span>
     </div>`;

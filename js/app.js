@@ -1,10 +1,11 @@
-import { CHARACTERS, getCharacter } from "./data/characters.js?v=fit1";
-import { QUESTIONS, checkFill } from "./data/questions.js?v=fit1";
-import { RANKS, XP_REWARDS, rankFromXp, outfitOf } from "./data/ranks.js?v=fit1";
-import { DIALOGUES } from "./data/dialogues.js?v=fit1";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=fit1";
-import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=fit1";
-import { renderAvatar } from "./avatar.js?v=fit1";
+import { CHARACTERS, getCharacter } from "./data/characters.js?v=rps1";
+import { QUESTIONS, checkFill } from "./data/questions.js?v=rps1";
+import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rps1";
+import { levelFromXp } from "./data/levels.js?v=rps1";
+import { DIALOGUES } from "./data/dialogues.js?v=rps1";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rps1";
+import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=rps1";
+import { renderAvatar } from "./avatar.js?v=rps1";
 import {
   CARD_TYPES,
   createBattle,
@@ -14,7 +15,7 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=fit1";
+} from "./data/shizhan.js?v=rps1";
 import {
   getCurrentUser,
   registerUser,
@@ -22,7 +23,22 @@ import {
   clearSession,
   addXp,
   updateUser,
-} from "./storage.js?v=fit1";
+} from "./storage.js?v=rps1";
+import {
+  userSnapshot,
+  buildPromotionOrder,
+  recordLearning,
+  IDENTITY_DISCLAIMER,
+} from "./progress.js?v=rps1";
+import {
+  renderJourneyHome,
+  renderScroll,
+  renderChapterDetail,
+  renderPromote,
+  renderNotes,
+  renderChronicle,
+  bindJourney,
+} from "./journey.js?v=rps1";
 
 const app = document.getElementById("app");
 let toastTimer = null;
@@ -37,6 +53,11 @@ let state = {
   timeline: { setId: TIMELINE_SETS[0].id },
   dialogue: { id: DIALOGUES[0].id, step: 0 },
   shizhan: null,
+  scrollChapter: "ch1_escape",
+  scrollStage: null,
+  stageQuiz: null,
+  bossStep: 0,
+  trial: null,
 };
 
 function toast(msg) {
@@ -63,24 +84,41 @@ function shuffle(arr) {
 
 function reward(amount, meta = {}) {
   const before = getCurrentUser();
-  const prevRank = before ? rankFromXp(before.gender, before.xp).current.id : 0;
+  const prevLv = before ? levelFromXp(before.xp).level : 1;
   let bonus = amount;
-  // 重複答同一題大幅減經驗，防止刷級
   if (meta.qid && before?.answered?.[meta.qid]) {
     bonus = Math.max(1, Math.round(bonus * XP_REWARDS.repeatScale));
   }
-  // 連勝要連續 4 題才有小額加成
   if (meta.correct && (before?.streak || 0) >= 3) bonus += XP_REWARDS.streakBonus;
+  if (meta.correct && (meta.topic || meta.skill || meta.qid)) {
+    updateUser((u) =>
+      recordLearning(u, {
+        topic: meta.topic,
+        skill: meta.skill || "recall",
+        correct: true,
+        qid: meta.qid,
+        qText: meta.qText,
+        chapterId: meta.chapterId,
+      })
+    );
+  }
+  if (meta.wrong && meta.qText) {
+    updateUser((u) =>
+      recordLearning(u, {
+        topic: meta.topic,
+        skill: meta.skill || "recall",
+        correct: false,
+        qid: meta.qid,
+        qText: meta.qText,
+      })
+    );
+  }
   addXp(bonus, meta);
   const after = getCurrentUser();
-  const nextRank = rankFromXp(after.gender, after.xp).current;
-  if (nextRank.id > prevRank) {
-    toast(`晉升為「${nextRank.name}」！+${bonus} 經驗`);
-  } else if (meta.qid && before?.answered?.[meta.qid]) {
-    toast(`+${bonus} 經驗（複習題減半再減）`);
-  } else {
-    toast(`+${bonus} 經驗`);
-  }
+  const nextLv = levelFromXp(after.xp).level;
+  if (nextLv > prevLv) toast(`角色升至 Lv.${nextLv}！+${bonus} 經驗（身份需經晉升殿考核）`);
+  else if (meta.qid && before?.answered?.[meta.qid]) toast(`+${bonus} 經驗（複習減幅）`);
+  else if (bonus) toast(`+${bonus} 經驗`);
   if (!meta.keepView) render();
   else refreshTopbarOnly();
 }
@@ -89,16 +127,26 @@ function refreshTopbarOnly() {
   const user = getCurrentUser();
   if (!user) return;
   const char = getCharacter(user.gender, user.characterId);
-  const { current, next, progress } = rankFromXp(user.gender, user.xp);
+  const snap = userSnapshot(user);
   const badge = app.querySelector(".player-badge");
   if (!badge) return;
   badge.innerHTML = `
-    <div class="avatar-ring">${renderAvatar(char, current.id, "sm")}</div>
+    <div class="avatar-ring">${renderAvatar(char, snap.identity.id, "sm")}</div>
     <div class="player-meta">
-      <strong>${char?.name || "行者"} · ${current.name}</strong>
-      <span>${user.username}　經驗 ${user.xp}${next ? `／下一階 ${next.xp}` : "（已登頂）"}</span>
-      <div class="xp-bar"><i style="width:${progress}%"></i></div>
+      <strong>${char?.name || "行者"} · ${snap.identityName}</strong>
+      <span>${user.username}　Lv.${snap.level.level}　XP ${user.xp}</span>
+      <div class="xp-bar"><i style="width:${snap.level.progress}%"></i></div>
     </div>`;
+}
+
+function journeyCtx() {
+  return {
+    state,
+    render,
+    toast,
+    reward,
+    getUser: getCurrentUser,
+  };
 }
 
 function render() {
@@ -157,8 +205,8 @@ function renderAuth() {
             ? `
         <label>性別
           <select name="gender" id="gender-select">
-            <option value="male" ${state.gender === "male" ? "selected" : ""}>男（奴隸→皇帝）</option>
-            <option value="female" ${state.gender === "female" ? "selected" : ""}>女（婢女→女皇）</option>
+            <option value="male" ${state.gender === "male" ? "selected" : ""}>男（開局：奴隸困境 → 考核晉升）</option>
+            <option value="female" ${state.gender === "female" ? "selected" : ""}>女（開局：婢女困境 → 考核晉升）</option>
           </select>
         </label>
         <div>
@@ -226,7 +274,7 @@ function bindAuth() {
       }
       state.view = "home";
       render();
-      toast("歡迎踏上任平生之路");
+      toast("歡迎踏上任平生——小升級靠努力，大晉升靠實力");
     } catch (ex) {
       err.textContent = ex.message;
     }
@@ -236,60 +284,77 @@ function bindAuth() {
 /* ========== Shell ========== */
 function renderShell(user) {
   const char = getCharacter(user.gender, user.characterId);
-  const { current, next, progress } = rankFromXp(user.gender, user.xp);
-  const ranks = RANKS[user.gender];
+  const snap = userSnapshot(user);
+  const idn = snap.identity;
+  const main =
+    state.view === "home"
+      ? renderJourneyHome(user, char)
+      : state.view === "scroll"
+        ? renderScroll(user)
+        : state.view === "chapter"
+          ? renderChapterDetail(user, state.scrollChapter, state.scrollStage)
+          : state.view === "promote"
+            ? renderPromote(user, char)
+            : state.view === "notes"
+              ? renderNotes(user)
+              : state.view === "chronicle"
+                ? renderChronicle(user, char)
+                : state.view === "practice"
+                  ? renderPractice()
+                  : state.view === "games"
+                    ? renderGamesHub()
+                    : state.view === "videos"
+                      ? renderVideos()
+                      : state.view === "profile"
+                        ? renderProfile(user, char, snap)
+                        : state.view === "wordwall"
+                          ? renderWordwall()
+                          : state.view === "timeline"
+                            ? renderTimeline()
+                            : state.view === "dialogue"
+                              ? renderDialogue()
+                              : state.view === "shizhan"
+                                ? renderShizhan(user, char, idn)
+                                : "";
+
+  const topNav = null; // nav built below
+
   return `
-  <div class="app-shell">
+  <div class="app-shell paper-shell">
     <header class="topbar">
       <div class="player-badge">
-        <div class="avatar-ring">${renderAvatar(char, current.id, "sm")}</div>
+        <div class="avatar-ring">${renderAvatar(char, idn.id, "sm")}</div>
         <div class="player-meta">
-          <strong>${char?.name || "行者"} · ${current.name}</strong>
-          <span>${user.username}　經驗 ${user.xp}${next ? `／下一階 ${next.xp}` : "（已登頂）"}</span>
-          <div class="xp-bar"><i style="width:${progress}%"></i></div>
+          <strong>${char?.name || "行者"} · ${snap.identityName}</strong>
+          <span>${user.username}　Lv.${snap.level.level}　XP ${user.xp}</span>
+          <div class="xp-bar"><i style="width:${snap.level.progress}%"></i></div>
         </div>
       </div>
-      <div style="display:flex;gap:.5rem;align-items:center">
+      <div class="top-tools">
+        <span class="brand-top">《任平生》</span>
         <button class="btn ghost" id="logout-btn" type="button">登出</button>
       </div>
     </header>
-    <nav class="nav">
+    <nav class="nav mobile-nav">
       ${[
-        ["home", "🏯 主殿"],
-        ["practice", "📝 練習"],
-        ["games", "🎯 遊戲"],
-        ["videos", "🎬 影片"],
-        ["profile", "👑 角色"],
+        ["home", "行旅"],
+        ["scroll", "長卷"],
+        ["promote", "晉升"],
+        ["notes", "札記"],
+        ["chronicle", "史冊"],
+        ["practice", "練習"],
+        ["games", "遊戲"],
       ]
-        .map(
-          ([id, label]) =>
-            `<button type="button" data-nav="${id}" class="${state.view === id ? "active" : ""}">${label}</button>`
-        )
+        .map(([id, label]) => {
+          const active =
+            state.view === id ||
+            (id === "scroll" && state.view === "chapter") ||
+            (id === "games" && ["wordwall", "timeline", "dialogue", "shizhan"].includes(state.view));
+          return `<button type="button" data-nav="${id}" class="${active ? "active" : ""}">${label}</button>`;
+        })
         .join("")}
     </nav>
-    <main id="main">
-      ${
-        state.view === "home"
-          ? renderHome(user, char, current)
-          : state.view === "practice"
-            ? renderPractice()
-            : state.view === "games"
-              ? renderGamesHub()
-              : state.view === "videos"
-                ? renderVideos()
-                : state.view === "profile"
-                  ? renderProfile(user, ranks, current, char)
-                  : state.view === "wordwall"
-                    ? renderWordwall()
-                    : state.view === "timeline"
-                      ? renderTimeline()
-                      : state.view === "dialogue"
-                        ? renderDialogue()
-                        : state.view === "shizhan"
-                          ? renderShizhan(user, char, current)
-                          : ""
-      }
-    </main>
+    <main id="main">${main}</main>
   </div>`;
 }
 
@@ -302,6 +367,9 @@ function bindShell(user) {
   app.querySelectorAll("[data-nav]").forEach((btn) => {
     btn.addEventListener("click", () => {
       state.view = btn.dataset.nav;
+      if (state.view === "scroll") {
+        state.scrollStage = null;
+      }
       render();
     });
   });
@@ -321,6 +389,8 @@ function bindShell(user) {
     });
   });
 
+  bindJourney(user, journeyCtx());
+
   if (state.view === "practice") bindPractice();
   if (state.view === "wordwall") bindWordwall();
   if (state.view === "timeline") bindTimeline();
@@ -328,94 +398,44 @@ function bindShell(user) {
   if (state.view === "shizhan") bindShizhan(user, char);
 }
 
-function renderHome(user, char, rank) {
-  const { next, progress } = rankFromXp(user.gender, user.xp);
-  const quests = [
-    { goto: "shizhan", icon: "⚔️", title: "史戰風雲", tip: "卡牌對戰 · 答題攻防", xp: `+${XP_REWARDS.shizhanWin}`, tone: "cinnabar" },
-    { goto: "practice", icon: "📝", title: "科舉答題", tip: "選擇 · 填充 · 配對", xp: `+${XP_REWARDS.mcCorrect}起`, tone: "cinnabar" },
-    { goto: "wordwall", icon: "🎯", title: "機緣翻牌", tip: "Wordwall 風挑戰", xp: `+${XP_REWARDS.wordwallRound}`, tone: "gold" },
-    { goto: "timeline", icon: "⏳", title: "時光長河", tip: "事件配對年代", xp: `+${XP_REWARDS.timelineComplete}`, tone: "jade" },
-    { goto: "dialogue", icon: "💬", title: "古人問答", tip: "與名君對話", xp: `+${XP_REWARDS.dialogueGood}`, tone: "indigo" },
-    { goto: "videos", icon: "🎬", title: "史影堂", tip: "看片鞏固知識", xp: "加分備戰", tone: "bronze" },
-    { goto: "profile", icon: "👑", title: "登基之路", tip: "等級與衣裝演進", xp: `${user.xp} XP`, tone: "royal" },
-  ];
-  return `
-  <section class="home-layout">
-    <div class="hero-banner panel">
-      <div class="hero-banner-art">
-        <div class="portrait-glow" style="--glow:${char?.color || rank.color}"></div>
-        ${renderAvatar(char, rank.id, "lg")}
-        <div class="rank-badge" style="background:${rank.color}">${rank.name}</div>
-      </div>
-      <div class="hero-banner-copy">
-        <p class="eyebrow">今日挑戰 · 任平生</p>
-        <h2>${char?.name}，繼續你的傳奇</h2>
-        <p class="motto">「${char?.motto}」</p>
-        <p class="lead">${char?.era}人物原型 · 現職<strong>${rank.name}</strong> · 衣裝「${rank.outfit || outfitOf(user.gender, rank.id)}」。答岩題升級，衣裝會由粗布漸變華麗！</p>
-        <div class="progress-card">
-          <div class="progress-head">
-            <span>升級進度</span>
-            <span>${next ? `距「${next.name}」還差 ${Math.max(0, next.xp - user.xp)} XP` : "已登帝位 🎉"}</span>
-          </div>
-          <div class="xp-bar xl"><i style="width:${progress}%"></i></div>
-        </div>
-        <div class="quick-actions">
-          <button type="button" class="btn" data-goto="practice">立即答題</button>
-          <button type="button" class="btn ghost" data-goto="games">玩小遊戲</button>
-        </div>
-      </div>
-    </div>
-    <div class="quest-board">
-      <h3 class="section-title"><span>任務告示板</span></h3>
-      <div class="quest-grid">
-        ${quests
-          .map(
-            (q, i) => `
-          <article class="quest-card tone-${q.tone}" data-goto="${q.goto}" style="--i:${i}">
-            <div class="quest-icon">${q.icon}</div>
-            <div class="quest-body">
-              <h3>${q.title}</h3>
-              <p>${q.tip}</p>
-            </div>
-            <span class="quest-xp">${q.xp}</span>
-          </article>`
-          )
-          .join("")}
-      </div>
-    </div>
-  </section>`;
+function renderHome(user, char) {
+  return renderJourneyHome(user, char);
 }
 
-function renderProfile(user, ranks, current, char) {
+function renderProfile(user, char, snap) {
   const roster = CHARACTERS[user.gender] || [];
+  const order = buildPromotionOrder(user);
   return `
-  <section class="panel profile-panel">
+  <section class="panel-paper profile-panel">
     <div class="profile-hero">
-      ${renderAvatar(char, current.id, "lg")}
+      ${renderAvatar(char, snap.identity.id, "lg")}
       <div>
-        <h2>${char?.name} 的登基之路</h2>
-        <p class="lead">${current.desc}　現着「${current.outfit || outfitOf(user.gender, current.id)}」。連勝 ${user.streak || 0} 題可獲額外經驗。奴隸／婢女為粗布簡樸，等級愈高衣裝愈華麗。</p>
+        <h2>${char?.name}</h2>
+        <p class="lead">身份「${snap.identityName}」· Lv.${snap.level.level} · 衣裝「${snap.outfit}」。${snap.identity.desc}</p>
+        <p class="muted">${IDENTITY_DISCLAIMER}</p>
       </div>
     </div>
-    <h3 class="section-title"><span>更換人物（${roster.length} 位）</span></h3>
-    <p class="lead" style="margin-top:0">進度保留，可隨時改選同性別角色。向下滑動睇晒全部。</p>
+    <div class="edict">
+      <h4>晉升令摘要</h4>
+      <ul class="edict-list">
+        ${order.items
+          .slice(0, 5)
+          .map((i) => `<li class="${i.ok ? "ok" : "no"}"><span>${i.ok ? "✓" : "✗"}</span>${i.label}</li>`)
+          .join("")}
+      </ul>
+      <button type="button" class="btn" data-goto="promote">前往晉升殿</button>
+    </div>
+    <h3 class="section-title"><span>更換人物原型（${roster.length}）</span></h3>
+    <p class="lead" style="margin-top:0">進度與身份保留，只改立繪原型。</p>
     <div class="char-pick profile-char-pick">
       ${roster
         .map(
           (c) => `
         <button type="button" class="char-card ${user.characterId === c.id ? "selected" : ""}" data-switch-char="${c.id}" style="--accent:${c.color}">
-          <div class="char-portrait">${renderAvatar(c, current.id, "md")}</div>
+          <div class="char-portrait">${renderAvatar(c, snap.identity.id, "md")}</div>
           <div class="name">${c.name}</div>
           <div class="era">${c.era}</div>
         </button>`
-        )
-        .join("")}
-    </div>
-    <div class="rank-road">
-      ${ranks
-        .map(
-          (r) =>
-            `<span class="rank-pill ${user.xp >= r.xp ? "reached" : ""}" style="${user.xp >= r.xp ? `background:${r.color}` : ""}">${r.name}<br><small>${r.outfit || ""} · ${r.xp}XP</small></span>`
         )
         .join("")}
     </div>
@@ -425,7 +445,6 @@ function renderProfile(user, ranks, current, char) {
       <div class="stat">小遊戲 ${user.stats?.games || 0}</div>
       <div class="stat">總經驗 ${user.xp}</div>
     </div>
-    <p class="lead" style="margin-top:1rem">升級偏難：選擇題 +${XP_REWARDS.mcCorrect}、填充 +${XP_REWARDS.fillCorrect}、配對每對 +${XP_REWARDS.matchPair}；重複作答只得約 ${Math.round(XP_REWARDS.repeatScale * 100)}% 經驗。登上帝位需約 ${RANKS.male[8].xp} XP。</p>
   </section>`;
 }
 

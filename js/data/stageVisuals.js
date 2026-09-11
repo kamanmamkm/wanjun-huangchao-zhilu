@@ -63,7 +63,7 @@ export const STAGE_VISUALS = {
     propKey: "brush",
     accent: "#246b87",
     bgHint: "白衣配青藍",
-    quote: "心有定見，行有所往。",
+    quote: "初露鋒芒，志在天下。",
     vibe: "初露鋒芒",
     priority: true,
   },
@@ -160,6 +160,12 @@ export const STAGE_ART = {
     female: "assets/stages/xuezi-female.jpg",
     badge: "② 學子｜Lv.6–15",
     label: "學子登場",
+  },
+  3: {
+    male: "assets/stages/shiren-male.jpg",
+    female: "assets/stages/shiren-female.jpg",
+    badge: "③ 士人｜Lv.16–25",
+    label: "士人登場",
   },
 };
 

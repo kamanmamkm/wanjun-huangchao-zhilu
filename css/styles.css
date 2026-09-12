@@ -340,6 +340,57 @@ select {
   padding: 0.55rem 0.8rem;
   letter-spacing: 0.06em;
 }
+.poster-char {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+.name-pencil {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.95rem;
+  line-height: 1;
+  padding: 0.15rem 0.35rem;
+  opacity: 0.72;
+  border-radius: 4px;
+}
+.name-pencil:hover,
+.name-pencil:focus-visible {
+  opacity: 1;
+  background: rgba(154, 52, 36, 0.08);
+}
+.home-quest {
+  margin: 0.2rem 0 0;
+  padding: 0.85rem 1rem;
+  max-width: 22rem;
+  border: 1px solid rgba(154, 52, 36, 0.32);
+  border-radius: 10px;
+  background: rgba(255, 250, 240, 0.94);
+  box-shadow: 0 6px 16px rgba(58, 36, 22, 0.08);
+}
+.home-quest .eyebrow {
+  margin: 0;
+  letter-spacing: 0.16em;
+  font-size: 0.72rem;
+  color: #9a3424;
+}
+.home-quest h3 {
+  margin: 0.2rem 0 0.25rem;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  letter-spacing: 0.06em;
+}
+.home-quest p {
+  margin: 0 0 0.65rem;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+.home-quest .poster-actions {
+  margin-top: 0;
+}
 
 .form-error {
   color: var(--cinnabar-deep);
@@ -1855,6 +1906,7 @@ select {
 .stage-card.locked { opacity: 0.45; cursor: not-allowed; }
 .stage-card.done { border-color: #8a7340; }
 .stage-card.mastered { border-color: #2d6b52; }
+.stage-card.corrected { border-color: #4a6d8c; }
 .stage-card .ic { font-size: 1.4rem; }
 .stage-card .goal { font-size: 0.78rem; opacity: 0.8; }
 .stage-settle {

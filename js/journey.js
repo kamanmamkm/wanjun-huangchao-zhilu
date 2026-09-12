@@ -15,10 +15,11 @@ import {
   buildPromotionOrder,
   completeStage,
   settleStage,
-  recordLearning,
   isStageCompleted,
   isStageMastered,
+  isStageCorrected,
   stageRecord,
+  stageStatusLabel,
   masteryFromScore,
   STAGE_MASTERY_RATE,
   markNoteMastered,
@@ -40,17 +41,95 @@ import {
 import { updateUser, addXp, pushRecent } from "./storage.js";
 import { getTrial } from "./data/trials.js";
 
-export function renderJourneyHome(user, char) {
+function chapterShortTitle(ch) {
+  const t = String(ch?.title || "");
+  const m = t.match(/^(第[一二三四五六七八九十百]+章)/);
+  return m ? m[1] : t || "長卷";
+}
+
+function makeStageTask(ch, stage, idx, extra = {}) {
+  const short = chapterShortTitle(ch);
+  return {
+    kind: extra.resume ? "resume" : "stage",
+    label: `繼續：${short}・第 ${idx + 1} 關`,
+    detail: stage.title,
+    chapterId: ch.id,
+    stageId: stage.id,
+    enterStage: `${ch.id}:${stage.id}`,
+  };
+}
+
+/** 根據目前進度計下一關：未完成關卡 → 下一章 → 錯題／試煉。 */
+export function nextJourneyTask(user, ui = {}) {
+  const list = chapterList();
+  const p = user.progress?.chapters || {};
+  const notes = (user.progress?.wrongNotes || []).filter((n) => n.status !== "mastered");
+
+  if (ui.scrollChapter && ui.scrollStage) {
+    const ch = CHAPTERS[ui.scrollChapter];
+    const stage = ch?.stages?.find((s) => s.id === ui.scrollStage);
+    const rec = p[ui.scrollChapter]?.stages?.[ui.scrollStage];
+    if (ch && stage && !isStageCompleted(rec)) {
+      const idx = ch.stages.findIndex((s) => s.id === stage.id);
+      return makeStageTask(ch, stage, idx, { resume: true });
+    }
+  }
+
+  for (const ch of list) {
+    const stages = ch.stages || [];
+    if (!stages.length) continue;
+    const st = p[ch.id] || { stages: {} };
+    const idx = stages.findIndex((s) => !isStageCompleted(st.stages?.[s.id]));
+    if (idx >= 0) return makeStageTask(ch, stages[idx], idx);
+  }
+
+  if (notes.length) {
+    return {
+      kind: "notes",
+      label: "複習錯題",
+      detail: `尚有 ${notes.length} 則待掌握`,
+      goto: "notes",
+    };
+  }
+
+  const order = buildPromotionOrder(user);
+  if (order.readyForTrial) {
+    return {
+      kind: "trial",
+      label: "開始試煉",
+      detail: order.nextName ? `挑戰「${order.nextName}」` : "晉升試煉已解鎖",
+      goto: "promote",
+    };
+  }
+  if (order.trialPassed && order.next) {
+    return {
+      kind: "promote",
+      label: `確認晉升「${order.nextName}」`,
+      detail: "條件已齊，可到晉升殿完成躍升",
+      goto: "promote",
+    };
+  }
+
+  const nextDraft = list.find((ch) => !(ch.stages || []).length);
+  return {
+    kind: "scroll",
+    label: "重溫長卷",
+    detail: nextDraft ? `${nextDraft.title} 製作中` : "已完成現有關卡",
+    goto: "scroll",
+  };
+}
+
+export function renderJourneyHome(user, char, ui = {}) {
   const snap = userSnapshot(user);
   const stageId = snap.stageId ?? user.identityId ?? 0;
   const order = buildPromotionOrder(user);
-  const ch = CHAPTERS.ch1_escape;
-  const chProg = user.progress?.chapters?.ch1_escape || { stages: {} };
-  const stages = ch.stages || [];
-  const nextStage = stages.find((s) => !isStageCompleted(chProg.stages?.[s.id])) || stages[stages.length - 1];
+  const task = nextJourneyTask(user, ui);
+  const taskCh = task.chapterId ? CHAPTERS[task.chapterId] : null;
   const skills = user.progress?.skills || {};
   const vis = getStageVisual(stageId);
   const realm = realmLabel(stageId);
+  const heroName = heroDisplayName(user, char);
+  const gaps = (order.items || []).filter((i) => !i.ok);
 
   const skillBars = SKILL_BARS.slice(0, 3)
     .map((s) => {
@@ -99,47 +178,76 @@ export function renderJourneyHome(user, char) {
     .filter(Boolean)
     .join("");
 
-  return `
-  <section class="poster-home scene-poster-${vis.sceneKey}">
-    <div class="poster-copy">
-      <p class="realm-kicker">${realm} · ${ch.arc || ""}</p>
-      <h2 class="realm-title">${snap.identityName}</h2>
-      <hr class="realm-rule" />
-      <p class="realm-quote">${vis.quote}</p>
-      <p class="poster-char">${heroDisplayName(user, char)} · Lv.${snap.level.level} · ${vis.vibe}</p>
-      <div class="hero-name-edit">
-        <input id="ingame-hero-name" maxlength="8" value="${String(heroDisplayName(user, char)).replace(/"/g, "&quot;")}" aria-label="角色名" />
-        <button type="button" class="btn ghost" id="reroll-hero-name">換一個</button>
-        <button type="button" class="btn ghost" id="save-hero-name">確認改名</button>
-      </div>
-      <p class="muted" style="font-size:.8rem;margin:.15rem 0 0">不喜歡可隨時轉換。古風姓＋名共 ${HERO_NAME_COUNT} 組，亦可自訂。</p>
-      ${
-        order.next
-          ? `<div class="promote-teaser edict">
-        <h4>下一身份：${order.nextName}</h4>
+  const questAction = task.enterStage
+    ? `data-enter-stage="${task.enterStage}"`
+    : `data-goto="${task.goto || "scroll"}"`;
+
+  let promoteBlock = "";
+  if (order.next) {
+    if (gaps.length) {
+      promoteBlock = `<div class="promote-teaser edict">
+        <h4>晉升尚欠</h4>
         <ul class="edict-list">
-          ${order.items
+          ${gaps
             .map((i) => {
-              const mark = i.ok ? "✓" : "○";
-              const extra = !i.ok && i.hint ? ` <span class="muted">${i.hint}</span>` : "";
-              return `<li class="${i.ok ? "ok" : "wait"}"><span>${mark}</span><div>${i.label}${extra}</div></li>`;
+              const extra = i.hint ? ` <span class="muted">${i.hint}</span>` : "";
+              return `<li class="wait"><span>○</span><div>${i.label}${extra}</div></li>`;
             })
             .join("")}
         </ul>
-        <button type="button" class="btn ${order.readyForTrial ? "" : "ghost"}" data-goto="promote">${
-          order.readyForTrial ? "開始試煉" : "前往晉升殿"
-        }</button>
+        <button type="button" class="btn ghost" data-goto="promote">前往晉升殿</button>
+      </div>`;
+    } else if (order.readyForTrial) {
+      promoteBlock = `<div class="promote-teaser edict">
+        <h4>下一身份：${order.nextName}</h4>
+        <p class="muted" style="margin:0 0 .5rem">條件已齊，可開始試煉。</p>
+        <button type="button" class="btn" data-goto="promote">開始試煉</button>
+      </div>`;
+    } else if (order.trialPassed) {
+      promoteBlock = `<div class="promote-teaser edict">
+        <h4>下一身份：${order.nextName}</h4>
+        <p class="muted" style="margin:0 0 .5rem">試煉已過，可確認晉升。</p>
+        <button type="button" class="btn" data-goto="promote">確認晉升</button>
+      </div>`;
+    }
+  }
+
+  return `
+  <section class="poster-home scene-poster-${vis.sceneKey}">
+    <div class="poster-copy">
+      <p class="realm-kicker">${realm}${taskCh?.arc ? ` · ${taskCh.arc}` : ""}</p>
+      <h2 class="realm-title">${snap.identityName}</h2>
+      <hr class="realm-rule" />
+      <p class="realm-quote">${vis.quote}</p>
+      <p class="poster-char">
+        <span>學子 · ${heroName}</span>
+        <button type="button" class="name-pencil" id="toggle-hero-name" aria-label="改名" title="改名" aria-expanded="${ui.heroNameEdit ? "true" : "false"}">✎</button>
+        <span class="muted">Lv.${snap.level.level}</span>
+      </p>
+      ${
+        ui.heroNameEdit
+          ? `<div class="hero-name-edit" id="hero-name-edit">
+        <input id="ingame-hero-name" maxlength="8" value="${String(heroName).replace(/"/g, "&quot;")}" aria-label="角色名" />
+        <button type="button" class="btn ghost" id="reroll-hero-name">換一個</button>
+        <button type="button" class="btn ghost" id="save-hero-name">確認改名</button>
+        <button type="button" class="btn ghost" id="cancel-hero-name">取消</button>
+        <p class="muted" style="font-size:.8rem;margin:.15rem 0 0;flex-basis:100%">古風姓＋名共 ${HERO_NAME_COUNT} 組，亦可自訂。</p>
       </div>`
           : ""
       }
-      <div class="poster-skills">${skillBars}</div>
-      <div class="poster-actions">
-        <button type="button" class="btn" data-goto="scroll">${chProg.done ? "重溫長卷" : "繼續旅程"}</button>
-        <button type="button" class="btn ghost" data-goto="promote">晉升試煉</button>
+      <div class="home-quest">
+        <p class="eyebrow">當前任務</p>
+        <h3>${task.label}</h3>
+        <p>${task.detail || ""}</p>
+        <div class="poster-actions">
+          <button type="button" class="btn" ${questAction}>${task.label}</button>
+          <button type="button" class="btn ghost" data-goto="scroll">歷史長卷</button>
+        </div>
       </div>
-      <p class="muted" style="font-size:.8rem;margin:0">當前任務：${nextStage?.title || "—"}</p>
+      ${promoteBlock}
+      <div class="poster-skills">${skillBars}</div>
     </div>
-    <div class="poster-art" aria-label="${heroDisplayName(user, char)} 立繪">
+    <div class="poster-art" aria-label="${heroName} 立繪">
       ${renderHeroStage(char, stageId, "hero", {
         gender: user.gender,
         priorityBoost: true,
@@ -194,7 +302,7 @@ export function renderChapterDetail(user, chapterId, stageId) {
       <p class="eyebrow ink-red">${ch.arc}</p>
       <h2>${ch.title}</h2>
       <p class="lead">${ch.blurb}</p>
-      <p class="muted">已完成＝做完全部題目。已掌握＝答對八成，或完成錯題重答。</p>
+      <p class="muted">已完成＝做完全部題目。已掌握＝首次答對八成。未達可做錯題重答，完成後為「已完成修正」，首次成績保留。</p>
       <div class="stage-grid">
         ${(ch.stages || [])
           .map((s, i) => {
@@ -202,10 +310,11 @@ export function renderChapterDetail(user, chapterId, stageId) {
             const rec = stageRecord(st.stages?.[s.id]);
             const done = !!rec?.completed;
             const mastered = !!rec?.mastered;
+            const corrected = isStageCorrected(st.stages?.[s.id]);
             const locked = !prevDone && !done;
-            const status = locked ? "先完成上一關" : mastered ? "已掌握" : done ? "已完成" : "可進入";
+            const status = locked ? "先完成上一關" : stageStatusLabel(rec);
             return `
-            <button type="button" class="stage-card ${done ? "done" : ""} ${mastered ? "mastered" : ""} ${locked ? "locked" : ""}"
+            <button type="button" class="stage-card ${done ? "done" : ""} ${mastered ? "mastered" : ""} ${corrected ? "corrected" : ""} ${locked ? "locked" : ""}"
               data-enter-stage="${ch.id}:${s.id}" ${locked ? "disabled" : ""}>
               <span class="ic">${s.icon}</span>
               <strong>${s.title}</strong>
@@ -373,15 +482,26 @@ export function renderCuoshi(user) {
 }
 
 function bindHeroNameEdit(ctx) {
-  const { render, toast, getUser } = ctx;
+  const { render, toast, getUser, state } = ctx;
+  document.getElementById("toggle-hero-name")?.addEventListener("click", () => {
+    state.heroNameEdit = !state.heroNameEdit;
+    render();
+  });
+  document.getElementById("cancel-hero-name")?.addEventListener("click", () => {
+    state.heroNameEdit = false;
+    render();
+  });
   const input = document.getElementById("ingame-hero-name");
   if (!input) return;
+  input.focus();
+  input.select();
   const save = (raw) => {
     try {
       const name = normalizeHeroName(raw);
       updateUser((u) => {
         u.heroName = name;
       });
+      state.heroNameEdit = false;
       toast(`角色名已改為「${name}」`);
       render();
     } catch (ex) {
@@ -399,6 +519,11 @@ function bindHeroNameEdit(ctx) {
     if (e.key === "Enter") {
       e.preventDefault();
       save(input.value);
+    }
+    if (e.key === "Escape") {
+      e.preventDefault();
+      state.heroNameEdit = false;
+      render();
     }
   });
 }
@@ -500,20 +625,20 @@ function paintCuoshi(ctx) {
   panel.querySelectorAll("[data-cs]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const ok = Number(btn.dataset.cs) === step.answer;
-      updateUser((u) =>
-        recordLearning(u, {
-          skill: step.skill,
-          correct: ok,
-          qid: `cuoshi-${battle.id}-${step.id}`,
-          qText: step.q,
-          chapterId: "cuoshi",
-        })
-      );
+      const recorded = ctx.submitAnswer?.(ok ? XP_REWARDS.mcCorrect || 8 : 0, {
+        correct: ok,
+        wrong: !ok,
+        skill: step.skill,
+        qid: `cuoshi-${battle.id}-${step.id}`,
+        qText: step.q,
+        source: "錯史",
+        keepView: true,
+      });
+      if (recorded?.duplicate) return;
       if (!ok) {
         toast("未中——再讀一次選項（可重試）");
         return;
       }
-      ctx.reward?.(XP_REWARDS.mcCorrect || 8, { correct: true, keepView: true });
       state.cuoshi.index++;
       paintCuoshi(ctx);
     });
@@ -530,6 +655,10 @@ function blankStageQuiz() {
     phase: "main",
     mastered: false,
     retried: false,
+    corrected: false,
+    firstCorrect: 0,
+    firstTotal: 0,
+    retryCorrect: 0,
   };
 }
 
@@ -560,27 +689,36 @@ function paintQuizSettle(qs, state, ch, stage, ctx) {
   const prog = document.getElementById("sq-progress");
   if (!body) return;
   if (prog) prog.textContent = "本關結算";
-  const rate = `${quiz.correct}/${qs.length}`;
+  const firstC = quiz.firstCorrect ?? quiz.correct;
+  const firstT = quiz.firstTotal || qs.length;
+  const retryT = quiz.retryTotal || (quiz.wrong || []).length;
+  const retryC = quiz.retryCorrect || 0;
+  const status = quiz.mastered ? "已掌握" : quiz.corrected || quiz.retried ? "已完成修正" : "已完成";
   const need = Math.ceil(qs.length * STAGE_MASTERY_RATE);
+  const retryLine =
+    quiz.corrected || quiz.retried
+      ? `<p class="settle-line ok"><strong>錯題修正</strong>：${retryC}／${retryT}</p>`
+      : quiz.wrong?.length
+        ? `<p class="settle-line wait"><strong>已掌握</strong>：首次 ${firstC}／${firstT}，未達八成（須答對 ${need} 題）。可做錯題重答，首次成績保留。</p>`
+        : `<p class="settle-line wait"><strong>已掌握</strong>：首次 ${firstC}／${firstT}，未達八成</p>`;
   body.innerHTML = `
     <div class="stage-settle">
       <h3>本關結算</h3>
-      <p class="settle-line ok"><strong>已完成</strong>：做完全部題目（${qs.length} 題）</p>
-      <p class="settle-line ${quiz.mastered ? "ok" : "wait"}"><strong>已掌握</strong>：${
+      <p class="settle-line ok"><strong>首次作答</strong>：${firstC}／${firstT}</p>
+      ${
         quiz.mastered
-          ? quiz.retried
-            ? "已完成錯題重答"
-            : `準確率 ${rate}，已達八成`
-          : `準確率 ${rate}，未達八成（須答對 ${need} 題或完成錯題重答）`
-      }</p>
-      <p class="muted">做過同識咗係兩件事。完成只代表題目都答過；掌握先算識咗。</p>
+          ? `<p class="settle-line ok"><strong>已掌握</strong>：準確率已達八成</p>`
+          : retryLine
+      }
+      <p class="settle-line ok"><strong>關卡狀態</strong>：${status}</p>
+      <p class="muted">做過同識咗係兩件事。錯題重答唔會覆蓋首次成績。</p>
       <div class="row-actions">
         ${
-          !quiz.mastered && (quiz.wrong || []).length
+          !quiz.mastered && !quiz.corrected && !quiz.retried && (quiz.wrong || []).length
             ? `<button type="button" class="btn" id="sq-retry">開始錯題重答</button>`
             : ""
         }
-        <button type="button" class="btn ${quiz.mastered ? "" : "ghost"}" id="sq-back">返回關卡</button>
+        <button type="button" class="btn ${quiz.mastered || quiz.corrected ? "" : "ghost"}" id="sq-back">返回關卡</button>
       </div>
     </div>`;
   document.getElementById("sq-retry")?.addEventListener("click", () => {
@@ -588,10 +726,12 @@ function paintQuizSettle(qs, state, ch, stage, ctx) {
     quiz.index = 0;
     quiz.locked = false;
     quiz.pick = null;
+    quiz.retryCorrect = 0;
+    quiz.retryTotal = (quiz.wrong || []).length;
     paintQuiz(qs, state, ch, stage, ctx);
   });
   document.getElementById("sq-back")?.addEventListener("click", () => {
-    toast(quiz.mastered ? "本關已掌握" : "本關已完成（尚未掌握）");
+    toast(status === "已掌握" ? "本關已掌握" : status === "已完成修正" ? "本關已完成修正" : "本關已完成（尚未掌握）");
     state.scrollStage = null;
     state.view = "chapter";
     render();
@@ -609,15 +749,16 @@ function advanceAfterNext(qs, state, ch, stage, ctx) {
     return;
   }
   if (quiz.phase === "retry") {
-    quiz.mastered = true;
     quiz.retried = true;
+    quiz.corrected = true;
+    quiz.retryTotal = (quiz.wrong || []).length;
     updateUser((u) =>
       settleStage(u, ch.id, stage.id, {
         completed: true,
-        mastered: true,
-        correct: qs.length,
-        total: qs.length,
+        corrected: true,
         retried: true,
+        retryCorrect: quiz.retryCorrect || 0,
+        retryTotal: quiz.retryTotal,
       })
     );
     quiz.phase = "settle";
@@ -625,16 +766,20 @@ function advanceAfterNext(qs, state, ch, stage, ctx) {
     return;
   }
   quiz.mastered = masteryFromScore(quiz.correct, qs.length);
+  quiz.firstCorrect = quiz.correct;
+  quiz.firstTotal = qs.length;
   updateUser((u) =>
     settleStage(u, ch.id, stage.id, {
       completed: true,
       mastered: quiz.mastered,
+      firstCorrect: quiz.correct,
+      firstTotal: qs.length,
       correct: quiz.correct,
       total: qs.length,
     })
   );
   pushRecent(`完成關卡：${stage.title}${quiz.mastered ? "（已掌握）" : ""}`);
-  addXp(XP_REWARDS.chapterBonus, { correct: true });
+  addXp(XP_REWARDS.chapterBonus);
   quiz.phase = "settle";
   paintQuizSettle(qs, state, ch, stage, ctx);
 }
@@ -680,16 +825,21 @@ function paintQuiz(qs, state, ch, stage, ctx) {
         const ok = pick === q.answer;
         quiz.locked = true;
         quiz.pick = pick;
-        updateUser((u) => {
-          recordLearning(u, {
-            topic: q.topic,
-            skill: q.skill,
-            correct: ok,
-            qid: q.id,
-            qText: q.q,
-            chapterId: ch.id,
-          });
+        const recorded = ctx.submitAnswer?.(ok ? XP_REWARDS.mcCorrect : 0, {
+          correct: ok,
+          wrong: !ok,
+          topic: q.topic,
+          skill: q.skill,
+          qid: q.id,
+          qText: q.q,
+          chapterId: ch.id,
+          source: quiz.phase === "retry" ? "錯題重答" : "關卡",
+          keepView: true,
         });
+        if (recorded?.duplicate) {
+          quiz.locked = false;
+          return;
+        }
         const fb = document.getElementById("sq-fb");
         fb.classList.remove("hidden");
         fb.innerHTML = ok
@@ -704,17 +854,8 @@ function paintQuiz(qs, state, ch, stage, ctx) {
         if (quiz.phase === "main") {
           if (ok) quiz.correct += 1;
           else if (!quiz.wrong.some((w) => w.id === q.id)) quiz.wrong.push(q);
-        }
-        if (ok) {
-          ctx.reward(XP_REWARDS.mcCorrect, {
-            correct: true,
-            qid: q.id,
-            qText: q.q,
-            topic: q.topic,
-            keepView: true,
-          });
-        } else {
-          ctx.reward(0, { wrong: true, qid: q.id, qText: q.q, topic: q.topic, keepView: true });
+        } else if (quiz.phase === "retry" && ok) {
+          quiz.retryCorrect = (quiz.retryCorrect || 0) + 1;
         }
         const actions = body.querySelector(".row-actions");
         if (quiz.phase === "retry" && !ok) {
@@ -764,19 +905,21 @@ function paintBoss(root, ctx) {
   body.querySelectorAll("[data-boss]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const ok = Number(btn.dataset.boss) === step.answer;
-      updateUser((u) =>
-        recordLearning(u, { skill: step.skill, correct: ok, qid: `boss-${step.id}`, qText: step.q, chapterId: ch.id })
-      );
+      const recorded = ctx.submitAnswer?.(ok ? XP_REWARDS.mcCorrect : 0, {
+        correct: ok,
+        wrong: !ok,
+        skill: step.skill,
+        qid: `boss-${step.id}`,
+        qText: step.q,
+        chapterId: ch.id,
+        source: "關卡",
+        keepView: true,
+      });
+      if (recorded?.duplicate) return;
       if (!ok) {
         toast("未中——再想一次（練習可重試）");
         return;
       }
-      ctx.reward(XP_REWARDS.mcCorrect, {
-        correct: true,
-        qid: `boss-${step.id}`,
-        qText: step.q,
-        keepView: true,
-      });
       state.bossStep++;
       if (state.bossStep >= steps.length) {
         if (bar) bar.style.width = "100%";

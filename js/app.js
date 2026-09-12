@@ -1,11 +1,11 @@
-import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad28";
-import { QUESTIONS, checkFill } from "./data/questions.js?v=rad28";
-import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad28";
-import { levelFromXp } from "./data/levels.js?v=rad28";
-import { DIALOGUES } from "./data/dialogues.js?v=rad28";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad28";
-import { VIDEOS } from "./data/videos.js?v=rad28";
-import { renderAvatar } from "./avatar.js?v=rad28";
+import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad29";
+import { QUESTIONS, checkFill } from "./data/questions.js?v=rad29";
+import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad29";
+import { levelFromXp } from "./data/levels.js?v=rad29";
+import { DIALOGUES } from "./data/dialogues.js?v=rad29";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad29";
+import { VIDEOS } from "./data/videos.js?v=rad29";
+import { renderAvatar } from "./avatar.js?v=rad29";
 import {
   CARD_TYPES,
   createBattle,
@@ -15,7 +15,7 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=rad28";
+} from "./data/shizhan.js?v=rad29";
 import {
   getCurrentUser,
   registerUser,
@@ -23,7 +23,7 @@ import {
   clearSession,
   addXp,
   updateUser,
-} from "./storage.js?v=rad28";
+} from "./storage.js?v=rad29";
 import {
   userSnapshot,
   buildPromotionOrder,
@@ -31,7 +31,7 @@ import {
   IDENTITY_DISCLAIMER,
   identityDisplayName,
   getIdentity,
-} from "./progress.js?v=rad28";
+} from "./progress.js?v=rad29";
 import {
   renderJourneyHome,
   renderScroll,
@@ -42,17 +42,18 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad28";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad28";
-import { renderPromoteReveal } from "./heroStage.js?v=rad28";
-import { getStageVisual } from "./data/stageVisuals.js?v=rad28";
+} from "./journey.js?v=rad29";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad29";
+import { renderPromoteReveal } from "./heroStage.js?v=rad29";
+import { getStageVisual } from "./data/stageVisuals.js?v=rad29";
 import {
   FORM_YEARS,
   normalizeFormYear,
   allowedGradeKeys,
   formYearHint,
   filterByFormYear,
-} from "./data/formYear.js?v=rad28";
+} from "./data/formYear.js?v=rad29";
+import { pickRandomHeroName, isPooledHeroName, HERO_NAME_COUNT } from "./data/heroNames.js?v=rad29";
 
 const app = document.getElementById("app");
 let toastTimer = null;
@@ -61,6 +62,7 @@ let state = {
   authMode: "login",
   gender: "male",
   heroName: "",
+  heroNameFromPool: true,
   formYear: "",
   practice: { mode: "mc", grade: "全部", index: 0 },
   match: { selectedLeft: null, selectedRight: null, solved: new Set() },
@@ -233,6 +235,10 @@ function guestTryQuestions() {
 function renderAuth() {
   const male = getCharacter("male");
   const female = getCharacter("female");
+  if (state.authMode === "register" && !String(state.heroName || "").trim()) {
+    state.heroName = pickRandomHeroName(state.gender);
+    state.heroNameFromPool = true;
+  }
   const stages = [
     { id: 0, name: "庶民" },
     { id: 1, name: "學子" },
@@ -275,10 +281,14 @@ function renderAuth() {
         ${
           state.authMode === "register"
             ? `
-        <label>角色名（自訂）
-          <input name="heroName" id="hero-name-input" required maxlength="8" autocomplete="nickname"
-            value="${escapeAttr(state.heroName)}" placeholder="例如：任平生、阿文" />
+        <label>角色名
+          <div class="name-roll">
+            <input name="heroName" id="hero-name-input" required maxlength="8" autocomplete="nickname"
+              value="${escapeAttr(state.heroName)}" placeholder="古風姓＋名" />
+            <button type="button" class="btn ghost" id="reroll-hero-name">換一個</button>
+          </div>
         </label>
+        <p class="muted" style="margin:0;font-size:.88rem">系統隨機派古風姓名（共 ${HERO_NAME_COUNT} 組）。不喜歡可換，或自行改字。</p>
         <label>年級
           <select name="formYear" id="form-year-select" required>
             <option value="" ${!state.formYear ? "selected" : ""}>— 請選擇 —</option>
@@ -420,15 +430,28 @@ function bindAuth() {
   if (gender) {
     gender.addEventListener("change", (e) => {
       rememberAuthDraft();
+      const prev = state.gender;
       state.gender = e.target.value;
+      if (state.heroNameFromPool || isPooledHeroName(state.heroName, prev)) {
+        state.heroName = pickRandomHeroName(state.gender);
+        state.heroNameFromPool = true;
+      }
       render();
     });
   }
+  app.querySelector("#reroll-hero-name")?.addEventListener("click", () => {
+    const next = pickRandomHeroName(state.gender, state.heroName);
+    state.heroName = next;
+    state.heroNameFromPool = true;
+    const input = app.querySelector("#hero-name-input");
+    if (input) input.value = next;
+  });
   app.querySelector("#form-year-select")?.addEventListener("change", (e) => {
     state.formYear = e.target.value;
   });
   app.querySelector("#hero-name-input")?.addEventListener("input", (e) => {
     state.heroName = e.target.value;
+    state.heroNameFromPool = isPooledHeroName(e.target.value, state.gender);
     const strong = app.querySelector(".hero-caption strong");
     if (strong) strong.textContent = String(e.target.value).trim() || "行者";
   });

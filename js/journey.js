@@ -6,7 +6,8 @@ import { XP_REWARDS } from "./data/levels.js";
 import { CUOSHI_BATTLES, getCuoshi } from "./data/cuoshi.js";
 import { IDENTITIES } from "./data/identities.js";
 import { getStageVisual, SKILL_BARS, skillFill, STAGE_RELIC, realmLabel } from "./data/stageVisuals.js";
-import { heroDisplayName } from "./data/characters.js";
+import { heroDisplayName, normalizeHeroName } from "./data/characters.js";
+import { pickRandomHeroName, HERO_NAME_COUNT } from "./data/heroNames.js";
 import { renderAvatar } from "./avatar.js";
 import { renderHeroStage, renderStudyCompanion, renderPromoteReveal } from "./heroStage.js";
 import {
@@ -100,6 +101,12 @@ export function renderJourneyHome(user, char) {
       <hr class="realm-rule" />
       <p class="realm-quote">${vis.quote}</p>
       <p class="poster-char">${heroDisplayName(user, char)} · Lv.${snap.level.level} · ${vis.vibe}</p>
+      <div class="hero-name-edit">
+        <input id="ingame-hero-name" maxlength="8" value="${String(heroDisplayName(user, char)).replace(/"/g, "&quot;")}" aria-label="角色名" />
+        <button type="button" class="btn ghost" id="reroll-hero-name">換一個</button>
+        <button type="button" class="btn ghost" id="save-hero-name">確認改名</button>
+      </div>
+      <p class="muted" style="font-size:.8rem;margin:.15rem 0 0">不喜歡可隨時轉換。古風姓＋名共 ${HERO_NAME_COUNT} 組，亦可自訂。</p>
       ${
         order.next
           ? `<div class="promote-teaser edict">
@@ -356,6 +363,37 @@ export function renderCuoshi(user) {
   </section>`;
 }
 
+function bindHeroNameEdit(ctx) {
+  const { render, toast, getUser } = ctx;
+  const input = document.getElementById("ingame-hero-name");
+  if (!input) return;
+  const save = (raw) => {
+    try {
+      const name = normalizeHeroName(raw);
+      updateUser((u) => {
+        u.heroName = name;
+      });
+      toast(`角色名已改為「${name}」`);
+      render();
+    } catch (ex) {
+      toast(ex.message);
+    }
+  };
+  document.getElementById("reroll-hero-name")?.addEventListener("click", () => {
+    const u = getUser?.() || {};
+    save(pickRandomHeroName(u.gender, u.heroName));
+  });
+  document.getElementById("save-hero-name")?.addEventListener("click", () => {
+    save(input.value);
+  });
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      save(input.value);
+    }
+  });
+}
+
 export function bindJourney(user, ctx) {
   const { render, toast, state, reward } = ctx;
 
@@ -397,6 +435,7 @@ export function bindJourney(user, ctx) {
   bindPromote(user, ctx);
   bindNotes(user, ctx);
   bindCuoshi(user, ctx);
+  bindHeroNameEdit(ctx);
   bindGrowth(user, ctx);
 
   const slot = document.getElementById("study-companion-slot");

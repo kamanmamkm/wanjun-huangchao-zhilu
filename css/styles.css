@@ -297,13 +297,31 @@ select {
   color: var(--ink-soft);
 }
 
-.form-grid input,
-.form-grid select {
+.name-roll,
+.hero-name-edit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+.name-roll input,
+.hero-name-edit input {
+  flex: 1;
+  min-width: 8rem;
   padding: 0.7rem 0.85rem;
   border-radius: 6px;
   border: 1px solid rgba(110, 84, 48, 0.3);
   background: rgba(255, 250, 240, 0.92);
   color: var(--ink);
+  font: inherit;
+}
+.hero-name-edit {
+  margin: 0.15rem 0 0;
+}
+.hero-name-edit .btn,
+.name-roll .btn {
+  padding: 0.55rem 0.8rem;
+  letter-spacing: 0.06em;
 }
 
 .form-error {

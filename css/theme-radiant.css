@@ -70,10 +70,13 @@ body::after {
 }
 
 body.theme-court {
+  /* 深色只作遠景光暈，操作面保持象牙紙 */
   background:
-    radial-gradient(ellipse 70% 50% at 50% 18%, rgba(224, 184, 78, 0.22), transparent 55%),
-    linear-gradient(180deg, #4a3c30 0%, var(--bronze) 100%);
-  color: var(--warm);
+    radial-gradient(ellipse 55% 40% at 82% 8%, rgba(58, 46, 36, 0.16), transparent 58%),
+    radial-gradient(ellipse 70% 45% at 50% 0%, rgba(224, 184, 78, 0.2), transparent 55%),
+    radial-gradient(ellipse 40% 35% at 8% 92%, rgba(184, 58, 47, 0.07), transparent 52%),
+    linear-gradient(180deg, #f3e8d4 0%, var(--warm) 42%, #efe2cc 100%);
+  color: var(--ink);
 }
 
 #app {
@@ -655,15 +658,24 @@ h1, h2, h3,
     var(--pattern-grain),
     #fffaf0 !important;
   border: var(--border-gold);
-  color: var(--ink) !important;
+  color: #1a1612 !important;
 }
 .study-mode .q-text,
 .stage-play .q-text,
 .question-box .q-text,
 .trial-q .q-text,
-.cuoshi-view .q-text {
+.cuoshi-view .q-text,
+.study-mode .lead,
+.stage-play .lead,
+.study-mode .story-box {
   color: #1a1612 !important;
   font-weight: 700;
+}
+.study-mode .muted,
+.stage-play .muted,
+.study-mode .q-top,
+.stage-play .q-top {
+  color: #4a443c !important;
 }
 .study-mode .option,
 .stage-play .option,
@@ -756,28 +768,112 @@ h1, h2, h3,
 .theme-court .promote-view,
 .theme-court .topbar,
 .theme-court .auth-panel {
-  background: linear-gradient(180deg, #4a3c30, var(--bronze));
-  border-color: rgba(224, 184, 78, 0.45);
-  color: var(--warm);
+  background:
+    var(--pattern-grain),
+    linear-gradient(180deg, #fffaf0, #f3e8d4);
+  border: var(--border-gold);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+.theme-court h2,
+.theme-court .lead,
+.theme-court .id-line,
+.theme-court .muted,
+.theme-court .disclaimer {
+  color: var(--ink);
+}
+.theme-court .muted,
+.theme-court .disclaimer {
+  color: var(--ink-soft);
 }
 .theme-court .nav.mobile-nav {
   background:
     var(--pattern-cloud),
-    linear-gradient(180deg, #524436, #2e241c);
+    linear-gradient(180deg, #fffaf0, #f3e8d4);
   background-size: 100px 32px, auto;
 }
 .theme-court .nav button {
   background: transparent;
-  color: rgba(247, 240, 228, 0.8);
+  color: var(--ink-soft);
+  border-color: rgba(196, 154, 70, 0.35);
 }
 .theme-court .nav button.active {
-  background: linear-gradient(180deg, rgba(240, 208, 120, 0.3), rgba(184, 146, 58, 0.22));
-  color: var(--gold-bright);
+  background: linear-gradient(180deg, #d4684c, var(--cinnabar-deep));
+  color: #fff8ef;
 }
 .theme-court .btn.ghost {
-  background: linear-gradient(180deg, rgba(236, 230, 220, 0.2), rgba(120, 108, 90, 0.25));
-  color: var(--warm);
-  border-color: rgba(224, 184, 78, 0.35);
+  background: rgba(255, 250, 240, 0.95);
+  color: var(--ink);
+  border-color: rgba(42, 36, 28, 0.18);
+}
+.theme-court .player-meta strong,
+.theme-court .brand-top {
+  color: var(--gold-deep);
+}
+
+/* 晉升頁：象牙白＋朱紅頂欄＋局部金 */
+.promote-view {
+  position: relative;
+  overflow: hidden;
+  padding-top: 1.35rem;
+  background:
+    var(--pattern-grain),
+    linear-gradient(180deg, #fffaf0 0%, #f7eedc 100%) !important;
+  color: var(--ink) !important;
+  border: var(--border-gold) !important;
+}
+.promote-view::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 7px;
+  z-index: 1;
+  background: linear-gradient(90deg, var(--cinnabar), var(--gold), var(--cinnabar-deep));
+}
+.promote-view .eyebrow {
+  color: var(--cinnabar) !important;
+}
+.promote-view .ink-gold {
+  color: var(--gold-deep) !important;
+}
+.promote-view .edict {
+  background:
+    var(--pattern-grain),
+    #fffef8;
+  border: 1px solid rgba(184, 58, 47, 0.28);
+  box-shadow: inset 0 0 0 1px rgba(224, 184, 78, 0.28);
+}
+.promote-view .edict h3,
+.promote-view .edict h4 {
+  color: var(--cinnabar) !important;
+}
+.promote-view .edict-list li.ok span {
+  color: var(--gold-deep);
+}
+.promote-view .btn.gold {
+  background: linear-gradient(180deg, #e8c45c, #c49a2e);
+  color: #2a241c;
+  border: 1px solid rgba(184, 146, 58, 0.7);
+  box-shadow: 0 8px 18px rgba(138, 106, 46, 0.28);
+}
+.theme-court .finale-board {
+  background:
+    var(--pattern-grain),
+    #fffaf0;
+  border: var(--border-gold);
+  color: var(--ink);
+}
+.stage-visual-8.theme-court .promote-view::before {
+  height: 7px;
+  inset: auto;
+  top: 0;
+  left: 0;
+  right: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .auth-panel label,

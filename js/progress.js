@@ -108,6 +108,35 @@ export function recordLearning(user, { topic, skill, correct, qid, qText, chapte
   }
 }
 
+/** 掌握門檻：答對八成，或完成錯題重答 */
+export const STAGE_MASTERY_RATE = 0.8;
+
+export function stageRecord(raw) {
+  if (!raw) return null;
+  if (raw === true) return { completed: true, mastered: true, correct: 0, total: 0 };
+  return {
+    completed: !!raw.completed,
+    mastered: !!raw.mastered,
+    correct: Number(raw.correct) || 0,
+    total: Number(raw.total) || 0,
+    retried: !!raw.retried,
+  };
+}
+
+export function isStageCompleted(raw) {
+  return !!stageRecord(raw)?.completed;
+}
+
+export function isStageMastered(raw) {
+  return !!stageRecord(raw)?.mastered;
+}
+
+export function masteryFromScore(correct, total) {
+  const t = Number(total) || 0;
+  if (t <= 0) return false;
+  return Number(correct) / t >= STAGE_MASTERY_RATE;
+}
+
 export function skillTagLabel(skill) {
   const map = {
     timeline: "時序未明",
@@ -119,16 +148,44 @@ export function skillTagLabel(skill) {
   return map[skill] || "待重修";
 }
 
-export function completeStage(user, chapterId, stageId) {
+export function settleStage(user, chapterId, stageId, info = {}) {
   const p = ensureProgress(user);
   const ch = p.chapters[chapterId] || { correct: 0, stages: {} };
   ch.stages = ch.stages || {};
-  ch.stages[stageId] = true;
+  const prev = stageRecord(ch.stages[stageId]) || {
+    completed: false,
+    mastered: false,
+    correct: 0,
+    total: 0,
+    retried: false,
+  };
+  const rec = {
+    completed: prev.completed || !!info.completed,
+    mastered: prev.mastered || !!info.mastered,
+    correct: info.correct != null ? info.correct : prev.correct,
+    total: info.total != null ? info.total : prev.total,
+    retried: prev.retried || !!info.retried,
+    at: Date.now(),
+  };
+  ch.stages[stageId] = rec;
   const meta = CHAPTERS[chapterId];
-  if (meta?.stages?.every((s) => ch.stages[s.id])) ch.done = true;
+  if (meta?.stages?.every((s) => isStageCompleted(ch.stages[s.id]))) ch.done = true;
   p.chapters[chapterId] = ch;
   p.chronicle = p.chronicle || { promotions: [], restored: [], quotes: [] };
-  p.chronicle.restored.push({ chapterId, stageId, at: Date.now() });
+  if (!prev.completed && rec.completed) {
+    p.chronicle.restored.push({ chapterId, stageId, at: Date.now() });
+  }
+}
+
+/** 標記本關已完成（未必然掌握）。故事／互動關用。 */
+export function completeStage(user, chapterId, stageId, extra = {}) {
+  settleStage(user, chapterId, stageId, {
+    completed: true,
+    mastered: !!extra.mastered,
+    correct: extra.correct,
+    total: extra.total,
+    retried: extra.retried,
+  });
 }
 
 export function markRemedial(user, remedialId) {

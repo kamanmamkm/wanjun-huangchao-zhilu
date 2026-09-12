@@ -1,11 +1,11 @@
-import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad24";
-import { QUESTIONS, checkFill } from "./data/questions.js?v=rad24";
-import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad24";
-import { levelFromXp } from "./data/levels.js?v=rad24";
-import { DIALOGUES } from "./data/dialogues.js?v=rad24";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad24";
-import { VIDEOS } from "./data/videos.js?v=rad24";
-import { renderAvatar } from "./avatar.js?v=rad24";
+import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad26";
+import { QUESTIONS, checkFill } from "./data/questions.js?v=rad26";
+import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad26";
+import { levelFromXp } from "./data/levels.js?v=rad26";
+import { DIALOGUES } from "./data/dialogues.js?v=rad26";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad26";
+import { VIDEOS } from "./data/videos.js?v=rad26";
+import { renderAvatar } from "./avatar.js?v=rad26";
 import {
   CARD_TYPES,
   createBattle,
@@ -15,7 +15,7 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=rad24";
+} from "./data/shizhan.js?v=rad26";
 import {
   getCurrentUser,
   registerUser,
@@ -23,7 +23,7 @@ import {
   clearSession,
   addXp,
   updateUser,
-} from "./storage.js?v=rad24";
+} from "./storage.js?v=rad26";
 import {
   userSnapshot,
   buildPromotionOrder,
@@ -31,7 +31,7 @@ import {
   IDENTITY_DISCLAIMER,
   identityDisplayName,
   getIdentity,
-} from "./progress.js?v=rad24";
+} from "./progress.js?v=rad26";
 import {
   renderJourneyHome,
   renderScroll,
@@ -42,17 +42,17 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad24";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad24";
-import { renderPromoteReveal } from "./heroStage.js?v=rad24";
-import { getStageVisual } from "./data/stageVisuals.js?v=rad24";
+} from "./journey.js?v=rad26";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad26";
+import { renderPromoteReveal } from "./heroStage.js?v=rad26";
+import { getStageVisual } from "./data/stageVisuals.js?v=rad26";
 import {
   FORM_YEARS,
   normalizeFormYear,
   allowedGradeKeys,
   formYearHint,
   filterByFormYear,
-} from "./data/formYear.js?v=rad24";
+} from "./data/formYear.js?v=rad26";
 
 const app = document.getElementById("app");
 let toastTimer = null;
@@ -264,6 +264,13 @@ function renderAuth() {
       <form id="auth-form" class="form-grid">
         <label>帳號<input name="username" required autocomplete="username" placeholder="例如：1A_陳大文" /></label>
         <label>密碼<input name="password" type="password" required autocomplete="current-password" placeholder="至少三個字" /></label>
+        ${
+          state.authMode === "register"
+            ? `
+        <label>角色名（自訂）
+          <input name="heroName" id="hero-name-input" required maxlength="8" autocomplete="nickname"
+            value="${escapeAttr(state.heroName)}" placeholder="例如：任平生、阿文" />
+        </label>
         <label>年級
           <select name="formYear" id="form-year-select" required>
             <option value="" ${!state.formYear ? "selected" : ""}>— 請選擇 —</option>
@@ -275,21 +282,14 @@ function renderAuth() {
             ).join("")}
           </select>
         </label>
-        ${
-          state.authMode === "register"
-            ? `
-        <label>角色名（自訂）
-          <input name="heroName" id="hero-name-input" required maxlength="8" autocomplete="nickname"
-            value="${escapeAttr(state.heroName)}" placeholder="例如：任平生、阿文" />
-        </label>
         <label>性別
           <select name="gender" id="gender-select">
             <option value="male" ${state.gender === "male" ? "selected" : ""}>男（開局：庶民 · Lv.1 起步）</option>
             <option value="female" ${state.gender === "female" ? "selected" : ""}>女（開局：庶民 · Lv.1 起步）</option>
           </select>
         </label>
-        <p class="muted" style="margin:0;font-size:.88rem">已取消歷史人物原型——只選男女樣貌，角色名完全自訂。</p>`
-            : `<p class="muted" style="margin:0;font-size:.88rem">每次登入請揀年級：中一只做中一題；中二可做中一＋中二；中三三者皆可。</p>`
+        <p class="muted" style="margin:0;font-size:.88rem">年級喺註冊時決定，之後登入會沿用。</p>`
+            : ""
         }
         <p class="form-error" id="auth-error"></p>
         <button class="btn btn-wide" type="submit">${state.authMode === "login" ? "⚔️ 進入任平生" : "🏯 創角出發"}</button>
@@ -310,7 +310,7 @@ function renderFormYearGate(user) {
   <section class="hero-screen">
     <div class="auth-panel" style="margin:auto">
       <h2>請選擇年級</h2>
-      <p class="lead">中一只做中一題；中二可做中一＋中二；中三可做中一、中二、中三。</p>
+      <p class="lead">舊帳號尚未設定年級。請揀一次，之後登入會沿用。</p>
       <form id="form-year-gate" class="form-grid">
         <label>年級
           <select name="formYear" required>
@@ -382,7 +382,7 @@ function bindAuth() {
     const err = app.querySelector("#auth-error");
     try {
       if (state.authMode === "login") {
-        loginUser(fd.get("username"), fd.get("password"), fd.get("formYear"));
+        loginUser(fd.get("username"), fd.get("password"));
       } else {
         registerUser({
           username: fd.get("username"),
@@ -392,14 +392,14 @@ function bindAuth() {
           formYear: fd.get("formYear"),
         });
         state.heroName = "";
+        state.formYear = normalizeFormYear(fd.get("formYear")) || "";
       }
-      state.formYear = normalizeFormYear(fd.get("formYear")) || "";
       state.practice = { mode: "mc", grade: "全部", index: 0 };
       state.timeline = { setId: TIMELINE_SETS[0].id };
       state.view = "home";
       render();
       const year = getCurrentUser()?.formYear || "";
-      toast(`歡迎踏上任平生——${year}　${formYearHint(year)}`);
+      toast(year ? `歡迎踏上任平生——${year}` : "歡迎踏上任平生");
     } catch (ex) {
       err.textContent = ex.message;
     }

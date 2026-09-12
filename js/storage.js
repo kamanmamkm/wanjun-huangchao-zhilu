@@ -140,15 +140,12 @@ export function registerUser({ username, password, gender, characterId, heroName
   return users[name];
 }
 
-export function loginUser(username, password, formYear) {
+export function loginUser(username, password) {
   const users = readUsers();
   const name = String(username || "").trim();
   let u = users[name];
   if (!u || u.password !== String(password)) throw new Error("帳號或密碼錯誤");
   u = migrateUser(u);
-  const year = normalizeFormYear(formYear) || normalizeFormYear(u.formYear);
-  if (!year) throw new Error("請選擇年級（中一／中二／中三）");
-  u.formYear = year;
   users[name] = u;
   writeUsers(users);
   setSession(u.username);

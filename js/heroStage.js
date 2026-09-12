@@ -34,7 +34,7 @@ export function renderHeroStage(char, identityId, size = "hero", opts = {}) {
       </div>`;
   } else if (usePoster) {
     body = `<div class="stage-poster" role="img" aria-label="${name} · ${art.badge || outfit}">
-      <img src="${art.src}?v=rad23" alt="${name} · ${art.badge || "階段立繪"}" loading="lazy" />
+      <img src="${art.src}?v=rad24" alt="${name} · ${art.badge || "階段立繪"}" loading="lazy" />
       ${art.badge ? `<span class="stage-art-badge">${art.badge}</span>` : ""}
     </div>`;
   } else {

@@ -45,12 +45,3 @@ export const VIDEOS = [
     youtubeId: "0hY9bQ0n0ZQ",
   },
 ];
-
-/** 可嵌入外部 Wordwall 活動（老師自行貼上連結） */
-export const EXTERNAL_WORDWALL = [
-  {
-    title: "（示例）老師可在此加入 Wordwall 連結",
-    url: "https://wordwall.net/",
-    note: "到 Wordwall 建立活動後，把分享連結加到 js/data/videos.js 的 EXTERNAL_WORDWALL。",
-  },
-];

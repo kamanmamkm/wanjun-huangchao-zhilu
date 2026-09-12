@@ -1,11 +1,11 @@
-import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad23";
-import { QUESTIONS, checkFill } from "./data/questions.js?v=rad23";
-import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad23";
-import { levelFromXp } from "./data/levels.js?v=rad23";
-import { DIALOGUES } from "./data/dialogues.js?v=rad23";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad23";
-import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=rad23";
-import { renderAvatar } from "./avatar.js?v=rad23";
+import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad24";
+import { QUESTIONS, checkFill } from "./data/questions.js?v=rad24";
+import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad24";
+import { levelFromXp } from "./data/levels.js?v=rad24";
+import { DIALOGUES } from "./data/dialogues.js?v=rad24";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad24";
+import { VIDEOS } from "./data/videos.js?v=rad24";
+import { renderAvatar } from "./avatar.js?v=rad24";
 import {
   CARD_TYPES,
   createBattle,
@@ -15,7 +15,7 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=rad23";
+} from "./data/shizhan.js?v=rad24";
 import {
   getCurrentUser,
   registerUser,
@@ -23,7 +23,7 @@ import {
   clearSession,
   addXp,
   updateUser,
-} from "./storage.js?v=rad23";
+} from "./storage.js?v=rad24";
 import {
   userSnapshot,
   buildPromotionOrder,
@@ -31,7 +31,7 @@ import {
   IDENTITY_DISCLAIMER,
   identityDisplayName,
   getIdentity,
-} from "./progress.js?v=rad23";
+} from "./progress.js?v=rad24";
 import {
   renderJourneyHome,
   renderScroll,
@@ -42,17 +42,17 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad23";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad23";
-import { renderPromoteReveal } from "./heroStage.js?v=rad23";
-import { getStageVisual } from "./data/stageVisuals.js?v=rad23";
+} from "./journey.js?v=rad24";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad24";
+import { renderPromoteReveal } from "./heroStage.js?v=rad24";
+import { getStageVisual } from "./data/stageVisuals.js?v=rad24";
 import {
   FORM_YEARS,
   normalizeFormYear,
   allowedGradeKeys,
   formYearHint,
   filterByFormYear,
-} from "./data/formYear.js?v=rad23";
+} from "./data/formYear.js?v=rad24";
 
 const app = document.getElementById("app");
 let toastTimer = null;
@@ -844,16 +844,6 @@ function renderGamesHub() {
         <div class="quest-body"><h3>題目練習</h3><p>選擇／填充／配對，題庫已擴充</p></div>
         <span class="quest-xp">常練</span>
       </article>
-    </div>
-    <h3 class="section-title" style="margin-top:1.5rem"><span>外部 Wordwall</span></h3>
-    <div class="grid-cards" style="margin-top:.6rem">
-      ${EXTERNAL_WORDWALL.map(
-        (w) => `
-        <a class="feature-card" href="${w.url}" target="_blank" rel="noopener">
-          <h3>${w.title}</h3>
-          <p>${w.note || w.url}</p>
-        </a>`
-      ).join("")}
     </div>
   </section>`;
 }

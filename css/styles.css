@@ -231,6 +231,18 @@ select {
   backdrop-filter: blur(4px);
 }
 
+.guest-play h2 {
+  margin: 0 0 0.85rem;
+  font-size: 1.15rem;
+  letter-spacing: 0.06em;
+  color: var(--ink);
+}
+.guest-invite .lead {
+  margin: 0 0 0.9rem;
+  color: var(--ink);
+  line-height: 1.65;
+}
+
 .auth-panel {
   background:
     linear-gradient(180deg, rgba(246, 236, 214, 0.98), rgba(232, 214, 180, 0.96));

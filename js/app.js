@@ -1,11 +1,11 @@
-import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad41";
-import { QUESTIONS, checkFill } from "./data/questions.js?v=rad41";
-import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad41";
-import { levelFromXp } from "./data/levels.js?v=rad41";
-import { DIALOGUES } from "./data/dialogues.js?v=rad41";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad41";
-import { VIDEOS } from "./data/videos.js?v=rad41";
-import { renderAvatar } from "./avatar.js?v=rad41";
+import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad42";
+import { QUESTIONS, checkFill } from "./data/questions.js?v=rad42";
+import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad42";
+import { levelFromXp } from "./data/levels.js?v=rad42";
+import { DIALOGUES } from "./data/dialogues.js?v=rad42";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad42";
+import { VIDEOS } from "./data/videos.js?v=rad42";
+import { renderAvatar } from "./avatar.js?v=rad42";
 import {
   CARD_TYPES,
   createBattle,
@@ -15,7 +15,7 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=rad41";
+} from "./data/shizhan.js?v=rad42";
 import {
   getCurrentUser,
   registerUser,
@@ -24,7 +24,7 @@ import {
   addXp,
   updateUser,
   pushRecent,
-} from "./storage.js?v=rad41";
+} from "./storage.js?v=rad42";
 import {
   userSnapshot,
   buildPromotionOrder,
@@ -37,7 +37,7 @@ import {
   IDENTITY_DISCLAIMER,
   identityDisplayName,
   getIdentity,
-} from "./progress.js?v=rad41";
+} from "./progress.js?v=rad42";
 import {
   renderJourneyHome,
   renderScroll,
@@ -48,10 +48,10 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad41";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad41";
-import { renderPromoteReveal } from "./heroStage.js?v=rad41";
-import { getStageVisual } from "./data/stageVisuals.js?v=rad41";
+} from "./journey.js?v=rad42";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad42";
+import { renderPromoteReveal, renderLevelUpReveal } from "./heroStage.js?v=rad42";
+import { getStageVisual } from "./data/stageVisuals.js?v=rad42";
 import {
   FORM_YEARS,
   normalizeFormYear,
@@ -61,11 +61,12 @@ import {
   normalizeClassId,
   formYearFromClassId,
   classIdHint,
-} from "./data/formYear.js?v=rad41";
-import { pickRandomHeroName, isPooledHeroName, HERO_NAME_COUNT } from "./data/heroNames.js?v=rad41";
+} from "./data/formYear.js?v=rad42";
+import { pickRandomHeroName, isPooledHeroName, HERO_NAME_COUNT } from "./data/heroNames.js?v=rad42";
 
 const app = document.getElementById("app");
 let toastTimer = null;
+let levelUpTimer = null;
 let state = {
   view: "home",
   authMode: "login",
@@ -89,6 +90,7 @@ let state = {
   trial: null,
   cuoshi: null,
   promoteReveal: null,
+  levelUpReveal: null,
   heroNameEdit: false,
   teacherUser: null,
   teacherFilter: "全部",
@@ -129,14 +131,22 @@ function reward(amount, meta = {}) {
   const nextLv = after ? levelFromXp(after.xp).level : prevLv;
   const idBefore = before?.identityId ?? 0;
   const idAfter = after?.identityId ?? 0;
-  if (nextLv > prevLv) toast(`角色升至 Lv.${nextLv}！+${bonus} 經驗`);
-  else if (meta.repeat && bonus) toast(`+${bonus} 經驗（複習減幅）`);
-  else if (bonus) toast(`+${bonus} 經驗`);
   if (idAfter > idBefore && !state.promoteReveal) {
     state.promoteReveal = { fromId: idBefore, toId: idAfter };
   }
+  if (nextLv > prevLv) {
+    if (state.promoteReveal) {
+      toast(`角色升至 Lv.${nextLv}！+${bonus} 經驗`);
+    } else {
+      state.levelUpReveal = { fromLv: prevLv, toLv: nextLv };
+    }
+  } else if (meta.repeat && bonus) toast(`+${bonus} 經驗（複習減幅）`);
+  else if (bonus) toast(`+${bonus} 經驗`);
   if (!meta.keepView) render();
-  else refreshTopbarOnly();
+  else {
+    refreshTopbarOnly();
+    mountLevelUpReveal();
+  }
 }
 
 /** 答題入口：先寫紀錄（唯一 ID），再發經驗。 */
@@ -183,6 +193,38 @@ function finishInteractStage(from, { mastered, correct, total }) {
   return { already };
 }
 
+function previewLevelRequested() {
+  try {
+    return new URLSearchParams(location.search).get("preview") === "levelup";
+  } catch {
+    return false;
+  }
+}
+
+function applyLevelUpPreview() {
+  if (!previewLevelRequested() || state.promoteReveal) return;
+  const user = getCurrentUser();
+  const fromLv = user ? levelFromXp(user.xp).level : 3;
+  state.levelUpReveal = { fromLv, toLv: fromLv + 1 };
+}
+
+function dismissLevelUpReveal() {
+  clearTimeout(levelUpTimer);
+  levelUpTimer = null;
+  state.levelUpReveal = null;
+  document.getElementById("levelup-reveal")?.remove();
+}
+
+function mountLevelUpReveal() {
+  if (!state.levelUpReveal || state.promoteReveal) return;
+  if (document.getElementById("levelup-reveal")) return;
+  const { fromLv, toLv } = state.levelUpReveal;
+  app.insertAdjacentHTML("beforeend", renderLevelUpReveal({ fromLv, toLv }));
+  const overlay = document.getElementById("levelup-reveal");
+  if (!overlay) return;
+  overlay.addEventListener("click", dismissLevelUpReveal);
+}
+
 function refreshTopbarOnly() {
   const user = getCurrentUser();
   if (!user) return;
@@ -215,17 +257,22 @@ function journeyCtx() {
 }
 
 function render() {
+  clearTimeout(levelUpTimer);
+  levelUpTimer = null;
+  applyLevelUpPreview();
   const user = getCurrentUser();
   if (!user) {
     document.body.className = "";
     app.innerHTML = renderAuth();
     bindAuth();
+    if (state.levelUpReveal) mountLevelUpReveal();
     return;
   }
   if (!normalizeFormYear(user.formYear)) {
     document.body.className = "";
     app.innerHTML = renderFormYearGate(user);
     bindFormYearGate();
+    if (state.levelUpReveal) mountLevelUpReveal();
     return;
   }
   const snap = userSnapshot(user);
@@ -258,6 +305,8 @@ function render() {
       document.body.classList.add("reduce-motion");
       toast("已減少動態");
     });
+  } else if (state.levelUpReveal) {
+    mountLevelUpReveal();
   }
 }
 
@@ -677,6 +726,9 @@ function renderShell(user) {
 function bindShell(user) {
   const char = getCharacter(user.gender, user.characterId);
   app.querySelector("#logout-btn")?.addEventListener("click", () => {
+    clearTimeout(levelUpTimer);
+    levelUpTimer = null;
+    state.levelUpReveal = null;
     clearSession();
     render();
   });

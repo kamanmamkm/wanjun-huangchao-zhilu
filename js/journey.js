@@ -1,7 +1,7 @@
 /**
  * 《任平生》主介面：行旅首頁、歷史長卷、晉升殿、待考札記、史冊
  */
-import { CHAPTERS, chapterList } from "./data/chapters.js";
+import { CHAPTERS, chapterList } from "./data/chapters.js?v=rad41";
 import { XP_REWARDS } from "./data/levels.js";
 import { CUOSHI_BATTLES, getCuoshi } from "./data/cuoshi.js";
 import { IDENTITIES } from "./data/identities.js";
@@ -69,7 +69,7 @@ export function nextJourneyTask(user, ui = {}) {
     const ch = CHAPTERS[ui.scrollChapter];
     const stage = ch?.stages?.find((s) => s.id === ui.scrollStage);
     const rec = p[ui.scrollChapter]?.stages?.[ui.scrollStage];
-    if (ch && stage && !isStageCompleted(rec)) {
+    if (ch && stage && isChapterEnterable(user, ui.scrollChapter) && !isStageCompleted(rec)) {
       const idx = ch.stages.findIndex((s) => s.id === stage.id);
       return makeStageTask(ch, stage, idx, { resume: true });
     }
@@ -78,6 +78,7 @@ export function nextJourneyTask(user, ui = {}) {
   for (const ch of list) {
     const stages = ch.stages || [];
     if (!stages.length) continue;
+    if (!isChapterEnterable(user, ch.id)) continue;
     const st = p[ch.id] || { stages: {} };
     const idx = stages.findIndex((s) => !isStageCompleted(st.stages?.[s.id]));
     if (idx >= 0) return makeStageTask(ch, stages[idx], idx);
@@ -262,6 +263,42 @@ export function renderJourneyHome(user, char, ui = {}) {
   </section>`;
 }
 
+function isChapterFullyDone(user, ch) {
+  if (!ch) return false;
+  const stages = ch.stages || [];
+  if (!stages.length) return false;
+  const st = user.progress?.chapters?.[ch.id] || {};
+  if (st.done) return true;
+  return stages.every((s) => isStageCompleted(st.stages?.[s.id]));
+}
+
+export function isChapterEnterable(user, chapterId) {
+  const list = chapterList();
+  const idx = list.findIndex((c) => c.id === chapterId);
+  if (idx < 0) return false;
+  const ch = list[idx];
+  if (!(ch.stages || []).length) return false;
+  for (let j = idx - 1; j >= 0; j--) {
+    if ((list[j].stages || []).length) return isChapterFullyDone(user, list[j]);
+  }
+  return true;
+}
+
+const INTERACT_COPY = {
+  timeline: {
+    how: "年份已排好，你要為每個年份揀返正確事件。<strong>本局全部配對正確（全對）</strong>即完成本關，會自動記入長卷。",
+    start: "開始時序長廊",
+    again: "再玩一局",
+    done: "本關已完成——你已全對過一局。",
+  },
+  dialogue: {
+    how: "選最符合史實或合理史觀的回應。<strong>完成與一位古人的整段對話</strong>即完成本關，會自動記入長卷。",
+    start: "開始與古人對話",
+    again: "再對話一回",
+    done: "本關已完成——你已完成一段對話。",
+  },
+};
+
 export function renderScroll(user) {
   const list = chapterList();
   const p = user.progress?.chapters || {};
@@ -271,19 +308,33 @@ export function renderScroll(user) {
     <p class="lead">課程章節可隨老師進度學習；角色身份晉升另計，唔會因為未升官而鎖死課堂課題。</p>
     <div class="chapter-list">
       ${list
-        .map((ch, idx) => {
+        .map((ch) => {
           const st = p[ch.id] || {};
           const hasStages = (ch.stages || []).length > 0;
           const total = (ch.stages || []).length || 0;
           const doneN = (ch.stages || []).filter((s) => isStageCompleted(st.stages?.[s.id])).length;
           const masteredN = (ch.stages || []).filter((s) => isStageMastered(st.stages?.[s.id])).length;
+          const enterable = hasStages && isChapterEnterable(user, ch.id);
+          const lockHint = hasStages && !enterable ? "先完成上一章" : "";
           return `
-          <article class="chapter-card ${hasStages ? "" : "dim"}" data-open-chapter="${ch.id}">
+          <article class="chapter-card ${hasStages ? "" : "dim"} ${enterable ? "" : hasStages ? "locked" : ""}" data-open-chapter="${ch.id}">
             <div class="ch-arc">${ch.arc}</div>
             <h3>${ch.title}</h3>
             <p>${ch.blurb}</p>
-            <p class="muted">${hasStages ? `已完成 ${doneN}/${total} · 已掌握 ${masteredN}/${total}` : "關卡製作中（可先用練習／遊戲）"}</p>
-            ${idx === 0 || hasStages ? `<button type="button" class="btn ghost" data-open-chapter="${ch.id}">進入</button>` : ""}
+            <p class="muted">${
+              !hasStages
+                ? "關卡製作中（可先用練習／遊戲）"
+                : enterable
+                  ? `已完成 ${doneN}/${total} · 已掌握 ${masteredN}/${total}`
+                  : lockHint
+            }</p>
+            ${
+              enterable
+                ? `<button type="button" class="btn ghost" data-open-chapter="${ch.id}">進入</button>`
+                : hasStages
+                  ? `<button type="button" class="btn ghost" disabled>尚未解鎖</button>`
+                  : ""
+            }
           </article>`;
         })
         .join("")}
@@ -294,6 +345,15 @@ export function renderScroll(user) {
 export function renderChapterDetail(user, chapterId, stageId) {
   const ch = CHAPTERS[chapterId];
   if (!ch) return `<section class="panel-paper"><p>找不到章節</p></section>`;
+  if (!isChapterEnterable(user, chapterId)) {
+    return `
+    <section class="panel-paper">
+      <button type="button" class="btn ghost" data-nav="scroll">← 返回長卷</button>
+      <p class="eyebrow ink-red">${ch.arc}</p>
+      <h2>${ch.title}</h2>
+      <p class="lead">尚未解鎖。請先完成上一章全部關卡，再入本章。</p>
+    </section>`;
+  }
   const st = user.progress?.chapters?.[chapterId] || { stages: {} };
   if (!stageId) {
     return `
@@ -347,18 +407,19 @@ function renderStagePlay(user, ch, stage) {
   }
   if (stage.kind === "interact" && stage.gotoGame) {
     const done = isStageCompleted(user.progress?.chapters?.[ch.id]?.stages?.[stage.id]);
+    const copy = INTERACT_COPY[stage.gotoGame] || INTERACT_COPY.timeline;
     return `
     <section class="panel-paper stage-play study-mode">
       ${companionSlot}
       <div class="q-top"><span>${stage.title}</span></div>
       <p class="lead">${stage.goal}</p>
-      <p>年份已排好，你要為每個年份揀返正確事件。<strong>本局全部配對正確（全對）</strong>即完成本關，會自動記入長卷。</p>
+      <p>${copy.how}</p>
       ${
         done
-          ? `<p class="settle-line ok">本關已完成——你已全對過一局。</p>
-             <button type="button" class="btn" data-start-timeline="${ch.id}:${stage.id}">再玩一局</button>
+          ? `<p class="settle-line ok">${copy.done}</p>
+             <button type="button" class="btn" data-start-interact="${ch.id}:${stage.id}">${copy.again}</button>
              <button type="button" class="btn ghost" data-open-chapter="${ch.id}">返回關卡</button>`
-          : `<button type="button" class="btn" data-start-timeline="${ch.id}:${stage.id}">開始時序長廊</button>`
+          : `<button type="button" class="btn" data-start-interact="${ch.id}:${stage.id}">${copy.start}</button>`
       }
     </section>`;
   }
@@ -455,7 +516,7 @@ export function renderGrowthScroll(user, char, growthFocus) {
         <p class="realm-kicker">${realmLabel(focusId)} · ${focusBand?.range || ""} · ${focusVis.vibe}</p>
         <h3>${identityDisplayName(focusIdn, user.gender)}</h3>
         <p>${focusVis.pose} · ${focusVis.prop}</p>
-        <p>背景：${focusVis.scene}（${focusVis.bgHint}）</p>
+        ${focusVis.bgHint ? `<p>背景：${focusVis.scene}（${focusVis.bgHint}）</p>` : ""}
         <p class="stage-quote">「${focusVis.quote}」</p>
         <p class="muted">${focusPromo?.trialId && focusPromo.trialId !== "level_band" ? `晉升於 ${new Date(focusPromo.at).toLocaleString()}` : focusPromo?.byLevel ? `Lv.${focusPromo.byLevel} 晉升` : focusPromo ? `晉升於 ${new Date(focusPromo.at).toLocaleString()}` : focusId === 0 ? "旅程起點" : "已解鎖造型"}</p>
       </div>
@@ -538,23 +599,46 @@ export function bindJourney(user, ctx) {
   const { render, toast, state, reward } = ctx;
 
   appClick("[data-open-chapter]", (btn) => {
-    state.scrollChapter = btn.dataset.openChapter;
+    const cid = btn.dataset.openChapter;
+    const ch = CHAPTERS[cid];
+    if (!(ch?.stages || []).length) {
+      toast("本章關卡製作中，可先用練習／遊戲。");
+      return;
+    }
+    if (!isChapterEnterable(user, cid)) {
+      toast("先完成上一章，再入本章。");
+      return;
+    }
+    state.scrollChapter = cid;
     state.scrollStage = null;
     state.view = "chapter";
     render();
   });
 
-  appClick("[data-start-timeline]", (btn) => {
-    const [cid, sid] = btn.dataset.startTimeline.split(":");
+  appClick("[data-start-interact]", (btn) => {
+    const [cid, sid] = btn.dataset.startInteract.split(":");
+    if (!isChapterEnterable(user, cid)) {
+      toast("先完成上一章，再入本章。");
+      return;
+    }
+    const stage = CHAPTERS[cid]?.stages?.find((s) => s.id === sid);
+    const game = stage?.gotoGame || "timeline";
     state.scrollChapter = cid;
     state.scrollStage = sid;
-    state.timelineFromStage = { cid, sid };
-    state.view = "timeline";
+    state.stageInteract = { cid, sid, game, title: stage?.title || "" };
+    if (game === "dialogue") {
+      state.dialogue = { id: state.dialogue?.id || "d_qin", step: 0, replied: false, good: 0 };
+    }
+    state.view = game;
     render();
   });
 
   appClick("[data-enter-stage]", (btn) => {
     const [cid, sid] = btn.dataset.enterStage.split(":");
+    if (!isChapterEnterable(user, cid)) {
+      toast("先完成上一章，再入本章。");
+      return;
+    }
     state.scrollChapter = cid;
     state.scrollStage = sid;
     state.view = "chapter";

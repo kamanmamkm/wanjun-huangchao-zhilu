@@ -1,11 +1,11 @@
-import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad38";
-import { QUESTIONS, checkFill } from "./data/questions.js?v=rad38";
-import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad38";
-import { levelFromXp } from "./data/levels.js?v=rad38";
-import { DIALOGUES } from "./data/dialogues.js?v=rad38";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad38";
-import { VIDEOS } from "./data/videos.js?v=rad38";
-import { renderAvatar } from "./avatar.js?v=rad38";
+import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad41";
+import { QUESTIONS, checkFill } from "./data/questions.js?v=rad41";
+import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad41";
+import { levelFromXp } from "./data/levels.js?v=rad41";
+import { DIALOGUES } from "./data/dialogues.js?v=rad41";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad41";
+import { VIDEOS } from "./data/videos.js?v=rad41";
+import { renderAvatar } from "./avatar.js?v=rad41";
 import {
   CARD_TYPES,
   createBattle,
@@ -15,7 +15,7 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=rad38";
+} from "./data/shizhan.js?v=rad41";
 import {
   getCurrentUser,
   registerUser,
@@ -24,7 +24,7 @@ import {
   addXp,
   updateUser,
   pushRecent,
-} from "./storage.js?v=rad38";
+} from "./storage.js?v=rad41";
 import {
   userSnapshot,
   buildPromotionOrder,
@@ -33,10 +33,11 @@ import {
   hasAttempt,
   completeStage,
   isStageCompleted,
+  masteryFromScore,
   IDENTITY_DISCLAIMER,
   identityDisplayName,
   getIdentity,
-} from "./progress.js?v=rad38";
+} from "./progress.js?v=rad41";
 import {
   renderJourneyHome,
   renderScroll,
@@ -47,10 +48,10 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad38";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad38";
-import { renderPromoteReveal } from "./heroStage.js?v=rad38";
-import { getStageVisual } from "./data/stageVisuals.js?v=rad38";
+} from "./journey.js?v=rad41";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad41";
+import { renderPromoteReveal } from "./heroStage.js?v=rad41";
+import { getStageVisual } from "./data/stageVisuals.js?v=rad41";
 import {
   FORM_YEARS,
   normalizeFormYear,
@@ -60,8 +61,8 @@ import {
   normalizeClassId,
   formYearFromClassId,
   classIdHint,
-} from "./data/formYear.js?v=rad38";
-import { pickRandomHeroName, isPooledHeroName, HERO_NAME_COUNT } from "./data/heroNames.js?v=rad38";
+} from "./data/formYear.js?v=rad41";
+import { pickRandomHeroName, isPooledHeroName, HERO_NAME_COUNT } from "./data/heroNames.js?v=rad41";
 
 const app = document.getElementById("app");
 let toastTimer = null;
@@ -78,7 +79,8 @@ let state = {
   flip: { cards: [], flipped: [], matched: new Set(), lock: false },
   timeline: { setId: TIMELINE_SETS[0].id },
   timelineFromStage: null,
-  dialogue: { id: DIALOGUES[0].id, step: 0 },
+  stageInteract: null,
+  dialogue: { id: DIALOGUES[0].id, step: 0, replied: false, good: 0 },
   shizhan: null,
   scrollChapter: "ch1_escape",
   scrollStage: null,
@@ -153,6 +155,32 @@ function submitAnswer(amount, meta = {}) {
   if (!recorded.ok) return recorded;
   reward(amount, { keepView: meta.keepView, repeat, streakBonus });
   return recorded;
+}
+
+function interactFrom(game) {
+  const s = state.stageInteract;
+  if (s?.game === game) return s;
+  if (game === "timeline" && state.timelineFromStage) return { ...state.timelineFromStage, game: "timeline" };
+  return null;
+}
+
+function finishInteractStage(from, { mastered, correct, total }) {
+  if (!from) return { already: true };
+  const already = isStageCompleted(getCurrentUser()?.progress?.chapters?.[from.cid]?.stages?.[from.sid]);
+  if (!already) {
+    updateUser((u) =>
+      completeStage(u, from.cid, from.sid, {
+        mastered: !!mastered,
+        firstCorrect: correct,
+        firstTotal: total,
+        correct,
+        total,
+      })
+    );
+    pushRecent(`完成互動關：${from.title || from.sid}`);
+    addXp(XP_REWARDS.chapterBonus);
+  }
+  return { already };
 }
 
 function refreshTopbarOnly() {
@@ -1434,7 +1462,7 @@ function renderTimeline() {
     <div style="margin-top:1rem;display:flex;gap:.6rem;flex-wrap:wrap">
       <button class="btn" type="button" id="tl-check">核對時間線</button>
       ${
-        state.timelineFromStage
+        state.stageInteract?.game === "timeline" || state.timelineFromStage
           ? `<button class="btn ghost" type="button" id="tl-back-stage">返回本關</button>`
           : `<button class="btn ghost" type="button" data-goto="practice">去做練習題</button>`
       }
@@ -1459,7 +1487,7 @@ function bindTimeline() {
     render();
   });
   app.querySelector("#tl-back-stage")?.addEventListener("click", () => {
-    const from = state.timelineFromStage;
+    const from = interactFrom("timeline");
     state.view = "chapter";
     if (from) {
       state.scrollChapter = from.cid;
@@ -1496,24 +1524,13 @@ function bindTimeline() {
         source: "遊戲",
         keepView: true,
       });
-      const from = state.timelineFromStage;
+      const from = interactFrom("timeline");
       if (from) {
-        const already = isStageCompleted(
-          getCurrentUser()?.progress?.chapters?.[from.cid]?.stages?.[from.sid]
-        );
-        if (!already) {
-          updateUser((u) =>
-            completeStage(u, from.cid, from.sid, {
-              mastered: true,
-              firstCorrect: selects.length,
-              firstTotal: selects.length,
-              correct: selects.length,
-              total: selects.length,
-            })
-          );
-          pushRecent("完成互動關：時序長廊（全對一局）");
-          addXp(XP_REWARDS.chapterBonus);
-        }
+        const { already } = finishInteractStage(from, {
+          mastered: true,
+          correct: selects.length,
+          total: selects.length,
+        });
         toast(already ? "全對！本關早已完成" : "全對！本關已記入長卷");
       } else {
         toast("全對！可按「再抽一局」繼續練");
@@ -1540,7 +1557,9 @@ function renderDialogue() {
   return `
   <section class="panel">
     <h2>與古人對話</h2>
-    <p class="lead">選擇最符合史實或合理史觀的回應。</p>
+    <p class="lead">選擇最符合史實或合理史觀的回應。${
+      state.stageInteract?.game === "dialogue" ? "完成與一位古人的整段對話即過關。" : ""
+    }</p>
     <div class="toolbar">
       ${DIALOGUES.map(
         (x) =>
@@ -1556,7 +1575,13 @@ function renderDialogue() {
         state.dialogue.replied
           ? `<div class="npc"><div class="face">🧑</div><div class="bubble">${state.dialogue.lastChoice}</div></div>
              <div class="npc"><div class="face">${d.avatar}</div><div class="bubble">${state.dialogue.lastReply}</div></div>
-             <button class="btn" type="button" id="dlg-next">${state.dialogue.step + 1 < d.steps.length ? "繼續對話" : "完成並換人"}</button>`
+             <button class="btn" type="button" id="dlg-next">${
+               state.dialogue.step + 1 < d.steps.length
+                 ? "繼續對話"
+                 : state.stageInteract?.game === "dialogue"
+                   ? "完成本關對話"
+                   : "完成並換人"
+             }</button>`
           : `<div class="options">${step.choices
               .map(
                 (c, i) =>
@@ -1565,13 +1590,18 @@ function renderDialogue() {
               .join("")}</div>`
       }
     </div>
+    ${
+      state.stageInteract?.game === "dialogue"
+        ? `<div style="margin-top:1rem"><button class="btn ghost" type="button" id="dlg-back-stage">返回本關</button></div>`
+        : ""
+    }
   </section>`;
 }
 
 function bindDialogue() {
   app.querySelectorAll("[data-dlg]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      state.dialogue = { id: btn.dataset.dlg, step: 0, replied: false };
+      state.dialogue = { id: btn.dataset.dlg, step: 0, replied: false, good: 0 };
       render();
     });
   });
@@ -1584,6 +1614,7 @@ function bindDialogue() {
       state.dialogue.lastChoice = choice.text;
       state.dialogue.lastReply = choice.reply;
       if (choice.good) {
+        state.dialogue.good = (state.dialogue.good || 0) + 1;
         submitAnswer(XP_REWARDS.dialogueGood, {
           recordId: makeAttemptId(),
           correct: true,
@@ -1608,16 +1639,40 @@ function bindDialogue() {
       render();
     });
   });
+  app.querySelector("#dlg-back-stage")?.addEventListener("click", () => {
+    const from = interactFrom("dialogue");
+    state.view = "chapter";
+    if (from) {
+      state.scrollChapter = from.cid;
+      state.scrollStage = from.sid;
+    }
+    render();
+  });
   app.querySelector("#dlg-next")?.addEventListener("click", () => {
     const d = DIALOGUES.find((x) => x.id === state.dialogue.id);
     if (state.dialogue.step + 1 < d.steps.length) {
       state.dialogue.step += 1;
       state.dialogue.replied = false;
     } else {
-      const idx = DIALOGUES.findIndex((x) => x.id === d.id);
-      const next = DIALOGUES[(idx + 1) % DIALOGUES.length];
-      state.dialogue = { id: next.id, step: 0, replied: false };
-      toast("對話完成！");
+      const from = interactFrom("dialogue");
+      if (from) {
+        const total = d.steps.length;
+        const correct = Math.min(state.dialogue.good || 0, total);
+        const { already } = finishInteractStage(from, {
+          mastered: masteryFromScore(correct, total),
+          correct,
+          total,
+        });
+        toast(already ? "對話完成！" : "對話完成！本關已記入長卷");
+        state.view = "chapter";
+        state.scrollChapter = from.cid;
+        state.scrollStage = from.sid;
+      } else {
+        const idx = DIALOGUES.findIndex((x) => x.id === d.id);
+        const next = DIALOGUES[(idx + 1) % DIALOGUES.length];
+        state.dialogue = { id: next.id, step: 0, replied: false, good: 0 };
+        toast("對話完成！");
+      }
     }
     render();
   });

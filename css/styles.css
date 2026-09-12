@@ -1899,7 +1899,7 @@ select {
   border: 1px solid rgba(110, 84, 48, 0.25); border-radius: 10px; padding: 0.85rem;
   background: rgba(255,250,240,0.9); text-align: left; cursor: pointer;
 }
-.chapter-card.dim { opacity: 0.7; }
+.chapter-card.locked { opacity: 0.55; cursor: default; }
 .ch-arc { font-size: 0.75rem; color: #9a3424; }
 .stage-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
 .stage-card { display: flex; flex-direction: column; gap: 0.25rem; }

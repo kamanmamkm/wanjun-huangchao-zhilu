@@ -91,13 +91,13 @@ export const IDENTITIES = [
  */
 export const PROMOTION_GATES = {
   0: {
-    minLevel: 6,
+    minLevel: 5,
     chapters: ["ch1_escape", "ch2_figures"],
     trialId: "trial_to_student",
     label: "學子試煉",
   },
   1: {
-    minLevel: 16,
+    minLevel: 11,
     chapters: ["ch3_events"],
     trialId: "trial_to_shi",
     label: "士人試煉",

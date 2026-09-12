@@ -220,7 +220,7 @@ export function renderJourneyHome(user, char, ui = {}) {
       <hr class="realm-rule" />
       <p class="realm-quote">${vis.quote}</p>
       <p class="poster-char">
-        <span>學子 · ${heroName}</span>
+        <span>${heroName}</span>
         <button type="button" class="name-pencil" id="toggle-hero-name" aria-label="改名" title="改名" aria-expanded="${ui.heroNameEdit ? "true" : "false"}">✎</button>
         <span class="muted">Lv.${snap.level.level}</span>
       </p>

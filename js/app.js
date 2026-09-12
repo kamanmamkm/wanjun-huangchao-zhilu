@@ -1,11 +1,11 @@
-import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad37";
-import { QUESTIONS, checkFill } from "./data/questions.js?v=rad37";
-import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad37";
-import { levelFromXp } from "./data/levels.js?v=rad37";
-import { DIALOGUES } from "./data/dialogues.js?v=rad37";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad37";
-import { VIDEOS } from "./data/videos.js?v=rad37";
-import { renderAvatar } from "./avatar.js?v=rad37";
+import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad38";
+import { QUESTIONS, checkFill } from "./data/questions.js?v=rad38";
+import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad38";
+import { levelFromXp } from "./data/levels.js?v=rad38";
+import { DIALOGUES } from "./data/dialogues.js?v=rad38";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad38";
+import { VIDEOS } from "./data/videos.js?v=rad38";
+import { renderAvatar } from "./avatar.js?v=rad38";
 import {
   CARD_TYPES,
   createBattle,
@@ -15,7 +15,7 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=rad37";
+} from "./data/shizhan.js?v=rad38";
 import {
   getCurrentUser,
   registerUser,
@@ -23,17 +23,20 @@ import {
   clearSession,
   addXp,
   updateUser,
-} from "./storage.js?v=rad37";
+  pushRecent,
+} from "./storage.js?v=rad38";
 import {
   userSnapshot,
   buildPromotionOrder,
   recordAttempt,
   makeAttemptId,
   hasAttempt,
+  completeStage,
+  isStageCompleted,
   IDENTITY_DISCLAIMER,
   identityDisplayName,
   getIdentity,
-} from "./progress.js?v=rad37";
+} from "./progress.js?v=rad38";
 import {
   renderJourneyHome,
   renderScroll,
@@ -44,10 +47,10 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad37";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad37";
-import { renderPromoteReveal } from "./heroStage.js?v=rad37";
-import { getStageVisual } from "./data/stageVisuals.js?v=rad37";
+} from "./journey.js?v=rad38";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad38";
+import { renderPromoteReveal } from "./heroStage.js?v=rad38";
+import { getStageVisual } from "./data/stageVisuals.js?v=rad38";
 import {
   FORM_YEARS,
   normalizeFormYear,
@@ -57,8 +60,8 @@ import {
   normalizeClassId,
   formYearFromClassId,
   classIdHint,
-} from "./data/formYear.js?v=rad37";
-import { pickRandomHeroName, isPooledHeroName, HERO_NAME_COUNT } from "./data/heroNames.js?v=rad37";
+} from "./data/formYear.js?v=rad38";
+import { pickRandomHeroName, isPooledHeroName, HERO_NAME_COUNT } from "./data/heroNames.js?v=rad38";
 
 const app = document.getElementById("app");
 let toastTimer = null;
@@ -74,6 +77,7 @@ let state = {
   match: { selectedLeft: null, selectedRight: null, solved: new Set() },
   flip: { cards: [], flipped: [], matched: new Set(), lock: false },
   timeline: { setId: TIMELINE_SETS[0].id },
+  timelineFromStage: null,
   dialogue: { id: DIALOGUES[0].id, step: 0 },
   shizhan: null,
   scrollChapter: "ch1_escape",
@@ -1402,7 +1406,7 @@ function renderTimeline() {
   return `
   <section class="panel">
     <h2>人物／事件時間線</h2>
-    <p class="lead">${set.title}（${set.grade}）——本題抽 ${round.length}／${set.items.length} 件事件。${formYearHint(year)}</p>
+    <p class="lead">${set.title}（${set.grade}）——本題抽 ${round.length}／${set.items.length} 件事件。全部配對正確即過關。${formYearHint(year)}</p>
     <div class="toolbar">
       ${pool
         .map(
@@ -1429,7 +1433,11 @@ function renderTimeline() {
     </div>
     <div style="margin-top:1rem;display:flex;gap:.6rem;flex-wrap:wrap">
       <button class="btn" type="button" id="tl-check">核對時間線</button>
-      <button class="btn ghost" type="button" data-goto="practice">去做練習題</button>
+      ${
+        state.timelineFromStage
+          ? `<button class="btn ghost" type="button" id="tl-back-stage">返回本關</button>`
+          : `<button class="btn ghost" type="button" data-goto="practice">去做練習題</button>`
+      }
     </div>
     <div class="feedback hidden" id="feedback"></div>
   </section>`;
@@ -1450,6 +1458,15 @@ function bindTimeline() {
     toast("已換一組新事件");
     render();
   });
+  app.querySelector("#tl-back-stage")?.addEventListener("click", () => {
+    const from = state.timelineFromStage;
+    state.view = "chapter";
+    if (from) {
+      state.scrollChapter = from.cid;
+      state.scrollStage = from.sid;
+    }
+    render();
+  });
   app.querySelector("[data-goto=practice]")?.addEventListener("click", () => {
     state.view = "practice";
     render();
@@ -1468,7 +1485,7 @@ function bindTimeline() {
     const fb = app.querySelector("#feedback");
     fb.classList.remove("hidden");
     fb.textContent = `正確 ${ok}/${selects.length}`;
-    if (ok === selects.length) {
+    if (ok === selects.length && selects.length) {
       submitAnswer(XP_REWARDS.timelineComplete, {
         recordId: makeAttemptId(),
         correct: true,
@@ -1477,8 +1494,30 @@ function bindTimeline() {
         qid: `tl-${state.timeline.setId || "set"}`,
         qText: "時序長廊",
         source: "遊戲",
+        keepView: true,
       });
-      toast("全對！可按「再抽一局」繼續練");
+      const from = state.timelineFromStage;
+      if (from) {
+        const already = isStageCompleted(
+          getCurrentUser()?.progress?.chapters?.[from.cid]?.stages?.[from.sid]
+        );
+        if (!already) {
+          updateUser((u) =>
+            completeStage(u, from.cid, from.sid, {
+              mastered: true,
+              firstCorrect: selects.length,
+              firstTotal: selects.length,
+              correct: selects.length,
+              total: selects.length,
+            })
+          );
+          pushRecent("完成互動關：時序長廊（全對一局）");
+          addXp(XP_REWARDS.chapterBonus);
+        }
+        toast(already ? "全對！本關早已完成" : "全對！本關已記入長卷");
+      } else {
+        toast("全對！可按「再抽一局」繼續練");
+      }
     } else {
       submitAnswer(0, {
         recordId: makeAttemptId(),
@@ -1488,6 +1527,7 @@ function bindTimeline() {
         qid: `tl-${state.timeline.setId || "set"}`,
         qText: "時序長廊",
         source: "遊戲",
+        keepView: true,
       });
       toast("尚未全對，再檢查一下");
     }

@@ -1853,9 +1853,20 @@ select {
 .stage-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
 .stage-card { display: flex; flex-direction: column; gap: 0.25rem; }
 .stage-card.locked { opacity: 0.45; cursor: not-allowed; }
-.stage-card.done { border-color: #2d6b52; }
+.stage-card.done { border-color: #8a7340; }
+.stage-card.mastered { border-color: #2d6b52; }
 .stage-card .ic { font-size: 1.4rem; }
 .stage-card .goal { font-size: 0.78rem; opacity: 0.8; }
+.stage-settle {
+  padding: 1rem;
+  border: 1px solid rgba(110, 84, 48, 0.28);
+  border-radius: 10px;
+  background: rgba(255, 250, 240, 0.92);
+}
+.stage-settle h3 { margin: 0 0 0.75rem; }
+.settle-line { margin: 0.45rem 0; line-height: 1.55; }
+.settle-line.ok { color: #215c45; }
+.settle-line.wait { color: #7a3a22; }
 .story-box {
   padding: 1rem; border-left: 3px solid #9a3424; background: rgba(255,248,236,0.8);
   line-height: 1.75; margin: 0.75rem 0;

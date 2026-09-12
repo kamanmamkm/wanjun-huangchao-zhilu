@@ -1,11 +1,11 @@
-import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad33";
-import { QUESTIONS, checkFill } from "./data/questions.js?v=rad33";
-import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad33";
-import { levelFromXp } from "./data/levels.js?v=rad33";
-import { DIALOGUES } from "./data/dialogues.js?v=rad33";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad33";
-import { VIDEOS } from "./data/videos.js?v=rad33";
-import { renderAvatar } from "./avatar.js?v=rad33";
+import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad35";
+import { QUESTIONS, checkFill } from "./data/questions.js?v=rad35";
+import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad35";
+import { levelFromXp } from "./data/levels.js?v=rad35";
+import { DIALOGUES } from "./data/dialogues.js?v=rad35";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad35";
+import { VIDEOS } from "./data/videos.js?v=rad35";
+import { renderAvatar } from "./avatar.js?v=rad35";
 import {
   CARD_TYPES,
   createBattle,
@@ -15,7 +15,7 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=rad33";
+} from "./data/shizhan.js?v=rad35";
 import {
   getCurrentUser,
   registerUser,
@@ -23,7 +23,7 @@ import {
   clearSession,
   addXp,
   updateUser,
-} from "./storage.js?v=rad33";
+} from "./storage.js?v=rad35";
 import {
   userSnapshot,
   buildPromotionOrder,
@@ -31,7 +31,7 @@ import {
   IDENTITY_DISCLAIMER,
   identityDisplayName,
   getIdentity,
-} from "./progress.js?v=rad33";
+} from "./progress.js?v=rad35";
 import {
   renderJourneyHome,
   renderScroll,
@@ -42,10 +42,10 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad33";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad33";
-import { renderPromoteReveal } from "./heroStage.js?v=rad33";
-import { getStageVisual } from "./data/stageVisuals.js?v=rad33";
+} from "./journey.js?v=rad35";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad35";
+import { renderPromoteReveal } from "./heroStage.js?v=rad35";
+import { getStageVisual } from "./data/stageVisuals.js?v=rad35";
 import {
   FORM_YEARS,
   normalizeFormYear,
@@ -55,8 +55,8 @@ import {
   normalizeClassId,
   formYearFromClassId,
   classIdHint,
-} from "./data/formYear.js?v=rad33";
-import { pickRandomHeroName, isPooledHeroName, HERO_NAME_COUNT } from "./data/heroNames.js?v=rad33";
+} from "./data/formYear.js?v=rad35";
+import { pickRandomHeroName, isPooledHeroName, HERO_NAME_COUNT } from "./data/heroNames.js?v=rad35";
 
 const app = document.getElementById("app");
 let toastTimer = null;

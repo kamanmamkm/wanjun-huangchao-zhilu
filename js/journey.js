@@ -14,7 +14,13 @@ import {
   userSnapshot,
   buildPromotionOrder,
   completeStage,
+  settleStage,
   recordLearning,
+  isStageCompleted,
+  isStageMastered,
+  stageRecord,
+  masteryFromScore,
+  STAGE_MASTERY_RATE,
   markNoteMastered,
   scoreTrial,
   flattenTrialParts,
@@ -41,7 +47,7 @@ export function renderJourneyHome(user, char) {
   const ch = CHAPTERS.ch1_escape;
   const chProg = user.progress?.chapters?.ch1_escape || { stages: {} };
   const stages = ch.stages || [];
-  const nextStage = stages.find((s) => !chProg.stages?.[s.id]) || stages[stages.length - 1];
+  const nextStage = stages.find((s) => !isStageCompleted(chProg.stages?.[s.id])) || stages[stages.length - 1];
   const skills = user.progress?.skills || {};
   const vis = getStageVisual(stageId);
   const realm = realmLabel(stageId);
@@ -160,14 +166,15 @@ export function renderScroll(user) {
         .map((ch, idx) => {
           const st = p[ch.id] || {};
           const hasStages = (ch.stages || []).length > 0;
-          const doneN = Object.keys(st.stages || {}).length;
           const total = (ch.stages || []).length || 0;
+          const doneN = (ch.stages || []).filter((s) => isStageCompleted(st.stages?.[s.id])).length;
+          const masteredN = (ch.stages || []).filter((s) => isStageMastered(st.stages?.[s.id])).length;
           return `
           <article class="chapter-card ${hasStages ? "" : "dim"}" data-open-chapter="${ch.id}">
             <div class="ch-arc">${ch.arc}</div>
             <h3>${ch.title}</h3>
             <p>${ch.blurb}</p>
-            <p class="muted">${hasStages ? `進度 ${doneN}/${total}` : "關卡製作中（可先用練習／遊戲）"}</p>
+            <p class="muted">${hasStages ? `已完成 ${doneN}/${total} · 已掌握 ${masteredN}/${total}` : "關卡製作中（可先用練習／遊戲）"}</p>
             ${idx === 0 || hasStages ? `<button type="button" class="btn ghost" data-open-chapter="${ch.id}">進入</button>` : ""}
           </article>`;
         })
@@ -187,20 +194,24 @@ export function renderChapterDetail(user, chapterId, stageId) {
       <p class="eyebrow ink-red">${ch.arc}</p>
       <h2>${ch.title}</h2>
       <p class="lead">${ch.blurb}</p>
+      <p class="muted">已完成＝做完全部題目。已掌握＝答對八成，或完成錯題重答。</p>
       <div class="stage-grid">
         ${(ch.stages || [])
           .map((s, i) => {
-            const prevDone = i === 0 || !!st.stages?.[(ch.stages[i - 1] || {}).id];
-            const done = !!st.stages?.[s.id];
+            const prevDone = i === 0 || isStageCompleted(st.stages?.[(ch.stages[i - 1] || {}).id]);
+            const rec = stageRecord(st.stages?.[s.id]);
+            const done = !!rec?.completed;
+            const mastered = !!rec?.mastered;
             const locked = !prevDone && !done;
+            const status = locked ? "先完成上一關" : mastered ? "已掌握" : done ? "已完成" : "可進入";
             return `
-            <button type="button" class="stage-card ${done ? "done" : ""} ${locked ? "locked" : ""}"
+            <button type="button" class="stage-card ${done ? "done" : ""} ${mastered ? "mastered" : ""} ${locked ? "locked" : ""}"
               data-enter-stage="${ch.id}:${s.id}" ${locked ? "disabled" : ""}>
               <span class="ic">${s.icon}</span>
               <strong>${s.title}</strong>
               <span>${s.minutes || "—"} 分鐘</span>
               <span class="goal">${s.goal}</span>
-              ${locked ? "<em>先完成上一關</em>" : done ? "<em>已修復</em>" : "<em>可進入</em>"}
+              <em>${status}</em>
             </button>`;
           })
           .join("")}
@@ -214,12 +225,11 @@ export function renderChapterDetail(user, chapterId, stageId) {
 
 function renderStagePlay(user, ch, stage) {
   const companionSlot = `<div id="study-companion-slot" data-identity="${stageIdForUser(user)}"></div>`;
-  const readToggle = `<button type="button" class="btn ghost read-toggle" data-toggle-read>米白閱讀底</button>`;
   if (stage.kind === "story") {
     return `
     <section class="panel-paper stage-play study-mode">
       ${companionSlot}
-      <div class="q-top"><span>${ch.title}</span>${readToggle}</div>
+      <div class="q-top"><span>${ch.title}</span></div>
       <h2>${stage.title}</h2>
       <div class="story-box">${stage.body}</div>
       <p class="lead">學習目標：${stage.goal}</p>
@@ -230,7 +240,7 @@ function renderStagePlay(user, ch, stage) {
     return `
     <section class="panel-paper stage-play study-mode">
       ${companionSlot}
-      <div class="q-top"><span>${stage.title}</span>${readToggle}</div>
+      <div class="q-top"><span>${stage.title}</span></div>
       <p class="lead">${stage.goal}</p>
       <p>此關連接到「時光長河」互動。完成一局後返回可標記進度。</p>
       <button type="button" class="btn" data-goto="${stage.gotoGame}">開始時序長廊</button>
@@ -241,7 +251,7 @@ function renderStagePlay(user, ch, stage) {
     return `
     <section class="panel-paper stage-play study-mode" id="boss-stage" data-chapter="${ch.id}" data-stage="${stage.id}">
       ${companionSlot}
-      <div class="q-top"><span>${stage.title}</span>${readToggle}</div>
+      <div class="q-top"><span>${stage.title}</span></div>
       <p class="lead">Boss 是一本被改亂的史書——辨錯、修正、舉證。</p>
       <div class="boss-progress"><i style="width:0%" id="boss-bar"></i></div>
       <div id="boss-body"></div>
@@ -254,7 +264,6 @@ function renderStagePlay(user, ch, stage) {
     <div class="q-top">
       <span>${ch.title} · ${stage.title}</span>
       <span id="sq-progress">進度 1 / ${qs.length}</span>
-      ${readToggle}
     </div>
     <div id="sq-body"></div>
   </section>`;
@@ -409,7 +418,7 @@ export function bindJourney(user, ctx) {
     state.scrollChapter = cid;
     state.scrollStage = sid;
     state.view = "chapter";
-    state.stageQuiz = { index: 0, correct: 0 };
+    state.stageQuiz = blankStageQuiz();
     state.bossStep = 0;
     render();
     // after render, bind quiz/boss
@@ -444,14 +453,6 @@ export function bindJourney(user, ctx) {
     const id = Number(slot.dataset.identity || 0);
     slot.outerHTML = renderStudyCompanion(char, id);
   }
-  document.querySelectorAll("[data-toggle-read]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const pane = btn.closest(".study-mode") || btn.closest(".panel-paper");
-      pane?.classList.toggle("read-warm");
-      const on = pane?.classList.contains("read-warm");
-      btn.textContent = on ? "深色面板" : "米白閱讀底";
-    });
-  });
 }
 
 function bindCuoshi(user, ctx) {
@@ -519,6 +520,19 @@ function paintCuoshi(ctx) {
   });
 }
 
+function blankStageQuiz() {
+  return {
+    index: 0,
+    correct: 0,
+    locked: false,
+    pick: null,
+    wrong: [],
+    phase: "main",
+    mastered: false,
+    retried: false,
+  };
+}
+
 function bindStageRuntime(user, ctx) {
   const { state, render, toast, reward } = ctx;
   const quizRoot = document.getElementById("stage-quiz");
@@ -526,7 +540,7 @@ function bindStageRuntime(user, ctx) {
     const ch = CHAPTERS[quizRoot.dataset.chapter];
     const stage = ch.stages.find((s) => s.id === quizRoot.dataset.stage);
     const qs = stage.questions || [];
-    state.stageQuiz = state.stageQuiz || { index: 0, correct: 0 };
+    state.stageQuiz = state.stageQuiz || blankStageQuiz();
     paintQuiz(qs, state, ch, stage, ctx);
   }
   const bossRoot = document.getElementById("boss-stage");
@@ -535,15 +549,118 @@ function bindStageRuntime(user, ctx) {
   }
 }
 
-function paintQuiz(qs, state, ch, stage, ctx) {
+function quizPool(qs, quiz) {
+  return quiz.phase === "retry" ? quiz.wrong : qs;
+}
+
+function paintQuizSettle(qs, state, ch, stage, ctx) {
   const { render, toast } = ctx;
-  const i = state.stageQuiz.index;
-  const q = qs[i];
+  const quiz = state.stageQuiz;
+  const body = document.getElementById("sq-body");
+  const prog = document.getElementById("sq-progress");
+  if (!body) return;
+  if (prog) prog.textContent = "本關結算";
+  const rate = `${quiz.correct}/${qs.length}`;
+  const need = Math.ceil(qs.length * STAGE_MASTERY_RATE);
+  body.innerHTML = `
+    <div class="stage-settle">
+      <h3>本關結算</h3>
+      <p class="settle-line ok"><strong>已完成</strong>：做完全部題目（${qs.length} 題）</p>
+      <p class="settle-line ${quiz.mastered ? "ok" : "wait"}"><strong>已掌握</strong>：${
+        quiz.mastered
+          ? quiz.retried
+            ? "已完成錯題重答"
+            : `準確率 ${rate}，已達八成`
+          : `準確率 ${rate}，未達八成（須答對 ${need} 題或完成錯題重答）`
+      }</p>
+      <p class="muted">做過同識咗係兩件事。完成只代表題目都答過；掌握先算識咗。</p>
+      <div class="row-actions">
+        ${
+          !quiz.mastered && (quiz.wrong || []).length
+            ? `<button type="button" class="btn" id="sq-retry">開始錯題重答</button>`
+            : ""
+        }
+        <button type="button" class="btn ${quiz.mastered ? "" : "ghost"}" id="sq-back">返回關卡</button>
+      </div>
+    </div>`;
+  document.getElementById("sq-retry")?.addEventListener("click", () => {
+    quiz.phase = "retry";
+    quiz.index = 0;
+    quiz.locked = false;
+    quiz.pick = null;
+    paintQuiz(qs, state, ch, stage, ctx);
+  });
+  document.getElementById("sq-back")?.addEventListener("click", () => {
+    toast(quiz.mastered ? "本關已掌握" : "本關已完成（尚未掌握）");
+    state.scrollStage = null;
+    state.view = "chapter";
+    render();
+  });
+}
+
+function advanceAfterNext(qs, state, ch, stage, ctx) {
+  const quiz = state.stageQuiz;
+  const pool = quizPool(qs, quiz);
+  if (quiz.index + 1 < pool.length) {
+    quiz.index += 1;
+    quiz.locked = false;
+    quiz.pick = null;
+    paintQuiz(qs, state, ch, stage, ctx);
+    return;
+  }
+  if (quiz.phase === "retry") {
+    quiz.mastered = true;
+    quiz.retried = true;
+    updateUser((u) =>
+      settleStage(u, ch.id, stage.id, {
+        completed: true,
+        mastered: true,
+        correct: qs.length,
+        total: qs.length,
+        retried: true,
+      })
+    );
+    quiz.phase = "settle";
+    paintQuizSettle(qs, state, ch, stage, ctx);
+    return;
+  }
+  quiz.mastered = masteryFromScore(quiz.correct, qs.length);
+  updateUser((u) =>
+    settleStage(u, ch.id, stage.id, {
+      completed: true,
+      mastered: quiz.mastered,
+      correct: quiz.correct,
+      total: qs.length,
+    })
+  );
+  pushRecent(`完成關卡：${stage.title}${quiz.mastered ? "（已掌握）" : ""}`);
+  addXp(XP_REWARDS.chapterBonus, { correct: true });
+  quiz.phase = "settle";
+  paintQuizSettle(qs, state, ch, stage, ctx);
+}
+
+function paintQuiz(qs, state, ch, stage, ctx) {
+  const quiz = state.stageQuiz;
+  if (quiz.phase === "settle") {
+    paintQuizSettle(qs, state, ch, stage, ctx);
+    return;
+  }
+  const pool = quizPool(qs, quiz);
+  const i = quiz.index;
+  const q = pool[i];
   const body = document.getElementById("sq-body");
   const prog = document.getElementById("sq-progress");
   if (!body || !q) return;
-  prog.textContent = `進度 ${i + 1} / ${qs.length}`;
-  body.innerHTML = `
+  if (prog) {
+    prog.textContent =
+      quiz.phase === "retry" ? `錯題重答 ${i + 1} / ${pool.length}` : `進度 ${i + 1} / ${qs.length}`;
+  }
+  const last = i + 1 >= pool.length;
+  const nextLabel =
+    quiz.phase === "retry" ? (last ? "完成錯題重答" : "明白，下一題") : last ? "完成本關題目" : "明白，下一題";
+
+  const paintQuestion = () => {
+    body.innerHTML = `
     <div class="mission-box"><strong>【任務】</strong>${stage.goal}</div>
     <div class="q-text">${q.q}</div>
     <div class="options">
@@ -553,57 +670,77 @@ function paintQuiz(qs, state, ch, stage, ctx) {
     <div class="row-actions">
       <button type="button" class="btn ghost" id="sq-hint">查看提示</button>
     </div>`;
-  document.getElementById("sq-hint")?.addEventListener("click", () => {
-    toast(q.misconception || q.explain || "先排除明顯不合理的選項");
-  });
-  body.querySelectorAll("[data-sq]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const pick = Number(btn.dataset.sq);
-      const ok = pick === q.answer;
-      updateUser((u) => {
-        recordLearning(u, {
-          topic: q.topic,
-          skill: q.skill,
-          correct: ok,
-          qid: q.id,
-          qText: q.q,
-          chapterId: ch.id,
-        });
-      });
-      const fb = document.getElementById("sq-fb");
-      fb.classList.remove("hidden");
-      fb.innerHTML = ok
-        ? `<strong>正確。</strong> ${q.explain || ""}<br>下一步：繼續下一題。`
-        : `<strong>未正確。</strong> ${q.explain || ""}<br>常見誤解：${q.misconception || "再讀一次材料／選項。"}`;
-      if (ok) {
-        state.stageQuiz.correct++;
-        ctx.reward(XP_REWARDS.mcCorrect, {
-          correct: true,
-          qid: q.id,
-          qText: q.q,
-          topic: q.topic,
-          keepView: true,
-        });
-      } else {
-        ctx.reward(0, { wrong: true, qid: q.id, qText: q.q, topic: q.topic, keepView: true });
-      }
-      body.querySelectorAll("[data-sq]").forEach((b) => (b.disabled = true));
-      setTimeout(() => {
-        if (i + 1 >= qs.length) {
-          updateUser((u) => completeStage(u, ch.id, stage.id));
-          pushRecent(`修復史頁：${stage.title}`);
-          addXp(XP_REWARDS.chapterBonus, { correct: true });
-          toast("本關完成！史頁修復進度＋1");
-          state.scrollStage = null;
-          state.view = "chapter";
-          ctx.render();
-        } else {
-          state.stageQuiz.index++;
-          paintQuiz(qs, state, ch, stage, ctx);
-        }
-      }, 900);
+    document.getElementById("sq-hint")?.addEventListener("click", () => {
+      ctx.toast(q.misconception || q.explain || "先排除明顯不合理的選項");
     });
-  });
+    body.querySelectorAll("[data-sq]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (quiz.locked) return;
+        const pick = Number(btn.dataset.sq);
+        const ok = pick === q.answer;
+        quiz.locked = true;
+        quiz.pick = pick;
+        updateUser((u) => {
+          recordLearning(u, {
+            topic: q.topic,
+            skill: q.skill,
+            correct: ok,
+            qid: q.id,
+            qText: q.q,
+            chapterId: ch.id,
+          });
+        });
+        const fb = document.getElementById("sq-fb");
+        fb.classList.remove("hidden");
+        fb.innerHTML = ok
+          ? `<strong>正確。</strong> ${q.explain || ""}`
+          : `<strong>未正確。</strong> ${q.explain || ""}<br>常見誤解：${q.misconception || "再讀一次材料／選項。"}`;
+        body.querySelectorAll("[data-sq]").forEach((b) => {
+          b.disabled = true;
+          const idx = Number(b.dataset.sq);
+          if (idx === q.answer) b.classList.add("correct");
+          else if (idx === pick) b.classList.add("wrong");
+        });
+        if (quiz.phase === "main") {
+          if (ok) quiz.correct += 1;
+          else if (!quiz.wrong.some((w) => w.id === q.id)) quiz.wrong.push(q);
+        }
+        if (ok) {
+          ctx.reward(XP_REWARDS.mcCorrect, {
+            correct: true,
+            qid: q.id,
+            qText: q.q,
+            topic: q.topic,
+            keepView: true,
+          });
+        } else {
+          ctx.reward(0, { wrong: true, qid: q.id, qText: q.q, topic: q.topic, keepView: true });
+        }
+        const actions = body.querySelector(".row-actions");
+        if (quiz.phase === "retry" && !ok) {
+          actions.insertAdjacentHTML(
+            "beforeend",
+            `<button type="button" class="btn" id="sq-again">再試一次</button>`
+          );
+          document.getElementById("sq-again")?.addEventListener("click", () => {
+            quiz.locked = false;
+            quiz.pick = null;
+            paintQuestion();
+          });
+        } else {
+          actions.insertAdjacentHTML(
+            "beforeend",
+            `<button type="button" class="btn" id="sq-next">${nextLabel}</button>`
+          );
+          document.getElementById("sq-next")?.addEventListener("click", () => {
+            advanceAfterNext(qs, state, ch, stage, ctx);
+          });
+        }
+      });
+    });
+  };
+
+  paintQuestion();
 }
 
 function paintBoss(root, ctx) {
@@ -643,7 +780,7 @@ function paintBoss(root, ctx) {
       state.bossStep++;
       if (state.bossStep >= steps.length) {
         if (bar) bar.style.width = "100%";
-        updateUser((u) => completeStage(u, ch.id, stage.id));
+        updateUser((u) => completeStage(u, ch.id, stage.id, { mastered: true, correct: steps.length, total: steps.length }));
         pushRecent("擊敗錯史·第一章試煉");
         addXp(XP_REWARDS.chapterBonus, { correct: true });
         toast("史頁修復完成！");

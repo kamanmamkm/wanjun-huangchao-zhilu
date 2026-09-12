@@ -1,11 +1,11 @@
-import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad35";
-import { QUESTIONS, checkFill } from "./data/questions.js?v=rad35";
-import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad35";
-import { levelFromXp } from "./data/levels.js?v=rad35";
-import { DIALOGUES } from "./data/dialogues.js?v=rad35";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad35";
-import { VIDEOS } from "./data/videos.js?v=rad35";
-import { renderAvatar } from "./avatar.js?v=rad35";
+import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad36";
+import { QUESTIONS, checkFill } from "./data/questions.js?v=rad36";
+import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad36";
+import { levelFromXp } from "./data/levels.js?v=rad36";
+import { DIALOGUES } from "./data/dialogues.js?v=rad36";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad36";
+import { VIDEOS } from "./data/videos.js?v=rad36";
+import { renderAvatar } from "./avatar.js?v=rad36";
 import {
   CARD_TYPES,
   createBattle,
@@ -15,7 +15,7 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=rad35";
+} from "./data/shizhan.js?v=rad36";
 import {
   getCurrentUser,
   registerUser,
@@ -23,15 +23,17 @@ import {
   clearSession,
   addXp,
   updateUser,
-} from "./storage.js?v=rad35";
+} from "./storage.js?v=rad36";
 import {
   userSnapshot,
   buildPromotionOrder,
-  recordLearning,
+  recordAttempt,
+  makeAttemptId,
+  hasAttempt,
   IDENTITY_DISCLAIMER,
   identityDisplayName,
   getIdentity,
-} from "./progress.js?v=rad35";
+} from "./progress.js?v=rad36";
 import {
   renderJourneyHome,
   renderScroll,
@@ -42,10 +44,10 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad35";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad35";
-import { renderPromoteReveal } from "./heroStage.js?v=rad35";
-import { getStageVisual } from "./data/stageVisuals.js?v=rad35";
+} from "./journey.js?v=rad36";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad36";
+import { renderPromoteReveal } from "./heroStage.js?v=rad36";
+import { getStageVisual } from "./data/stageVisuals.js?v=rad36";
 import {
   FORM_YEARS,
   normalizeFormYear,
@@ -55,8 +57,8 @@ import {
   normalizeClassId,
   formYearFromClassId,
   classIdHint,
-} from "./data/formYear.js?v=rad35";
-import { pickRandomHeroName, isPooledHeroName, HERO_NAME_COUNT } from "./data/heroNames.js?v=rad35";
+} from "./data/formYear.js?v=rad36";
+import { pickRandomHeroName, isPooledHeroName, HERO_NAME_COUNT } from "./data/heroNames.js?v=rad36";
 
 const app = document.getElementById("app");
 let toastTimer = null;
@@ -81,6 +83,7 @@ let state = {
   trial: null,
   cuoshi: null,
   promoteReveal: null,
+  heroNameEdit: false,
   teacherUser: null,
   teacherFilter: "全部",
   guestPlay: { active: false, index: 0, done: false, locked: false, score: 0, pick: null, qs: [] },
@@ -108,50 +111,44 @@ function shuffle(arr) {
   return a;
 }
 
+/** 經驗獎勵只加 XP，唔改掌握度／答題紀錄。 */
 function reward(amount, meta = {}) {
   const before = getCurrentUser();
   const prevLv = before ? levelFromXp(before.xp).level : 1;
-  let bonus = amount;
-  if (meta.qid && before?.answered?.[meta.qid]) {
-    bonus = Math.max(1, Math.round(bonus * XP_REWARDS.repeatScale));
-  }
-  if (meta.correct && (before?.streak || 0) >= 3) bonus += XP_REWARDS.streakBonus;
-  if (meta.correct && (meta.topic || meta.skill || meta.qid)) {
-    updateUser((u) =>
-      recordLearning(u, {
-        topic: meta.topic,
-        skill: meta.skill || "recall",
-        correct: true,
-        qid: meta.qid,
-        qText: meta.qText,
-        chapterId: meta.chapterId,
-      })
-    );
-  }
-  if (meta.wrong && meta.qText) {
-    updateUser((u) =>
-      recordLearning(u, {
-        topic: meta.topic,
-        skill: meta.skill || "recall",
-        correct: false,
-        qid: meta.qid,
-        qText: meta.qText,
-      })
-    );
-  }
-  addXp(bonus, meta);
+  let bonus = Number(amount) || 0;
+  if (meta.repeat && bonus > 0) bonus = Math.max(1, Math.round(bonus * XP_REWARDS.repeatScale));
+  if (meta.streakBonus && bonus > 0) bonus += XP_REWARDS.streakBonus;
+  addXp(bonus);
   const after = getCurrentUser();
-  const nextLv = levelFromXp(after.xp).level;
+  const nextLv = after ? levelFromXp(after.xp).level : prevLv;
   const idBefore = before?.identityId ?? 0;
   const idAfter = after?.identityId ?? 0;
   if (nextLv > prevLv) toast(`角色升至 Lv.${nextLv}！+${bonus} 經驗`);
-  else if (meta.qid && before?.answered?.[meta.qid]) toast(`+${bonus} 經驗（複習減幅）`);
+  else if (meta.repeat && bonus) toast(`+${bonus} 經驗（複習減幅）`);
   else if (bonus) toast(`+${bonus} 經驗`);
   if (idAfter > idBefore && !state.promoteReveal) {
     state.promoteReveal = { fromId: idBefore, toId: idAfter };
   }
   if (!meta.keepView) render();
   else refreshTopbarOnly();
+}
+
+/** 答題入口：先寫紀錄（唯一 ID），再發經驗。 */
+function submitAnswer(amount, meta = {}) {
+  const recordId = String(meta.recordId || makeAttemptId());
+  const before = getCurrentUser();
+  if (!before) return { ok: false, duplicate: false, reason: "no-user" };
+  if (hasAttempt(before, recordId)) return { ok: false, duplicate: true, recordId };
+  const repeat = !!(meta.qid && before.answered?.[meta.qid]);
+  const correct = !!meta.correct && !meta.wrong;
+  const streakBonus = correct && (before.streak || 0) >= 3;
+  let recorded = { ok: false, duplicate: false, recordId };
+  updateUser((u) => {
+    recorded = recordAttempt(u, { ...meta, recordId });
+  });
+  if (!recorded.ok) return recorded;
+  reward(amount, { keepView: meta.keepView, repeat, streakBonus });
+  return recorded;
 }
 
 function refreshTopbarOnly() {
@@ -176,6 +173,7 @@ function journeyCtx() {
     render,
     toast,
     reward,
+    submitAnswer,
     getUser: getCurrentUser,
     getCharacter: () => {
       const u = getCurrentUser();
@@ -563,7 +561,7 @@ function renderShell(user) {
   const idn = snap.identity;
   const main =
     state.view === "home"
-      ? renderJourneyHome(user, char)
+      ? renderJourneyHome(user, char, state)
       : state.view === "scroll"
         ? renderScroll(user)
         : state.view === "chapter"
@@ -662,6 +660,7 @@ function bindShell(user) {
   app.querySelectorAll("[data-goto]").forEach((btn) => {
     btn.addEventListener("click", () => {
       state.view = btn.dataset.goto;
+      if (state.view === "scroll") state.scrollStage = null;
       render();
     });
   });
@@ -677,7 +676,7 @@ function bindShell(user) {
 }
 
 function renderHome(user, char) {
-  return renderJourneyHome(user, char);
+  return renderJourneyHome(user, char, state);
 }
 
 function renderProfile(user, char, snap) {
@@ -865,11 +864,13 @@ function bindPractice() {
           btn.classList.add("correct");
           fb.classList.remove("hidden");
           fb.textContent = `正確！${q.explain}`;
-          reward(XP_REWARDS.mcCorrect, {
+          submitAnswer(XP_REWARDS.mcCorrect, {
+            recordId: makeAttemptId(),
             correct: true,
             qid: q.id,
             qText: q.q,
             topic: q.topic,
+            skill: q.skill,
             grade: q.grade,
             source: "練習",
             keepView: true,
@@ -879,11 +880,13 @@ function bindPractice() {
           options[q.answer]?.classList.add("correct");
           fb.classList.remove("hidden");
           fb.textContent = `未中。正解：${q.options[q.answer]}。${q.explain}`;
-          reward(0, {
+          submitAnswer(0, {
+            recordId: makeAttemptId(),
             wrong: true,
             qid: q.id,
             qText: q.q,
             topic: q.topic,
+            skill: q.skill,
             grade: q.grade,
             source: "練習",
             keepView: true,
@@ -897,27 +900,32 @@ function bindPractice() {
     const submit = () => {
       const input = app.querySelector("#fill-input");
       const fb = app.querySelector("#feedback");
+      if (input?.disabled) return;
       const ok = checkFill(q, input.value);
       fb.classList.remove("hidden");
       if (ok) {
         fb.textContent = "正確！";
         input.disabled = true;
-        reward(XP_REWARDS.fillCorrect, {
+        submitAnswer(XP_REWARDS.fillCorrect, {
+          recordId: makeAttemptId(),
           correct: true,
           qid: q.id,
           qText: q.q,
           topic: q.topic,
+          skill: q.skill,
           grade: q.grade,
           source: "練習",
           keepView: true,
         });
       } else {
         fb.textContent = `未中。參考答案：${q.answers[0]}`;
-        reward(0, {
+        submitAnswer(0, {
+          recordId: makeAttemptId(),
           wrong: true,
           qid: q.id,
           qText: q.q,
           topic: q.topic,
+          skill: q.skill,
           grade: q.grade,
           source: "練習",
           keepView: true,
@@ -944,11 +952,13 @@ function bindPractice() {
         leftBtn?.classList.add("done");
         rightBtn?.classList.add("done");
         solved.add(selectedLeft);
-        reward(XP_REWARDS.matchPair, {
+        submitAnswer(XP_REWARDS.matchPair, {
+          recordId: makeAttemptId(),
           correct: true,
           qid: `${q.id}-${selectedLeft}`,
           qText: `${leftText} → ${expected}`,
           topic: q.topic,
+          skill: q.skill,
           grade: q.grade,
           source: "練習",
           keepView: true,
@@ -958,13 +968,16 @@ function bindPractice() {
       } else {
         leftBtn?.classList.add("wrong");
         rightBtn?.classList.add("wrong");
-        addXp(0, {
+        submitAnswer(0, {
+          recordId: makeAttemptId(),
           wrong: true,
           qid: `${q.id}-${selectedLeft}`,
           qText: `${leftText} → ${got}`,
           topic: q.topic,
+          skill: q.skill,
           grade: q.grade,
           source: "練習",
+          keepView: true,
         });
         setTimeout(() => {
           leftBtn?.classList.remove("wrong", "selected");
@@ -1201,9 +1214,9 @@ function finishShizhanIfEnded(user) {
   if (!b || b.phase !== "end" || b._xpGiven) return;
   b._xpGiven = true;
   if (b.winner === "player") {
-    reward(XP_REWARDS.shizhanWin, { correct: true, game: true });
+    reward(XP_REWARDS.shizhanWin, { keepView: false });
   } else {
-    reward(XP_REWARDS.shizhanLose, { game: true });
+    reward(XP_REWARDS.shizhanLose, { keepView: false });
   }
 }
 
@@ -1289,10 +1302,26 @@ function bindWordwall() {
             if (c1.pair === c2.pair) {
               state.flip.matched.add(c1.pair);
               if (state.flip.matched.size === round.pairs.length) {
-                reward(XP_REWARDS.wordwallRound, { correct: true, game: true, keepView: true });
+                submitAnswer(XP_REWARDS.wordwallRound, {
+                  recordId: makeAttemptId(),
+                  correct: true,
+                  game: true,
+                  qid: `ww-${round.id}`,
+                  qText: round.title,
+                  source: "遊戲",
+                  keepView: true,
+                });
               }
             } else {
-              addXp(0, { wrong: true });
+              submitAnswer(0, {
+                recordId: makeAttemptId(),
+                wrong: true,
+                game: true,
+                qid: `ww-${round.id}-miss`,
+                qText: round.title,
+                source: "遊戲",
+                keepView: true,
+              });
             }
             state.flip.flipped = [];
             state.flip.lock = false;
@@ -1308,13 +1337,26 @@ function bindWordwall() {
         const qi = state.flip.quizIndex || 0;
         const qq = round.questions[qi];
         if (i === qq.a) {
-          reward(Math.round(XP_REWARDS.wordwallRound / round.questions.length) + 2, {
+          submitAnswer(Math.round(XP_REWARDS.wordwallRound / round.questions.length) + 2, {
+            recordId: makeAttemptId(),
             correct: true,
             game: true,
+            qid: `wwq-${round.id}-${qi}`,
+            qText: qq.q,
+            source: "遊戲",
+            keepView: true,
           });
         } else {
           toast(`正解：${qq.options[qq.a]}`);
-          addXp(0, { wrong: true });
+          submitAnswer(0, {
+            recordId: makeAttemptId(),
+            wrong: true,
+            game: true,
+            qid: `wwq-${round.id}-${qi}`,
+            qText: qq.q,
+            source: "遊戲",
+            keepView: true,
+          });
         }
         if (qi + 1 < round.questions.length) {
           state.flip.quizIndex = qi + 1;
@@ -1427,10 +1469,26 @@ function bindTimeline() {
     fb.classList.remove("hidden");
     fb.textContent = `正確 ${ok}/${selects.length}`;
     if (ok === selects.length) {
-      reward(XP_REWARDS.timelineComplete, { correct: true, game: true, skill: "timeline" });
+      submitAnswer(XP_REWARDS.timelineComplete, {
+        recordId: makeAttemptId(),
+        correct: true,
+        game: true,
+        skill: "timeline",
+        qid: `tl-${state.timeline.setId || "set"}`,
+        qText: "時序長廊",
+        source: "遊戲",
+      });
       toast("全對！可按「再抽一局」繼續練");
     } else {
-      addXp(0, { wrong: true });
+      submitAnswer(0, {
+        recordId: makeAttemptId(),
+        wrong: true,
+        game: true,
+        skill: "timeline",
+        qid: `tl-${state.timeline.setId || "set"}`,
+        qText: "時序長廊",
+        source: "遊戲",
+      });
       toast("尚未全對，再檢查一下");
     }
   });
@@ -1485,9 +1543,26 @@ function bindDialogue() {
       state.dialogue.replied = true;
       state.dialogue.lastChoice = choice.text;
       state.dialogue.lastReply = choice.reply;
-      if (choice.good) reward(XP_REWARDS.dialogueGood, { correct: true, game: true });
-      else {
-        addXp(0, { wrong: true });
+      if (choice.good) {
+        submitAnswer(XP_REWARDS.dialogueGood, {
+          recordId: makeAttemptId(),
+          correct: true,
+          game: true,
+          qid: `dlg-${d.id}-${state.dialogue.step}`,
+          qText: choice.text,
+          source: "遊戲",
+          keepView: true,
+        });
+      } else {
+        submitAnswer(0, {
+          recordId: makeAttemptId(),
+          wrong: true,
+          game: true,
+          qid: `dlg-${d.id}-${state.dialogue.step}`,
+          qText: choice.text,
+          source: "遊戲",
+          keepView: true,
+        });
         toast("此回應較欠妥，聽聽古人怎麼說");
       }
       render();

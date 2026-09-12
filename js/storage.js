@@ -190,35 +190,10 @@ export function updateUser(mutator) {
   return u;
 }
 
-export function addXp(amount, meta = {}) {
+export function addXp(amount) {
+  const n = Number(amount) || 0;
   return updateUser((u) => {
-    u.xp = Math.max(0, (u.xp || 0) + amount);
-    if (meta.correct) {
-      u.stats.correct = (u.stats.correct || 0) + 1;
-      u.streak = (u.streak || 0) + 1;
-    }
-    if (meta.wrong) {
-      u.stats.wrong = (u.stats.wrong || 0) + 1;
-      u.streak = 0;
-    }
-    if (meta.game) u.stats.games = (u.stats.games || 0) + 1;
-    if (meta.qid) {
-      u.answered = u.answered || {};
-      u.answered[meta.qid] = true;
-    }
-    if (meta.qid || meta.qText) {
-      u.quizLog = u.quizLog || [];
-      u.quizLog.unshift({
-        at: Date.now(),
-        qid: meta.qid || "",
-        qText: String(meta.qText || "").slice(0, 160),
-        correct: !!meta.correct && !meta.wrong,
-        grade: meta.grade || "",
-        topic: meta.topic || "",
-        source: meta.source || (meta.game ? "遊戲" : "練習"),
-      });
-      u.quizLog = u.quizLog.slice(0, 250);
-    }
+    u.xp = Math.max(0, (u.xp || 0) + n);
   });
 }
 

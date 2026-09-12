@@ -72,8 +72,62 @@ export function userSnapshot(user) {
   };
 }
 
-/** 答題後更新掌握度／技能／章節 */
-export function recordLearning(user, { topic, skill, correct, qid, qText, chapterId }) {
+/** 答題紀錄：唯一函式。掌握度／札記／統計只喺呢度改。 */
+let attemptSeq = 0;
+export function makeAttemptId() {
+  attemptSeq += 1;
+  return `att-${Date.now().toString(36)}-${attemptSeq.toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+export function hasAttempt(user, recordId) {
+  const id = String(recordId || "");
+  if (!id) return false;
+  if ((user?.attemptIds || []).includes(id)) return true;
+  return (user?.quizLog || []).some((e) => e.recordId === id);
+}
+
+export function recordAttempt(user, payload = {}) {
+  const recordId = String(payload.recordId || "").trim();
+  if (!recordId) return { ok: false, duplicate: false, reason: "missing-id" };
+  if (hasAttempt(user, recordId)) return { ok: false, duplicate: true, recordId };
+
+  const correct = !!payload.correct && !payload.wrong;
+  const wrong = !!payload.wrong || payload.correct === false;
+  const qid = payload.qid || "";
+  const qText = String(payload.qText || "").slice(0, 160);
+  const skill = payload.skill || "";
+  const topic = payload.topic || "";
+
+  user.attemptIds = [recordId, ...(user.attemptIds || [])].slice(0, 400);
+  user.quizLog = user.quizLog || [];
+  user.quizLog.unshift({
+    recordId,
+    at: Date.now(),
+    qid,
+    qText,
+    correct,
+    grade: payload.grade || "",
+    topic,
+    skill,
+    source: payload.source || (payload.game ? "遊戲" : "練習"),
+    chapterId: payload.chapterId || "",
+  });
+  user.quizLog = user.quizLog.slice(0, 250);
+
+  user.stats = user.stats || { correct: 0, wrong: 0, games: 0 };
+  if (correct) {
+    user.stats.correct = (user.stats.correct || 0) + 1;
+    user.streak = (user.streak || 0) + 1;
+  } else if (wrong) {
+    user.stats.wrong = (user.stats.wrong || 0) + 1;
+    user.streak = 0;
+  }
+  if (payload.game) user.stats.games = (user.stats.games || 0) + 1;
+  if (qid) {
+    user.answered = user.answered || {};
+    user.answered[qid] = true;
+  }
+
   const p = ensureProgress(user);
   const bump = (obj, key, ok) => {
     if (!key) return;
@@ -83,8 +137,7 @@ export function recordLearning(user, { topic, skill, correct, qid, qText, chapte
   if (topic) bump(p.mastery, topic, correct);
   if (skill) bump(p.skills, skill, correct);
 
-  if (!correct && qText) {
-    const tag = skillTagLabel(skill);
+  if (wrong && qText) {
     p.wrongNotes = p.wrongNotes || [];
     const exists = p.wrongNotes.find((n) => n.qid === qid);
     if (!exists) {
@@ -92,7 +145,7 @@ export function recordLearning(user, { topic, skill, correct, qid, qText, chapte
         id: `wn-${Date.now()}`,
         qid: qid || `x-${Date.now()}`,
         skill: skill || "recall",
-        tag,
+        tag: skillTagLabel(skill || "recall"),
         qText: String(qText).slice(0, 120),
         status: "open",
         at: Date.now(),
@@ -101,25 +154,54 @@ export function recordLearning(user, { topic, skill, correct, qid, qText, chapte
     }
   }
 
-  if (correct && chapterId && CHAPTERS[chapterId]) {
-    const ch = p.chapters[chapterId] || { correct: 0, stages: {} };
+  if (correct && payload.chapterId && CHAPTERS[payload.chapterId]) {
+    const ch = p.chapters[payload.chapterId] || { correct: 0, stages: {} };
     ch.correct = (ch.correct || 0) + 1;
-    p.chapters[chapterId] = ch;
+    p.chapters[payload.chapterId] = ch;
   }
+
+  return { ok: true, duplicate: false, recordId };
 }
 
-/** 掌握門檻：答對八成，或完成錯題重答 */
 export const STAGE_MASTERY_RATE = 0.8;
 
 export function stageRecord(raw) {
   if (!raw) return null;
-  if (raw === true) return { completed: true, mastered: true, correct: 0, total: 0 };
+  if (raw === true) {
+    return {
+      completed: true,
+      mastered: true,
+      corrected: false,
+      retried: false,
+      firstCorrect: 0,
+      firstTotal: 0,
+      retryCorrect: 0,
+      retryTotal: 0,
+      correct: 0,
+      total: 0,
+    };
+  }
+  const retried = !!raw.retried || !!raw.corrected;
+  const hasFirst = raw.firstTotal != null && Number(raw.firstTotal) > 0;
+  const firstCorrect = hasFirst ? Number(raw.firstCorrect) || 0 : Number(raw.correct) || 0;
+  const firstTotal = hasFirst ? Number(raw.firstTotal) || 0 : Number(raw.total) || 0;
+  // 舊資料：錯題重答會把成績寫成滿分並標「已掌握」。只保留首次達八成先算掌握。
+  const mastered = hasFirst
+    ? masteryFromScore(firstCorrect, firstTotal)
+    : retried
+      ? false
+      : !!raw.mastered;
   return {
     completed: !!raw.completed,
-    mastered: !!raw.mastered,
-    correct: Number(raw.correct) || 0,
-    total: Number(raw.total) || 0,
-    retried: !!raw.retried,
+    mastered,
+    corrected: !!raw.corrected || retried,
+    retried,
+    firstCorrect,
+    firstTotal,
+    retryCorrect: Number(raw.retryCorrect) || 0,
+    retryTotal: Number(raw.retryTotal) || 0,
+    correct: firstCorrect,
+    total: firstTotal,
   };
 }
 
@@ -129,6 +211,19 @@ export function isStageCompleted(raw) {
 
 export function isStageMastered(raw) {
   return !!stageRecord(raw)?.mastered;
+}
+
+export function isStageCorrected(raw) {
+  const rec = stageRecord(raw);
+  return !!(rec?.corrected && !rec?.mastered);
+}
+
+export function stageStatusLabel(rec) {
+  if (!rec) return "可進入";
+  if (rec.mastered) return "已掌握";
+  if (rec.corrected) return "已完成修正";
+  if (rec.completed) return "已完成";
+  return "可進入";
 }
 
 export function masteryFromScore(correct, total) {
@@ -155,16 +250,41 @@ export function settleStage(user, chapterId, stageId, info = {}) {
   const prev = stageRecord(ch.stages[stageId]) || {
     completed: false,
     mastered: false,
+    corrected: false,
+    retried: false,
+    firstCorrect: 0,
+    firstTotal: 0,
+    retryCorrect: 0,
+    retryTotal: 0,
     correct: 0,
     total: 0,
-    retried: false,
   };
+  const firstLocked = prev.firstTotal > 0;
+  const firstCorrect = firstLocked
+    ? prev.firstCorrect
+    : info.firstCorrect != null
+      ? Number(info.firstCorrect)
+      : info.correct != null
+        ? Number(info.correct)
+        : prev.firstCorrect;
+  const firstTotal = firstLocked
+    ? prev.firstTotal
+    : info.firstTotal != null
+      ? Number(info.firstTotal)
+      : info.total != null
+        ? Number(info.total)
+        : prev.firstTotal;
   const rec = {
     completed: prev.completed || !!info.completed,
-    mastered: prev.mastered || !!info.mastered,
-    correct: info.correct != null ? info.correct : prev.correct,
-    total: info.total != null ? info.total : prev.total,
-    retried: prev.retried || !!info.retried,
+    mastered: firstLocked ? prev.mastered : !!info.mastered,
+    corrected: prev.corrected || !!info.corrected || !!info.retried,
+    retried: prev.retried || !!info.retried || !!info.corrected,
+    firstCorrect,
+    firstTotal,
+    retryCorrect: info.retryCorrect != null ? Number(info.retryCorrect) : prev.retryCorrect,
+    retryTotal: info.retryTotal != null ? Number(info.retryTotal) : prev.retryTotal,
+    correct: firstCorrect,
+    total: firstTotal,
     at: Date.now(),
   };
   ch.stages[stageId] = rec;
@@ -182,8 +302,13 @@ export function completeStage(user, chapterId, stageId, extra = {}) {
   settleStage(user, chapterId, stageId, {
     completed: true,
     mastered: !!extra.mastered,
+    corrected: extra.corrected,
     correct: extra.correct,
     total: extra.total,
+    firstCorrect: extra.firstCorrect,
+    firstTotal: extra.firstTotal,
+    retryCorrect: extra.retryCorrect,
+    retryTotal: extra.retryTotal,
     retried: extra.retried,
   });
 }

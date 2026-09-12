@@ -346,14 +346,20 @@ function renderStagePlay(user, ch, stage) {
     </section>`;
   }
   if (stage.kind === "interact" && stage.gotoGame) {
+    const done = isStageCompleted(user.progress?.chapters?.[ch.id]?.stages?.[stage.id]);
     return `
     <section class="panel-paper stage-play study-mode">
       ${companionSlot}
       <div class="q-top"><span>${stage.title}</span></div>
       <p class="lead">${stage.goal}</p>
-      <p>此關連接到「時光長河」互動。完成一局後返回可標記進度。</p>
-      <button type="button" class="btn" data-goto="${stage.gotoGame}">開始時序長廊</button>
-      <button type="button" class="btn ghost" data-finish-stage="${ch.id}:${stage.id}">我已完成，標記本關</button>
+      <p>年份已排好，你要為每個年份揀返正確事件。<strong>本局全部配對正確（全對）</strong>即完成本關，會自動記入長卷。</p>
+      ${
+        done
+          ? `<p class="settle-line ok">本關已完成——你已全對過一局。</p>
+             <button type="button" class="btn" data-start-timeline="${ch.id}:${stage.id}">再玩一局</button>
+             <button type="button" class="btn ghost" data-open-chapter="${ch.id}">返回關卡</button>`
+          : `<button type="button" class="btn" data-start-timeline="${ch.id}:${stage.id}">開始時序長廊</button>`
+      }
     </section>`;
   }
   if (stage.kind === "boss" && stage.boss) {
@@ -535,6 +541,15 @@ export function bindJourney(user, ctx) {
     state.scrollChapter = btn.dataset.openChapter;
     state.scrollStage = null;
     state.view = "chapter";
+    render();
+  });
+
+  appClick("[data-start-timeline]", (btn) => {
+    const [cid, sid] = btn.dataset.startTimeline.split(":");
+    state.scrollChapter = cid;
+    state.scrollStage = sid;
+    state.timelineFromStage = { cid, sid };
+    state.view = "timeline";
     render();
   });
 

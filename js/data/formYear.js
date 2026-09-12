@@ -11,6 +11,27 @@ export function normalizeFormYear(v) {
   return null;
 }
 
+/** 班別＋學號：1A10（年級 1–3、英文字母班、兩位學號），自動轉大楷。 */
+export function normalizeClassId(v) {
+  const raw = String(v || "")
+    .trim()
+    .toUpperCase()
+    .replace(/[\s_-]+/g, "");
+  const m = raw.match(/^([1-3])([A-Z])(\d{1,2})$/);
+  if (!m) return null;
+  return `${m[1]}${m[2]}${m[3].padStart(2, "0")}`;
+}
+
+export function formYearFromClassId(classId) {
+  const id = normalizeClassId(classId);
+  if (!id) return null;
+  return { 1: "中一", 2: "中二", 3: "中三" }[id[0]] || null;
+}
+
+export function classIdHint() {
+  return "英文大楷，班別加兩位學號，例如 1A10。";
+}
+
 export function formYearLabel(v) {
   return normalizeFormYear(v) || "未選年級";
 }

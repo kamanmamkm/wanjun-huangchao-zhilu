@@ -1,11 +1,11 @@
-import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad30";
-import { QUESTIONS, checkFill } from "./data/questions.js?v=rad30";
-import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad30";
-import { levelFromXp } from "./data/levels.js?v=rad30";
-import { DIALOGUES } from "./data/dialogues.js?v=rad30";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad30";
-import { VIDEOS } from "./data/videos.js?v=rad30";
-import { renderAvatar } from "./avatar.js?v=rad30";
+import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad31";
+import { QUESTIONS, checkFill } from "./data/questions.js?v=rad31";
+import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad31";
+import { levelFromXp } from "./data/levels.js?v=rad31";
+import { DIALOGUES } from "./data/dialogues.js?v=rad31";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad31";
+import { VIDEOS } from "./data/videos.js?v=rad31";
+import { renderAvatar } from "./avatar.js?v=rad31";
 import {
   CARD_TYPES,
   createBattle,
@@ -15,7 +15,7 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=rad30";
+} from "./data/shizhan.js?v=rad31";
 import {
   getCurrentUser,
   registerUser,
@@ -23,7 +23,7 @@ import {
   clearSession,
   addXp,
   updateUser,
-} from "./storage.js?v=rad30";
+} from "./storage.js?v=rad31";
 import {
   userSnapshot,
   buildPromotionOrder,
@@ -31,7 +31,7 @@ import {
   IDENTITY_DISCLAIMER,
   identityDisplayName,
   getIdentity,
-} from "./progress.js?v=rad30";
+} from "./progress.js?v=rad31";
 import {
   renderJourneyHome,
   renderScroll,
@@ -42,18 +42,21 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad30";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad30";
-import { renderPromoteReveal } from "./heroStage.js?v=rad30";
-import { getStageVisual } from "./data/stageVisuals.js?v=rad30";
+} from "./journey.js?v=rad31";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad31";
+import { renderPromoteReveal } from "./heroStage.js?v=rad31";
+import { getStageVisual } from "./data/stageVisuals.js?v=rad31";
 import {
   FORM_YEARS,
   normalizeFormYear,
   allowedGradeKeys,
   formYearHint,
   filterByFormYear,
-} from "./data/formYear.js?v=rad30";
-import { pickRandomHeroName, isPooledHeroName, HERO_NAME_COUNT } from "./data/heroNames.js?v=rad30";
+  normalizeClassId,
+  formYearFromClassId,
+  classIdHint,
+} from "./data/formYear.js?v=rad31";
+import { pickRandomHeroName, isPooledHeroName, HERO_NAME_COUNT } from "./data/heroNames.js?v=rad31";
 
 const app = document.getElementById("app");
 let toastTimer = null;
@@ -63,6 +66,7 @@ let state = {
   gender: "male",
   heroName: "",
   heroNameFromPool: true,
+  username: "",
   formYear: "",
   practice: { mode: "mc", grade: "全部", index: 0 },
   match: { selectedLeft: null, selectedRight: null, solved: new Set() },
@@ -271,7 +275,18 @@ function renderAuth() {
         <button type="button" data-auth="register" class="${state.authMode === "register" ? "active" : ""}">註冊角色</button>
       </div>
       <form id="auth-form" class="form-grid">
-        <label>帳號<input name="username" required autocomplete="username" placeholder="例如：1A_陳大文" /></label>
+        <label>${state.authMode === "register" ? "班別＋學號" : "帳號"}
+          <input name="username" id="class-id-input" required autocomplete="username"
+            autocapitalize="characters" spellcheck="false"
+            maxlength="${state.authMode === "register" ? 4 : 20}"
+            placeholder="例如：1A10"
+            value="${escapeAttr(state.username)}" />
+        </label>
+        ${
+          state.authMode === "register"
+            ? `<p class="muted" style="margin:0;font-size:.88rem">${classIdHint()}</p>`
+            : ""
+        }
         <label>密碼<input name="password" type="password" required autocomplete="current-password" placeholder="至少三個字" /></label>
         ${
           state.authMode === "register"
@@ -396,6 +411,8 @@ function rememberAuthDraft() {
   if (hero) state.heroName = hero.value;
   const year = app.querySelector("#form-year-select");
   if (year) state.formYear = year.value;
+  const user = app.querySelector("#class-id-input");
+  if (user) state.username = user.value.toUpperCase();
 }
 
 function bindAuth() {
@@ -429,6 +446,26 @@ function bindAuth() {
   app.querySelector("#form-year-select")?.addEventListener("change", (e) => {
     state.formYear = e.target.value;
   });
+  const classInput = app.querySelector("#class-id-input");
+  if (classInput) {
+    classInput.addEventListener("input", (e) => {
+      const start = e.target.selectionStart;
+      const next = String(e.target.value || "")
+        .toUpperCase()
+        .replace(/[^0-9A-Z]/g, "");
+      e.target.value = next;
+      state.username = next;
+      if (typeof start === "number") e.target.setSelectionRange(start, start);
+      if (state.authMode === "register") {
+        const year = formYearFromClassId(next);
+        if (year) {
+          state.formYear = year;
+          const sel = app.querySelector("#form-year-select");
+          if (sel) sel.value = year;
+        }
+      }
+    });
+  }
   app.querySelector("#hero-name-input")?.addEventListener("input", (e) => {
     state.heroName = e.target.value;
     state.heroNameFromPool = isPooledHeroName(e.target.value, state.gender);
@@ -443,15 +480,17 @@ function bindAuth() {
       if (state.authMode === "login") {
         loginUser(fd.get("username"), fd.get("password"));
       } else {
+        const classId = normalizeClassId(fd.get("username")) || String(fd.get("username") || "");
         registerUser({
-          username: fd.get("username"),
+          username: classId,
           password: fd.get("password"),
           gender: state.gender,
           heroName: fd.get("heroName"),
-          formYear: fd.get("formYear"),
+          formYear: fd.get("formYear") || formYearFromClassId(classId),
         });
         state.heroName = "";
-        state.formYear = normalizeFormYear(fd.get("formYear")) || "";
+        state.username = "";
+        state.formYear = normalizeFormYear(fd.get("formYear")) || formYearFromClassId(classId) || "";
       }
       state.practice = { mode: "mc", grade: "全部", index: 0 };
       state.timeline = { setId: TIMELINE_SETS[0].id };

@@ -313,7 +313,7 @@ export function renderTeacherPage(state = {}) {
       <table class="teacher-table">
         <thead>
           <tr>
-            <th>帳號</th><th>角色名</th><th>年級</th><th>身份</th><th>等級</th><th>XP</th><th>答對/錯</th><th>答題數</th>
+            <th>班號</th><th>角色名</th><th>年級</th><th>身份</th><th>等級</th><th>XP</th><th>答對/錯</th><th>答題數</th>
           </tr>
         </thead>
         <tbody>

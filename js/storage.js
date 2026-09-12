@@ -4,7 +4,7 @@
 import { migrateIdentityId, STARTING_IDENTITY_ID } from "./data/identities.js";
 import { normalizeHeroName } from "./data/characters.js";
 import { syncIdentityToLevel } from "./data/levelStage.js";
-import { normalizeFormYear } from "./data/formYear.js";
+import { normalizeFormYear, normalizeClassId, formYearFromClassId } from "./data/formYear.js?v=rad31";
 
 const USERS_KEY = "huangchao_users_v1";
 const SESSION_KEY = "huangchao_session_v1";
@@ -109,14 +109,19 @@ export function clearSession() {
 }
 
 export function registerUser({ username, password, gender, characterId, heroName, formYear }) {
-  const name = String(username || "").trim();
-  if (!name || name.length < 2) throw new Error("帳號至少兩個字");
+  const name = normalizeClassId(username);
+  if (!name) throw new Error("請填班別＋學號，英文大楷，例如 1A10");
   if (!password || String(password).length < 3) throw new Error("密碼至少三個字");
-  const year = normalizeFormYear(formYear);
+  const fromClass = formYearFromClassId(name);
+  const year = normalizeFormYear(formYear) || fromClass;
   if (!year) throw new Error("請選擇年級（中一／中二／中三）");
+  if (fromClass && year !== fromClass) {
+    const d = { 中一: "1", 中二: "2", 中三: "3" }[year];
+    throw new Error(`班別要同年級一致（${year}請用 ${d}A、${d}B…）`);
+  }
   const hero = normalizeHeroName(heroName);
   const users = readUsers();
-  if (users[name]) throw new Error("此帳號已被使用");
+  if (users[name]) throw new Error("此學號已被使用");
   const g = gender === "female" ? "female" : "male";
   users[name] = {
     username: name,
@@ -141,7 +146,15 @@ export function registerUser({ username, password, gender, characterId, heroName
 
 export function loginUser(username, password) {
   const users = readUsers();
-  const name = String(username || "").trim();
+  const raw = String(username || "").trim();
+  const classId = normalizeClassId(raw);
+  const name = users[raw]
+    ? raw
+    : users[raw.toUpperCase()]
+      ? raw.toUpperCase()
+      : classId && users[classId]
+        ? classId
+        : raw;
   let u = users[name];
   if (!u || u.password !== String(password)) throw new Error("帳號或密碼錯誤");
   u = migrateUser(u);

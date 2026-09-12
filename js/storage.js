@@ -194,6 +194,19 @@ export function addXp(amount, meta = {}) {
       u.answered = u.answered || {};
       u.answered[meta.qid] = true;
     }
+    if (meta.qid || meta.qText) {
+      u.quizLog = u.quizLog || [];
+      u.quizLog.unshift({
+        at: Date.now(),
+        qid: meta.qid || "",
+        qText: String(meta.qText || "").slice(0, 160),
+        correct: !!meta.correct && !meta.wrong,
+        grade: meta.grade || "",
+        topic: meta.topic || "",
+        source: meta.source || (meta.game ? "遊戲" : "練習"),
+      });
+      u.quizLog = u.quizLog.slice(0, 250);
+    }
     syncIdentityToLevel(u);
   });
 }

@@ -508,6 +508,27 @@ h2,
   background: rgba(163, 49, 43, 0.08);
   font-family: var(--font-display);
 }
+.teacher-row:hover {
+  background: rgba(215, 170, 80, 0.12);
+}
+.teacher-row.is-selected {
+  background: rgba(215, 170, 80, 0.22);
+}
+.teacher-table td.ok {
+  color: #2d6a4f;
+  font-weight: 600;
+}
+.teacher-table td.no {
+  color: #9b2226;
+  font-weight: 600;
+}
+.teacher-detail {
+  margin: 1rem 0 1.5rem;
+  padding: 1rem;
+  border: 1px solid rgba(37, 40, 32, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 252, 245, 0.7);
+}
 
 /* 答題頁：乾淨閱讀區 */
 .stage-play .q-text,

@@ -520,9 +520,15 @@ function paintQuiz(qs, state, ch, stage, ctx) {
         : `<strong>未正確。</strong> ${q.explain || ""}<br>常見誤解：${q.misconception || "再讀一次材料／選項。"}`;
       if (ok) {
         state.stageQuiz.correct++;
-        ctx.reward(XP_REWARDS.mcCorrect, { correct: true, qid: q.id, keepView: true });
+        ctx.reward(XP_REWARDS.mcCorrect, {
+          correct: true,
+          qid: q.id,
+          qText: q.q,
+          topic: q.topic,
+          keepView: true,
+        });
       } else {
-        ctx.reward(0, { wrong: true, keepView: true });
+        ctx.reward(0, { wrong: true, qid: q.id, qText: q.q, topic: q.topic, keepView: true });
       }
       body.querySelectorAll("[data-sq]").forEach((b) => (b.disabled = true));
       setTimeout(() => {
@@ -571,7 +577,12 @@ function paintBoss(root, ctx) {
         toast("未中——再想一次（練習可重試）");
         return;
       }
-      ctx.reward(XP_REWARDS.mcCorrect, { correct: true, qid: `boss-${step.id}`, keepView: true });
+      ctx.reward(XP_REWARDS.mcCorrect, {
+        correct: true,
+        qid: `boss-${step.id}`,
+        qText: step.q,
+        keepView: true,
+      });
       state.bossStep++;
       if (state.bossStep >= steps.length) {
         if (bar) bar.style.width = "100%";

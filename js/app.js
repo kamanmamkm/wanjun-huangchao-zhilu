@@ -1,11 +1,11 @@
-import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad26";
-import { QUESTIONS, checkFill } from "./data/questions.js?v=rad26";
-import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad26";
-import { levelFromXp } from "./data/levels.js?v=rad26";
-import { DIALOGUES } from "./data/dialogues.js?v=rad26";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad26";
-import { VIDEOS } from "./data/videos.js?v=rad26";
-import { renderAvatar } from "./avatar.js?v=rad26";
+import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad27";
+import { QUESTIONS, checkFill } from "./data/questions.js?v=rad27";
+import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad27";
+import { levelFromXp } from "./data/levels.js?v=rad27";
+import { DIALOGUES } from "./data/dialogues.js?v=rad27";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad27";
+import { VIDEOS } from "./data/videos.js?v=rad27";
+import { renderAvatar } from "./avatar.js?v=rad27";
 import {
   CARD_TYPES,
   createBattle,
@@ -15,7 +15,7 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=rad26";
+} from "./data/shizhan.js?v=rad27";
 import {
   getCurrentUser,
   registerUser,
@@ -23,7 +23,7 @@ import {
   clearSession,
   addXp,
   updateUser,
-} from "./storage.js?v=rad26";
+} from "./storage.js?v=rad27";
 import {
   userSnapshot,
   buildPromotionOrder,
@@ -31,7 +31,7 @@ import {
   IDENTITY_DISCLAIMER,
   identityDisplayName,
   getIdentity,
-} from "./progress.js?v=rad26";
+} from "./progress.js?v=rad27";
 import {
   renderJourneyHome,
   renderScroll,
@@ -42,17 +42,17 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad26";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad26";
-import { renderPromoteReveal } from "./heroStage.js?v=rad26";
-import { getStageVisual } from "./data/stageVisuals.js?v=rad26";
+} from "./journey.js?v=rad27";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad27";
+import { renderPromoteReveal } from "./heroStage.js?v=rad27";
+import { getStageVisual } from "./data/stageVisuals.js?v=rad27";
 import {
   FORM_YEARS,
   normalizeFormYear,
   allowedGradeKeys,
   formYearHint,
   filterByFormYear,
-} from "./data/formYear.js?v=rad26";
+} from "./data/formYear.js?v=rad27";
 
 const app = document.getElementById("app");
 let toastTimer = null;
@@ -75,7 +75,8 @@ let state = {
   trial: null,
   cuoshi: null,
   promoteReveal: null,
-  growthFocus: null,
+  teacherUser: null,
+  teacherFilter: "全部",
 };
 
 function toast(msg) {
@@ -429,7 +430,7 @@ function renderShell(user) {
                   : state.view === "growth"
                     ? renderGrowthScroll(user, char, state.growthFocus)
                     : state.view === "teacher"
-                      ? renderTeacherPage()
+                      ? renderTeacherPage(state)
                       : state.view === "practice"
                         ? renderPractice()
                         : state.view === "games"
@@ -517,7 +518,7 @@ function bindShell(user) {
   });
 
   bindJourney(user, journeyCtx());
-  if (state.view === "teacher") bindTeacher({ render, toast });
+  if (state.view === "teacher") bindTeacher({ render, toast, state });
 
   if (state.view === "practice") bindPractice();
   if (state.view === "wordwall") bindWordwall();
@@ -715,14 +716,29 @@ function bindPractice() {
           btn.classList.add("correct");
           fb.classList.remove("hidden");
           fb.textContent = `正確！${q.explain}`;
-          reward(XP_REWARDS.mcCorrect, { correct: true, qid: q.id, keepView: true });
+          reward(XP_REWARDS.mcCorrect, {
+            correct: true,
+            qid: q.id,
+            qText: q.q,
+            topic: q.topic,
+            grade: q.grade,
+            source: "練習",
+            keepView: true,
+          });
         } else {
           btn.classList.add("wrong");
           options[q.answer]?.classList.add("correct");
           fb.classList.remove("hidden");
           fb.textContent = `未中。正解：${q.options[q.answer]}。${q.explain}`;
-          addXp(0, { wrong: true });
-          refreshTopbarOnly();
+          reward(0, {
+            wrong: true,
+            qid: q.id,
+            qText: q.q,
+            topic: q.topic,
+            grade: q.grade,
+            source: "練習",
+            keepView: true,
+          });
         }
       });
     });
@@ -737,11 +753,26 @@ function bindPractice() {
       if (ok) {
         fb.textContent = "正確！";
         input.disabled = true;
-        reward(XP_REWARDS.fillCorrect, { correct: true, qid: q.id, keepView: true });
+        reward(XP_REWARDS.fillCorrect, {
+          correct: true,
+          qid: q.id,
+          qText: q.q,
+          topic: q.topic,
+          grade: q.grade,
+          source: "練習",
+          keepView: true,
+        });
       } else {
         fb.textContent = `未中。參考答案：${q.answers[0]}`;
-        addXp(0, { wrong: true });
-        refreshTopbarOnly();
+        reward(0, {
+          wrong: true,
+          qid: q.id,
+          qText: q.q,
+          topic: q.topic,
+          grade: q.grade,
+          source: "練習",
+          keepView: true,
+        });
         toast("再試一次，或按下一題");
       }
     };
@@ -767,6 +798,10 @@ function bindPractice() {
         reward(XP_REWARDS.matchPair, {
           correct: true,
           qid: `${q.id}-${selectedLeft}`,
+          qText: `${leftText} → ${expected}`,
+          topic: q.topic,
+          grade: q.grade,
+          source: "練習",
           keepView: true,
         });
         app.querySelector("#feedback").textContent = `已配對 ${solved.size}／${pairs.length}`;
@@ -774,7 +809,14 @@ function bindPractice() {
       } else {
         leftBtn?.classList.add("wrong");
         rightBtn?.classList.add("wrong");
-        addXp(0, { wrong: true });
+        addXp(0, {
+          wrong: true,
+          qid: `${q.id}-${selectedLeft}`,
+          qText: `${leftText} → ${got}`,
+          topic: q.topic,
+          grade: q.grade,
+          source: "練習",
+        });
         setTimeout(() => {
           leftBtn?.classList.remove("wrong", "selected");
           rightBtn?.classList.remove("wrong", "selected");

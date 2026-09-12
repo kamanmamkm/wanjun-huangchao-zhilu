@@ -1,11 +1,11 @@
-import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad32";
-import { QUESTIONS, checkFill } from "./data/questions.js?v=rad32";
-import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad32";
-import { levelFromXp } from "./data/levels.js?v=rad32";
-import { DIALOGUES } from "./data/dialogues.js?v=rad32";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad32";
-import { VIDEOS } from "./data/videos.js?v=rad32";
-import { renderAvatar } from "./avatar.js?v=rad32";
+import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad33";
+import { QUESTIONS, checkFill } from "./data/questions.js?v=rad33";
+import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad33";
+import { levelFromXp } from "./data/levels.js?v=rad33";
+import { DIALOGUES } from "./data/dialogues.js?v=rad33";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad33";
+import { VIDEOS } from "./data/videos.js?v=rad33";
+import { renderAvatar } from "./avatar.js?v=rad33";
 import {
   CARD_TYPES,
   createBattle,
@@ -15,7 +15,7 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=rad32";
+} from "./data/shizhan.js?v=rad33";
 import {
   getCurrentUser,
   registerUser,
@@ -23,7 +23,7 @@ import {
   clearSession,
   addXp,
   updateUser,
-} from "./storage.js?v=rad32";
+} from "./storage.js?v=rad33";
 import {
   userSnapshot,
   buildPromotionOrder,
@@ -31,7 +31,7 @@ import {
   IDENTITY_DISCLAIMER,
   identityDisplayName,
   getIdentity,
-} from "./progress.js?v=rad32";
+} from "./progress.js?v=rad33";
 import {
   renderJourneyHome,
   renderScroll,
@@ -42,10 +42,10 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad32";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad32";
-import { renderPromoteReveal } from "./heroStage.js?v=rad32";
-import { getStageVisual } from "./data/stageVisuals.js?v=rad32";
+} from "./journey.js?v=rad33";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad33";
+import { renderPromoteReveal } from "./heroStage.js?v=rad33";
+import { getStageVisual } from "./data/stageVisuals.js?v=rad33";
 import {
   FORM_YEARS,
   normalizeFormYear,
@@ -55,8 +55,8 @@ import {
   normalizeClassId,
   formYearFromClassId,
   classIdHint,
-} from "./data/formYear.js?v=rad32";
-import { pickRandomHeroName, isPooledHeroName, HERO_NAME_COUNT } from "./data/heroNames.js?v=rad32";
+} from "./data/formYear.js?v=rad33";
+import { pickRandomHeroName, isPooledHeroName, HERO_NAME_COUNT } from "./data/heroNames.js?v=rad33";
 
 const app = document.getElementById("app");
 let toastTimer = null;
@@ -255,8 +255,6 @@ function startGuestPlay() {
 }
 
 function renderAuth() {
-  const male = getCharacter("male");
-  const female = getCharacter("female");
   if (state.authMode === "register" && !String(state.heroName || "").trim()) {
     state.heroName = pickRandomHeroName(state.gender);
     state.heroNameFromPool = true;
@@ -369,18 +367,6 @@ function renderAuth() {
       <p class="eyebrow">萬鈞伯裘中史科成長遊戲</p>
       <h1>任平生</h1>
       <p class="subtitle">歷千年風雨，成就我人生。</p>
-      <div class="hero-cast">
-        <div class="hero-duo" aria-label="開局庶民">
-          <figure class="hero-duo-card">
-            ${renderAvatar(male, 0, "lg", { gender: "male" })}
-            <figcaption>男 · 庶民</figcaption>
-          </figure>
-          <figure class="hero-duo-card">
-            ${renderAvatar(female, 0, "lg", { gender: "female" })}
-            <figcaption>女 · 庶民</figcaption>
-          </figure>
-        </div>
-      </div>
       <div class="tags">
         <span class="tag">答題解鎖新造型</span>
         <span class="tag">挑戰被改亂嘅歷史</span>

@@ -100,7 +100,25 @@ export function renderJourneyHome(user, char) {
       <hr class="realm-rule" />
       <p class="realm-quote">${vis.quote}</p>
       <p class="poster-char">${heroDisplayName(user, char)} · Lv.${snap.level.level} · ${vis.vibe}</p>
-      <p class="muted" style="font-size:.82rem;margin:.2rem 0 0">等級到點自動轉相轉頭像（下一階見晉升殿）</p>
+      ${
+        order.next
+          ? `<div class="promote-teaser edict">
+        <h4>下一身份：${order.nextName}</h4>
+        <ul class="edict-list">
+          ${order.items
+            .map((i) => {
+              const mark = i.ok ? "✓" : "○";
+              const extra = !i.ok && i.hint ? ` <span class="muted">${i.hint}</span>` : "";
+              return `<li class="${i.ok ? "ok" : "wait"}"><span>${mark}</span><div>${i.label}${extra}</div></li>`;
+            })
+            .join("")}
+        </ul>
+        <button type="button" class="btn ${order.readyForTrial ? "" : "ghost"}" data-goto="promote">${
+          order.readyForTrial ? "開始試煉" : "前往晉升殿"
+        }</button>
+      </div>`
+          : ""
+      }
       <div class="poster-skills">${skillBars}</div>
       <div class="poster-actions">
         <button type="button" class="btn" data-goto="scroll">${chProg.done ? "重溫長卷" : "繼續旅程"}</button>
@@ -253,7 +271,7 @@ export function renderGrowthScroll(user, char, growthFocus) {
       <article class="growth-card locked">
         <div class="growth-preview unknown">？</div>
         <h3>未知</h3>
-        <p class="muted">${band ? `${band.range} 自動解鎖` : "繼續升級以揭曉"}</p>
+        <p class="muted">${band ? `${band.range} 達標後考試煉解鎖` : "繼續升級以揭曉"}</p>
       </article>`;
     }
     if (nextHint && !unlocked) {
@@ -268,7 +286,7 @@ export function renderGrowthScroll(user, char, growthFocus) {
           hideQuote: true,
         })}
         <h3>${name}</h3>
-        <p class="muted">升至 Lv.${band?.minLevel ?? "？"} 自動轉相 · 「${vis.prop}」</p>
+        <p class="muted">達 Lv.${band?.minLevel ?? "？"} 並通過試煉解鎖 · 「${vis.prop}」</p>
       </article>`;
     }
     return `
@@ -282,7 +300,7 @@ export function renderGrowthScroll(user, char, growthFocus) {
       })}
       <h3>${current ? `【${name}】` : name} ${current ? "· 目前" : "· 已解鎖"}</h3>
       <p>${band?.range || ""} · ${vis.scene} · ${vis.prop}</p>
-      <p class="muted">${promo?.byLevel ? `Lv.${promo.byLevel} 自動晉升` : promo ? new Date(promo.at).toLocaleDateString() + " 晉升" : idn.id === 0 ? "開局" : ""}</p>
+      <p class="muted">${promo?.trialId && promo.trialId !== "level_band" ? new Date(promo.at).toLocaleDateString() + " 試煉晉升" : promo?.byLevel ? `Lv.${promo.byLevel} 晉升` : promo ? new Date(promo.at).toLocaleDateString() + " 晉升" : idn.id === 0 ? "開局" : ""}</p>
     </article>`;
   }).join("");
 
@@ -296,8 +314,8 @@ export function renderGrowthScroll(user, char, growthFocus) {
   return `
   <section class="panel-paper growth-scroll-view">
     <p class="eyebrow ink-gold">人物成長長卷</p>
-    <h2>同一人物 · 等級到點即轉相轉頭像</h2>
-    <p class="lead">到達等級帶下限即自動改稱謂與立繪。${STAGE_RELIC.note}</p>
+    <h2>同一人物 · 試煉通過即轉相轉頭像</h2>
+    <p class="lead">等級靠練習與遊戲累積；身份造型要通過短試煉才解鎖。${STAGE_RELIC.note}</p>
     <p class="muted">${IDENTITY_DISCLAIMER}</p>
     <div class="growth-rail">${cards}</div>
     <div class="growth-focus thin-card">
@@ -308,7 +326,7 @@ export function renderGrowthScroll(user, char, growthFocus) {
         <p>${focusVis.pose} · ${focusVis.prop}</p>
         <p>背景：${focusVis.scene}（${focusVis.bgHint}）</p>
         <p class="stage-quote">「${focusVis.quote}」</p>
-        <p class="muted">${focusPromo?.byLevel ? `Lv.${focusPromo.byLevel} 自動轉相` : focusPromo ? `晉升於 ${new Date(focusPromo.at).toLocaleString()}` : focusId === 0 ? "旅程起點" : "已解鎖造型"}</p>
+        <p class="muted">${focusPromo?.trialId && focusPromo.trialId !== "level_band" ? `晉升於 ${new Date(focusPromo.at).toLocaleString()}` : focusPromo?.byLevel ? `Lv.${focusPromo.byLevel} 晉升` : focusPromo ? `晉升於 ${new Date(focusPromo.at).toLocaleString()}` : focusId === 0 ? "旅程起點" : "已解鎖造型"}</p>
       </div>
     </div>
     <button type="button" class="btn ghost" data-nav="home">返回行旅</button>
@@ -605,8 +623,9 @@ export function renderPromote(user, char) {
   const snap = userSnapshot(user);
   const list = order.items
     .map((i) => {
-      const mark = i.ok ? "✓" : i.locked ? "○" : "✗";
-      return `<li class="${i.ok ? "ok" : i.locked ? "lock" : "no"}"><span>${mark}</span><div>${i.label}</div></li>`;
+      const mark = i.ok ? "✓" : "○";
+      const extra = !i.ok && i.hint ? `<div class="muted" style="font-size:.82rem">${i.hint}</div>` : "";
+      return `<li class="${i.ok ? "ok" : "wait"}"><span>${mark}</span><div>${i.label}${extra}</div></li>`;
     })
     .join("");
   const rem = openWeakRemedials(user);
@@ -618,7 +637,7 @@ export function renderPromote(user, char) {
       ? `
     <div class="finale-board">
       <h3>終章試煉：天下待定</h3>
-      <p class="lead">三段為加分試煉，可分開完成。登基稱謂／頭像於 Lv.86 自動解鎖。</p>
+      <p class="lead">三段試煉可分開完成。全部通過後即可登基，解鎖帝王／女帝稱謂與造型。</p>
       <div class="finale-segs">
         ${finale.segs
           .map(
@@ -637,8 +656,8 @@ export function renderPromote(user, char) {
       </div>
       ${
         finale.allDone
-          ? `<p class="ink-gold">三段皆過——可領取終章加分獎勵。</p>
-             <button type="button" class="btn gold" id="btn-confirm-promote">領取終章獎勵</button>`
+          ? `<p class="ink-gold">三段皆過——可確認登基，解鎖帝王／女帝。</p>
+             <button type="button" class="btn gold" id="btn-confirm-promote">確認登基</button>`
           : ""
       }
     </div>`
@@ -647,7 +666,7 @@ export function renderPromote(user, char) {
   return `
   <section class="panel-paper promote-view">
     <p class="eyebrow ink-gold">晉升殿 · ${realmLabel(snap.stageId)}</p>
-    <h2>到達等級 · 自動轉名轉頭像</h2>
+    <h2>等級累積經驗 · 試煉解鎖身份</h2>
     <p class="lead disclaimer">${IDENTITY_DISCLAIMER}</p>
     <div class="level-band-table" style="display:grid;gap:.35rem;margin:0 0 1rem;font-size:.9rem">
       ${levelBandLines(user.gender)
@@ -663,31 +682,25 @@ export function renderPromote(user, char) {
       <div class="promote-silhouette">
         ${renderHeroStage(char, snap.stageId, "lg", { gender: user.gender, priorityBoost: true, preferStageArt: true })}
         <p>當前：<strong>${snap.identityName}</strong> · Lv.${snap.level.level}</p>
-        <p class="next-shadow">下一階：${
-          order.next
-            ? `${identityDisplayName(order.next, user.gender)}（Lv.${order.nextAutoLevel}+ 自動）`
-            : "—"
-        }</p>
       </div>
       <div class="edict big">
-        <h3>【轉相進度】</h3>
+        <h3>下一身份：${order.nextName || "—"}</h3>
         <ul class="edict-list">${list}</ul>
         <div class="row-actions">
-          <button type="button" class="btn" data-goto="practice">去練習升級</button>
-          <button type="button" class="btn ghost" data-goto="notes">前往補強</button>
           ${
-            isFinale
-              ? `<button type="button" class="btn ghost" data-goto="promote">終章加分試（可選）</button>`
-              : `<button type="button" class="btn ghost" id="btn-trial" ${order.canChallenge ? "" : "disabled"}>
-            ${order.canChallenge ? `可選：${order.gate.label}` : order.trialPassed ? "加分試已通過" : "加分試未解鎖"}
-          </button>`
+            order.readyForTrial && !isFinale
+              ? `<button type="button" class="btn" id="btn-trial">開始試煉</button>`
+              : ""
           }
+          ${!order.levelOk ? `<button type="button" class="btn" data-goto="practice">去練習升級</button>` : ""}
+          ${order.levelOk && !order.tasksOk ? `<button type="button" class="btn" data-goto="scroll">去完成學習任務</button>` : ""}
+          ${
+            order.trialPassed && order.next && !isFinale
+              ? `<button type="button" class="btn gold" id="btn-confirm-promote">確認晉升「${order.nextName}」</button>`
+              : ""
+          }
+          <button type="button" class="btn ghost" data-goto="notes">前往札記</button>
         </div>
-        ${
-          order.trialPassed && order.next && !isFinale
-            ? `<button type="button" class="btn gold" id="btn-confirm-promote">確認領取試煉獎勵「${identityDisplayName(order.next, user.gender)}」</button>`
-            : ""
-        }
         ${
           rem.length
             ? `<div class="rem-box"><p>建議補強：</p>${rem
@@ -770,20 +783,8 @@ function paintTrial(ctx) {
   const i = state.trial.index;
   if (i >= parts.length) {
     const result = scoreTrial(scoringTrial, state.trial.answers);
-    panel.innerHTML = `
-      <div class="trial-result">
-        <h3>${result.passed ? (seg ? "本段通過" : "試煉通過") : "尚未通過——進度保留"}</h3>
-        <p>總分 ${Math.round(result.avg)}｜史料 ${Math.round(result.sourceAvg)}｜論證 ${Math.round(result.argueAvg)}</p>
-        ${
-          result.passed
-            ? `<p>${seg ? "可繼續下一段，或返回晉升殿。" : "可按「確認晉升」完成身份躍升。"}</p>`
-            : `<ul>${result.fails.map((f) => `<li>${f}</li>`).join("")}</ul>
-               <p>完成補強後可再挑戰<strong>另一組同等難度</strong>（唔使等日數）。</p>`
-        }
-        <button type="button" class="btn" data-goto="${seg ? "promote" : "notes"}">${
-          seg ? "返回終章" : "前往待考札記／補強"
-        }</button>
-      </div>`;
+    const fromId = ctx.getUser()?.identityId ?? 0;
+    let promoted = null;
     updateUser((u) => {
       if (seg) {
         saveFinaleSegment(u, seg.id, result, state.trial.answers);
@@ -794,8 +795,37 @@ function paintTrial(ctx) {
           at: Date.now(),
           fails: result.fails,
         };
+        if (result.passed) {
+          const r = applyPromotion(u);
+          if (r.ok) {
+            promoted = {
+              toId: r.identityId,
+              name: identityDisplayName(getIdentity(r.identityId), u.gender),
+            };
+          }
+        }
       }
     });
+    if (promoted) {
+      addXp(XP_REWARDS.trialPassBonus || 40, { correct: true });
+      pushRecent(`晉升為${promoted.name}`);
+      state.promoteReveal = { fromId, toId: promoted.toId };
+      toast(`試煉通過！晉升為「${promoted.name}」`);
+      render();
+      return;
+    }
+    panel.innerHTML = `
+      <div class="trial-result">
+        <h3>${result.passed ? (seg ? "本段通過" : "試煉通過") : "尚未通過——進度保留"}</h3>
+        <p>總分 ${Math.round(result.avg)}｜史料 ${Math.round(result.sourceAvg)}｜論證 ${Math.round(result.argueAvg)}</p>
+        ${
+          result.passed
+            ? `<p>${seg ? "可繼續下一段，或返回晉升殿。" : "可按「確認晉升」完成身份躍升。"}</p>`
+            : `<ul>${result.fails.map((f) => `<li>${f}</li>`).join("")}</ul>
+               <p>完成補強後可再挑戰<strong>另一組同等難度</strong>（唔使等日數）。</p>`
+        }
+        <button type="button" class="btn" data-goto="promote">${seg ? "返回終章" : "返回晉升殿"}</button>
+      </div>`;
     if (result.passed) {
       pushRecent(seg ? `通過終章·${seg.title}` : `通過${trial.title}`);
       toast(seg ? "本段通過！進度已儲存" : "試煉通過！可確認晉升");

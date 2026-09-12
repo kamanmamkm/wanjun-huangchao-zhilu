@@ -1,8 +1,7 @@
 /**
  * 角色等級 ↔ 階段立繪／身份形象
- * 規則：到達等級帶下限即自動轉稱謂＋頭像（無需考核）
+ * 等級靠經驗；身份／造型只跟 identityId（試煉解鎖），唔再跟等級自動升。
  */
-import { levelFromXp } from "./levels.js";
 import { getIdentity, identityDisplayName, outfitForIdentity } from "./identities.js";
 import {
   stageIdFromLevel,
@@ -14,58 +13,25 @@ import {
 
 export { stageIdFromLevel, effectiveStageId, LEVEL_STAGE_BANDS, nextStageMinLevel };
 
-/** 依目前 XP 得出應顯示嘅階段 id（立繪／稱謂） */
+/** 立繪／稱謂跟已解鎖身份，唔跟等級帶 */
 export function stageIdForUser(user) {
   if (!user) return 0;
-  const lv = levelFromXp(user.xp).level;
-  return effectiveStageId(user.identityId, lv);
+  return Math.min(7, Math.max(0, Number(user.identityId) || 0));
 }
 
 /**
- * 等級落入海報等級帶時，自動升身份（Lv.6→學子等）
- * 同步寫入 identityId，令稱謂／頭像／主題一致
- * @returns {{ from: number, to: number, level: number } | null}
+ * 只校正缺省 identityId；不再按等級自動升身份。
+ * @returns {null}
  */
 export function syncIdentityToLevel(user) {
   if (!user) return null;
   if (typeof user.identityId !== "number" || user.identityId < 0) {
     user.identityId = 0;
   }
-  if (!user.progress || typeof user.progress !== "object") {
-    user.progress = {
-      identityId: user.identityId,
-      chapters: {},
-      mastery: {},
-      skills: {},
-      wrongNotes: [],
-      remedials: {},
-      trials: {},
-      chronicle: { promotions: [], restored: [], quotes: [] },
-      recent: [],
-    };
+  if (user.progress && typeof user.progress === "object") {
+    user.progress.identityId = user.identityId;
   }
-  const lv = levelFromXp(user.xp).level;
-  const band = stageIdFromLevel(lv);
-  const cur = Math.min(7, Math.max(0, Number(user.identityId) || 0));
-  if (band <= cur) return null;
-  const from = cur;
-  user.identityId = band;
-  if (user.progress) user.progress.identityId = band;
-  const p = user.progress;
-  p.chronicle = p.chronicle || { promotions: [], restored: [], quotes: [] };
-  p.chronicle.promotions = p.chronicle.promotions || [];
-  // 避免同一等級帶重複寫入多筆
-  const last = p.chronicle.promotions[p.chronicle.promotions.length - 1];
-  if (!(last && last.to === band && last.trialId === "level_band")) {
-    p.chronicle.promotions.push({
-      from,
-      to: band,
-      at: Date.now(),
-      trialId: "level_band",
-      byLevel: lv,
-    });
-  }
-  return { from, to: band, level: lv };
+  return null;
 }
 
 export function stageDisplayName(user, gender) {

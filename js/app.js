@@ -1,11 +1,11 @@
-import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad27";
-import { QUESTIONS, checkFill } from "./data/questions.js?v=rad27";
-import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad27";
-import { levelFromXp } from "./data/levels.js?v=rad27";
-import { DIALOGUES } from "./data/dialogues.js?v=rad27";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad27";
-import { VIDEOS } from "./data/videos.js?v=rad27";
-import { renderAvatar } from "./avatar.js?v=rad27";
+import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad28";
+import { QUESTIONS, checkFill } from "./data/questions.js?v=rad28";
+import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad28";
+import { levelFromXp } from "./data/levels.js?v=rad28";
+import { DIALOGUES } from "./data/dialogues.js?v=rad28";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad28";
+import { VIDEOS } from "./data/videos.js?v=rad28";
+import { renderAvatar } from "./avatar.js?v=rad28";
 import {
   CARD_TYPES,
   createBattle,
@@ -15,7 +15,7 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=rad27";
+} from "./data/shizhan.js?v=rad28";
 import {
   getCurrentUser,
   registerUser,
@@ -23,7 +23,7 @@ import {
   clearSession,
   addXp,
   updateUser,
-} from "./storage.js?v=rad27";
+} from "./storage.js?v=rad28";
 import {
   userSnapshot,
   buildPromotionOrder,
@@ -31,7 +31,7 @@ import {
   IDENTITY_DISCLAIMER,
   identityDisplayName,
   getIdentity,
-} from "./progress.js?v=rad27";
+} from "./progress.js?v=rad28";
 import {
   renderJourneyHome,
   renderScroll,
@@ -42,17 +42,17 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad27";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad27";
-import { renderPromoteReveal } from "./heroStage.js?v=rad27";
-import { getStageVisual } from "./data/stageVisuals.js?v=rad27";
+} from "./journey.js?v=rad28";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad28";
+import { renderPromoteReveal } from "./heroStage.js?v=rad28";
+import { getStageVisual } from "./data/stageVisuals.js?v=rad28";
 import {
   FORM_YEARS,
   normalizeFormYear,
   allowedGradeKeys,
   formYearHint,
   filterByFormYear,
-} from "./data/formYear.js?v=rad27";
+} from "./data/formYear.js?v=rad28";
 
 const app = document.getElementById("app");
 let toastTimer = null;
@@ -77,6 +77,7 @@ let state = {
   promoteReveal: null,
   teacherUser: null,
   teacherFilter: "全部",
+  guestPlay: { active: false, index: 0, done: false, locked: false, score: 0 },
 };
 
 function toast(msg) {
@@ -137,17 +138,12 @@ function reward(amount, meta = {}) {
   const nextLv = levelFromXp(after.xp).level;
   const idBefore = before?.identityId ?? 0;
   const idAfter = after?.identityId ?? 0;
-  // addXp／migrate 已 sync；用前後 identity 判斷有無轉相
-  const stageUp =
-    idAfter > idBefore ? { from: idBefore, to: idAfter, level: nextLv } : null;
-  const synced = after;
-  if (stageUp) {
-    const name = identityDisplayName(getIdentity(stageUp.to), synced?.gender);
-    state.promoteReveal = { fromId: stageUp.from, toId: stageUp.to };
-    toast(`升至 Lv.${nextLv}！形象晉升為「${name}」· +${bonus} 經驗`);
-  } else if (nextLv > prevLv) toast(`角色升至 Lv.${nextLv}！+${bonus} 經驗`);
+  if (nextLv > prevLv) toast(`角色升至 Lv.${nextLv}！+${bonus} 經驗`);
   else if (meta.qid && before?.answered?.[meta.qid]) toast(`+${bonus} 經驗（複習減幅）`);
   else if (bonus) toast(`+${bonus} 經驗`);
+  if (idAfter > idBefore && !state.promoteReveal) {
+    state.promoteReveal = { fromId: idBefore, toId: idAfter };
+  }
   if (!meta.keepView) render();
   else refreshTopbarOnly();
 }
@@ -230,34 +226,45 @@ function render() {
 }
 
 /* ========== Auth ========== */
+function guestTryQuestions() {
+  return (QUESTIONS.mc || []).filter((q) => q.grade === "中一").slice(0, 3);
+}
+
 function renderAuth() {
-  const preview = getCharacter(state.gender);
-  const previewName = String(state.heroName || "").trim() || "行者";
-  return `
-  <section class="hero-screen">
-    <div class="brand-block">
-      <p class="eyebrow">萬鈞伯裘中史科成長遊戲</p>
-      <h1>任平生</h1>
-      <p class="subtitle">歷千年風雨，成就我人生。</p>
-      <div class="hero-preview">
-        <div class="hero-stage">
-          ${
-            state.authMode === "register"
-              ? `${renderAvatar(preview, 0, "lg", { gender: state.gender })}
-                 <div class="hero-caption"><strong>${previewName}</strong><span>自訂角色名 · ${state.gender === "female" ? "女" : "男"} · 起步「${outfitOf(state.gender, 0)}」</span></div>`
-              : `${renderAvatar(getCharacter("male"), 0, "lg", { gender: "male" })}
-                 <p class="hero-idle-note">開局自訂角色名 · 選男女樣貌 · 考核晉升後衣裝與場景漸開闊</p>`
-          }
+  const male = getCharacter("male");
+  const female = getCharacter("female");
+  const stages = [
+    { id: 0, name: "庶民" },
+    { id: 1, name: "學子" },
+    { id: 7, name: "帝王" },
+  ];
+  const gp = state.guestPlay;
+  const tryQs = guestTryQuestions();
+  const q = tryQs[gp.index] || tryQs[0];
+
+  let authBody = "";
+  if (gp.active && !gp.done && q) {
+    authBody = `
+      <div class="guest-play">
+        <p class="eyebrow">試玩 ${gp.index + 1}／3</p>
+        <h2>先答 3 題，感受史識之路</h2>
+        <div class="question-box" id="guest-qbox">
+          <div class="q-meta">${q.grade} · ${q.topic}</div>
+          <div class="q-text">${q.q}</div>
+          <div class="options">
+            ${q.options.map((o, i) => `<button type="button" class="option" data-guest-mc="${i}">${String.fromCharCode(65 + i)}. ${o}</button>`).join("")}
+          </div>
+          <div class="feedback hidden" id="guest-feedback"></div>
         </div>
-      </div>
-      <div class="tags">
-        <span class="tag">盛世國風</span>
-        <span class="tag">熱血角色 RPG</span>
-        <span class="tag">晉升靠考核</span>
-        <span class="tag">陽光登場</span>
-      </div>
-    </div>
-    <div class="auth-panel">
+      </div>`;
+  } else {
+    const invite = gp.done
+      ? `<div class="guest-invite">
+          <p class="lead">試玩完成！答對 ${gp.score}／3 題。建立角色，答題就可以解鎖新造型。</p>
+        </div>`
+      : "";
+    authBody = `
+      ${invite}
       <div class="auth-tabs">
         <button type="button" data-auth="login" class="${state.authMode === "login" ? "active" : ""}">登入</button>
         <button type="button" data-auth="register" class="${state.authMode === "register" ? "active" : ""}">註冊角色</button>
@@ -295,6 +302,54 @@ function renderAuth() {
         <p class="form-error" id="auth-error"></p>
         <button class="btn btn-wide" type="submit">${state.authMode === "login" ? "⚔️ 進入任平生" : "🏯 創角出發"}</button>
       </form>
+      ${
+        gp.done
+          ? ""
+          : `<button type="button" class="btn ghost btn-wide" id="guest-try-btn" style="margin-top:.7rem">試玩 3 題</button>`
+      }`;
+  }
+
+  return `
+  <section class="hero-screen">
+    <div class="brand-block">
+      <p class="eyebrow">萬鈞伯裘中史科成長遊戲</p>
+      <h1>任平生</h1>
+      <p class="subtitle">歷千年風雨，成就我人生。</p>
+      <div class="hero-cast">
+        <div class="hero-duo" aria-label="男女主角">
+          <figure class="hero-duo-card">
+            ${renderAvatar(male, 0, "lg", { gender: "male" })}
+            <figcaption>男主角 · 庶民</figcaption>
+          </figure>
+          <figure class="hero-duo-card">
+            ${renderAvatar(female, 0, "lg", { gender: "female" })}
+            <figcaption>女主角 · 庶民</figcaption>
+          </figure>
+        </div>
+        <div class="growth-preview" aria-label="成長造型">
+          ${stages
+            .map(
+              (s, i) => `
+            <div class="growth-preview-step">
+              <div class="growth-preview-pair">
+                ${renderAvatar(male, s.id, "sm", { gender: "male" })}
+                ${renderAvatar(female, s.id, "sm", { gender: "female" })}
+              </div>
+              <span>${s.name}</span>
+            </div>
+            ${i < stages.length - 1 ? `<span class="growth-preview-arrow" aria-hidden="true">→</span>` : ""}`
+            )
+            .join("")}
+        </div>
+      </div>
+      <div class="tags">
+        <span class="tag">答題解鎖新造型</span>
+        <span class="tag">挑戰被改亂嘅歷史</span>
+        <span class="tag">建立你嘅成長史冊</span>
+      </div>
+    </div>
+    <div class="auth-panel">
+      ${authBody}
     </div>
   </section>`;
 }

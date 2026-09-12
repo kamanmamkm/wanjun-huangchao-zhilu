@@ -1,6 +1,6 @@
 /**
- * 角色等級（靠經驗累積）
- * 身份稱謂／頭像隨等級帶自動轉換（見 stageVisuals.stageIdFromLevel）
+ * 角色等級（練習、小遊戲累積經驗）
+ * 身份晉升：達指定等級後通過短試煉解鎖（見 identities.PROMOTION_GATES）
  */
 export const XP_REWARDS = {
   mcCorrect: 4,

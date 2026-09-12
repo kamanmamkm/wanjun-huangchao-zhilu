@@ -1789,7 +1789,17 @@ select {
 .edict-list li { display: flex; gap: 0.45rem; font-size: 0.86rem; line-height: 1.4; }
 .edict-list li.ok span { color: #2d6b52; font-weight: 700; }
 .edict-list li.no span { color: #9a3424; font-weight: 700; }
-.edict-list li.lock span { color: #8a7a60; }
+.edict-list li.wait span { color: var(--gold-deep, #8a7340); font-weight: 700; }
+.promote-teaser {
+  margin: 0.4rem 0 0;
+  padding: 0.7rem 0.85rem;
+  max-width: 22rem;
+}
+.promote-teaser h4 {
+  margin: 0 0 0.4rem;
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
+}
 .hero-card { text-align: center; }
 .hero-card h3 { font-family: var(--font-display); margin: 0.4rem 0; }
 .id-line { margin: 0.2rem 0; font-size: 0.9rem; }

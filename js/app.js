@@ -1,11 +1,11 @@
-import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad31";
-import { QUESTIONS, checkFill } from "./data/questions.js?v=rad31";
-import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad31";
-import { levelFromXp } from "./data/levels.js?v=rad31";
-import { DIALOGUES } from "./data/dialogues.js?v=rad31";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad31";
-import { VIDEOS } from "./data/videos.js?v=rad31";
-import { renderAvatar } from "./avatar.js?v=rad31";
+import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad32";
+import { QUESTIONS, checkFill } from "./data/questions.js?v=rad32";
+import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad32";
+import { levelFromXp } from "./data/levels.js?v=rad32";
+import { DIALOGUES } from "./data/dialogues.js?v=rad32";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad32";
+import { VIDEOS } from "./data/videos.js?v=rad32";
+import { renderAvatar } from "./avatar.js?v=rad32";
 import {
   CARD_TYPES,
   createBattle,
@@ -15,7 +15,7 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=rad31";
+} from "./data/shizhan.js?v=rad32";
 import {
   getCurrentUser,
   registerUser,
@@ -23,7 +23,7 @@ import {
   clearSession,
   addXp,
   updateUser,
-} from "./storage.js?v=rad31";
+} from "./storage.js?v=rad32";
 import {
   userSnapshot,
   buildPromotionOrder,
@@ -31,7 +31,7 @@ import {
   IDENTITY_DISCLAIMER,
   identityDisplayName,
   getIdentity,
-} from "./progress.js?v=rad31";
+} from "./progress.js?v=rad32";
 import {
   renderJourneyHome,
   renderScroll,
@@ -42,10 +42,10 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad31";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad31";
-import { renderPromoteReveal } from "./heroStage.js?v=rad31";
-import { getStageVisual } from "./data/stageVisuals.js?v=rad31";
+} from "./journey.js?v=rad32";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad32";
+import { renderPromoteReveal } from "./heroStage.js?v=rad32";
+import { getStageVisual } from "./data/stageVisuals.js?v=rad32";
 import {
   FORM_YEARS,
   normalizeFormYear,
@@ -55,8 +55,8 @@ import {
   normalizeClassId,
   formYearFromClassId,
   classIdHint,
-} from "./data/formYear.js?v=rad31";
-import { pickRandomHeroName, isPooledHeroName, HERO_NAME_COUNT } from "./data/heroNames.js?v=rad31";
+} from "./data/formYear.js?v=rad32";
+import { pickRandomHeroName, isPooledHeroName, HERO_NAME_COUNT } from "./data/heroNames.js?v=rad32";
 
 const app = document.getElementById("app");
 let toastTimer = null;
@@ -83,7 +83,7 @@ let state = {
   promoteReveal: null,
   teacherUser: null,
   teacherFilter: "全部",
-  guestPlay: { active: false, index: 0, done: false, locked: false, score: 0 },
+  guestPlay: { active: false, index: 0, done: false, locked: false, score: 0, pick: null, qs: [] },
 };
 
 function toast(msg) {
@@ -233,7 +233,25 @@ function render() {
 
 /* ========== Auth ========== */
 function guestTryQuestions() {
-  return (QUESTIONS.mc || []).filter((q) => q.grade === "中一").slice(0, 3);
+  if (state.guestPlay.qs?.length) return state.guestPlay.qs;
+  const pool = (QUESTIONS.mc || []).filter((q) => q.grade === "中一");
+  const src = pool.length ? pool : QUESTIONS.mc || [];
+  return src.slice(0, 3);
+}
+
+function startGuestPlay() {
+  const pool = (QUESTIONS.mc || []).filter((q) => q.grade === "中一");
+  const src = pool.length ? pool : QUESTIONS.mc || [];
+  state.guestPlay = {
+    active: true,
+    index: 0,
+    done: false,
+    locked: false,
+    score: 0,
+    pick: null,
+    qs: shuffle(src).slice(0, 3),
+  };
+  render();
 }
 
 function renderAuth() {
@@ -249,23 +267,43 @@ function renderAuth() {
 
   let authBody = "";
   if (gp.active && !gp.done && q) {
+    const locked = !!gp.locked;
+    const pick = gp.pick;
+    const last = gp.index >= tryQs.length - 1;
+    const fbText =
+      pick === q.answer
+        ? `正確！${q.explain || ""}`
+        : `未正確。正解：${q.options[q.answer]}。${q.explain || ""}`;
     authBody = `
       <div class="guest-play">
-        <p class="eyebrow">試玩 ${gp.index + 1}／3</p>
-        <h2>先答 3 題，感受史識之路</h2>
+        <p class="eyebrow">試玩 ${gp.index + 1}／${tryQs.length}</p>
+        <h2>先答 3 題選擇題，感受史識之路</h2>
         <div class="question-box" id="guest-qbox">
           <div class="q-meta">${q.grade} · ${q.topic}</div>
           <div class="q-text">${q.q}</div>
           <div class="options">
-            ${q.options.map((o, i) => `<button type="button" class="option" data-guest-mc="${i}">${String.fromCharCode(65 + i)}. ${o}</button>`).join("")}
+            ${q.options
+              .map((o, i) => {
+                let cls = "option";
+                if (locked && i === q.answer) cls += " correct";
+                else if (locked && i === pick) cls += " wrong";
+                return `<button type="button" class="${cls}" data-guest-mc="${i}" ${locked ? "disabled" : ""}>${String.fromCharCode(65 + i)}. ${o}</button>`;
+              })
+              .join("")}
           </div>
-          <div class="feedback hidden" id="guest-feedback"></div>
+          <div class="feedback ${locked ? "" : "hidden"}" id="guest-feedback">${locked ? fbText : ""}</div>
         </div>
+        ${
+          locked
+            ? `<button type="button" class="btn btn-wide" id="guest-next" style="margin-top:.85rem">${last ? "完成試玩" : "明白，下一題"}</button>`
+            : ""
+        }
+        <button type="button" class="btn ghost btn-wide" id="guest-skip" style="margin-top:.55rem">返回登入</button>
       </div>`;
   } else {
     const invite = gp.done
       ? `<div class="guest-invite">
-          <p class="lead">試玩完成！答對 ${gp.score}／3 題。建立角色，答題就可以解鎖新造型。</p>
+          <p class="lead">試玩完成！答對 ${gp.score}／${gp.qs?.length || 3} 題。建立角色，答題就可以解鎖新造型。</p>
         </div>`
       : "";
     authBody = `
@@ -322,11 +360,7 @@ function renderAuth() {
         <p class="form-error" id="auth-error"></p>
         <button class="btn btn-wide" type="submit">${state.authMode === "login" ? "⚔️ 進入任平生" : "🏯 創角出發"}</button>
       </form>
-      ${
-        gp.done
-          ? ""
-          : `<button type="button" class="btn ghost btn-wide" id="guest-try-btn" style="margin-top:.7rem">試玩 3 題</button>`
-      }`;
+      <button type="button" class="btn ghost btn-wide" id="guest-try-btn" style="margin-top:.7rem">${gp.done ? "再試 3 題" : "試玩 3 題選擇題"}</button>`;
   }
 
   return `
@@ -501,6 +535,38 @@ function bindAuth() {
     } catch (ex) {
       err.textContent = ex.message;
     }
+  });
+  app.querySelector("#guest-try-btn")?.addEventListener("click", () => {
+    startGuestPlay();
+  });
+  app.querySelector("#guest-skip")?.addEventListener("click", () => {
+    state.guestPlay = { ...state.guestPlay, active: false, locked: false, pick: null };
+    render();
+  });
+  app.querySelectorAll("[data-guest-mc]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (state.guestPlay.locked) return;
+      const tryQs = guestTryQuestions();
+      const q = tryQs[state.guestPlay.index];
+      if (!q) return;
+      const i = Number(btn.dataset.guestMc);
+      state.guestPlay.pick = i;
+      state.guestPlay.locked = true;
+      if (i === q.answer) state.guestPlay.score += 1;
+      render();
+    });
+  });
+  app.querySelector("#guest-next")?.addEventListener("click", () => {
+    const gp = state.guestPlay;
+    const tryQs = guestTryQuestions();
+    if (gp.index >= tryQs.length - 1) {
+      state.guestPlay = { ...gp, active: false, done: true, locked: false, pick: null };
+      state.authMode = "register";
+      toast(`試玩完成：答對 ${gp.score}／${tryQs.length} 題`);
+    } else {
+      state.guestPlay = { ...gp, index: gp.index + 1, locked: false, pick: null };
+    }
+    render();
   });
 }
 

@@ -19,7 +19,6 @@ export const STAGE_VISUALS = {
     prop: "行囊",
     propKey: "bag",
     accent: "#c84436",
-    bgHint: "米白短衣與晨光",
     quote: "少年有志，自此登程。",
     vibe: "少年出發",
     priority: true,
@@ -131,13 +130,13 @@ export function getStageVisual(identityId) {
 
 /**
  * 海報標籤等級帶 → 階段 id（與實際角色 Lv 對齊）
- * ①1–5 庶民｜②6–15 學子｜③16–25 士人｜④26–40 初仕
+ * ①1–4 庶民｜②5–10 學子｜③11–25 士人｜④26–40 初仕
  * ⑤41–55 主政｜⑥56–70 重臣｜⑦71–85 諸侯｜⑧86–100 帝王
  */
 export const LEVEL_STAGE_BANDS = [
-  { id: 0, minLevel: 1, maxLevel: 5, label: "庶民" },
-  { id: 1, minLevel: 6, maxLevel: 15, label: "學子" },
-  { id: 2, minLevel: 16, maxLevel: 25, label: "士人" },
+  { id: 0, minLevel: 1, maxLevel: 4, label: "庶民" },
+  { id: 1, minLevel: 5, maxLevel: 10, label: "學子" },
+  { id: 2, minLevel: 11, maxLevel: 25, label: "士人" },
   { id: 3, minLevel: 26, maxLevel: 40, label: "初仕" },
   { id: 4, minLevel: 41, maxLevel: 55, label: "主政" },
   { id: 5, minLevel: 56, maxLevel: 70, label: "重臣" },
@@ -173,19 +172,19 @@ export const STAGE_ART = {
   0: {
     male: "assets/stages/shumin-male.jpg",
     female: "assets/stages/shumin-female.jpg",
-    badge: "① 庶民｜Lv.1–5",
+    badge: "① 庶民｜Lv.1–4",
     label: "庶民登場",
   },
   1: {
     male: "assets/stages/xuezi-male.jpg",
     female: "assets/stages/xuezi-female.jpg",
-    badge: "② 學子｜Lv.6–15",
+    badge: "② 學子｜Lv.5–10",
     label: "學子登場",
   },
   2: {
     male: "assets/stages/shiren-male.jpg",
     female: "assets/stages/shiren-female.jpg",
-    badge: "③ 士人｜Lv.16–25",
+    badge: "③ 士人｜Lv.11–25",
     label: "士人登場",
   },
   3: {

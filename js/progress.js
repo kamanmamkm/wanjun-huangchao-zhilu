@@ -13,7 +13,7 @@ import {
   STARTING_IDENTITY_ID,
   IDENTITIES,
 } from "./data/identities.js";
-import { CHAPTERS, REMEDIALS } from "./data/chapters.js";
+import { CHAPTERS, REMEDIALS } from "./data/chapters.js?v=rad41";
 import { getTrial } from "./data/trials.js";
 import { stageIdFromLevel, stageIdForUser, syncIdentityToLevel, levelBandLines, nextStageMinLevel, LEVEL_STAGE_BANDS } from "./data/levelStage.js";
 

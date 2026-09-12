@@ -1,5 +1,5 @@
 /**
- * 用戶資料：經驗升等級；身份稱謂／頭像隨等級帶自動轉換。
+ * 用戶資料：練習／小遊戲累積經驗升等級；身份需試煉解鎖。
  */
 import { migrateIdentityId, STARTING_IDENTITY_ID } from "./data/identities.js";
 import { normalizeHeroName } from "./data/characters.js";
@@ -88,7 +88,6 @@ export function migrateUser(u) {
   const fy = normalizeFormYear(u.formYear);
   if (fy) u.formYear = fy;
   else if (u.formYear) delete u.formYear;
-  // 已達等級帶（如 Lv.6）而身份仍落後 → 補升形象
   syncIdentityToLevel(u);
   return u;
 }
@@ -207,7 +206,6 @@ export function addXp(amount, meta = {}) {
       });
       u.quizLog = u.quizLog.slice(0, 250);
     }
-    syncIdentityToLevel(u);
   });
 }
 

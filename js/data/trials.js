@@ -40,7 +40,7 @@ export const TRIALS = {
 
   trial_to_student: {
     id: "trial_to_student",
-    title: "求學考核",
+    title: "學子試煉",
     passScore: 65,
     minSource: 0,
     minArgue: 0,
@@ -72,7 +72,7 @@ export const TRIALS = {
 
   trial_to_shi: {
     id: "trial_to_shi",
-    title: "入仕預備試",
+    title: "士人試煉",
     passScore: 70,
     minSource: 0,
     minArgue: 0,

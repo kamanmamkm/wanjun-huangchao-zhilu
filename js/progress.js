@@ -55,11 +55,10 @@ export function ensureProgress(user) {
 }
 
 export function userSnapshot(user) {
-  syncIdentityToLevel(user);
   const p = ensureProgress(user);
   const stageId = stageIdForUser(user);
   const identity = getIdentity(stageId);
-  const next = nextIdentity(Math.max(user.identityId || 0, stageId));
+  const next = nextIdentity(stageId);
   const lv = levelFromXp(user.xp);
   return {
     identity,
@@ -145,95 +144,95 @@ export function markNoteMastered(user, noteId) {
   if (n) n.status = "mastered";
 }
 
+function chapterTaskDone(user, cid) {
+  const ch = CHAPTERS[cid];
+  if (!ch) return true;
+  if (!ch.stages?.length) return true;
+  const st = user.progress?.chapters?.[cid];
+  return !!(st?.done || (st?.correct || 0) >= (ch?.requiredCorrect || 999));
+}
+
+function requiredChapterTasks(gate) {
+  return (gate?.chapters || []).filter((cid) => CHAPTERS[cid]?.stages?.length);
+}
+
 /**
- * 晉升令：等級自動轉相為主；試煉為可選加分
+ * 晉升令：等級靠經驗；身份要等級＋學習任務＋短試煉
  */
 export function buildPromotionOrder(user) {
-  syncIdentityToLevel(user);
   const p = ensureProgress(user);
   const id = stageIdForUser(user);
   const gate = gateFor(id);
   const identity = getIdentity(id);
   const next = nextIdentity(id);
   const lv = levelFromXp(user.xp);
-  const nextLv = nextStageMinLevel(lv.level);
+  const needLv = gate?.minLevel ?? nextStageMinLevel(lv.level);
 
   if (!next) {
     return {
       done: true,
       identity,
       next: null,
-      items: [{ ok: true, label: "已達最高身份（Lv.86+ 帝王／女帝），可回顧史冊或挑戰加分試煉" }],
+      nextName: null,
+      items: [{ key: "max", ok: true, label: "已達最高身份，可回顧史冊或重溫試煉" }],
       canChallenge: false,
+      readyForTrial: false,
       trialId: null,
       disclaimer: IDENTITY_DISCLAIMER,
-      autoLevel: true,
     };
   }
 
   const nextName = identityDisplayName(next, user.gender);
-  const levelOk = nextLv != null && lv.level >= nextLv;
+  const levelOk = needLv != null && lv.level >= needLv;
+  const requiredCh = requiredChapterTasks(gate);
+  const tasksOk = requiredCh.every((cid) => chapterTaskDone(user, cid));
+  const missingTasks = requiredCh
+    .filter((cid) => !chapterTaskDone(user, cid))
+    .map((cid) => CHAPTERS[cid]?.title || cid);
+  const trialId = gate?.trialId;
+  let trialPassed = trialId ? !!p.trials?.[trialId]?.passed : false;
+  if (gate?.isFinale && getFinaleState(user).allDone) trialPassed = true;
+  const readyForTrial = !!(gate && levelOk && tasksOk && !trialPassed);
+  const canChallenge = readyForTrial;
+
   const items = [
     {
-      key: "auto-level",
+      key: "level",
       ok: levelOk,
-      label: levelOk
-        ? `已達 Lv.${lv.level}——稱謂／頭像應為「${identityDisplayName(identity, user.gender)}」（自動）`
-        : `升至 Lv.${nextLv} 即可自動晉升為「${nextName}」並更換頭像（現 Lv.${lv.level}）`,
+      label: `達到 Lv.${needLv}`,
+      hint: levelOk ? "" : `現 Lv.${lv.level}`,
+      goto: levelOk ? null : "practice",
+    },
+    {
+      key: "tasks",
+      ok: tasksOk,
+      label: "完成指定學習任務",
+      hint: missingTasks.length ? `尚欠：${missingTasks.join("、")}` : "",
+      goto: tasksOk ? null : "scroll",
+    },
+    {
+      key: "trial",
+      ok: trialPassed,
+      label: `通過${nextName}試煉`,
+      hint: "",
     },
   ];
-
-  // 可選試煉條件（加分，不擋自動轉相）
-  if (gate) {
-    for (const cid of gate.chapters || []) {
-      const ch = CHAPTERS[cid];
-      const st = p.chapters[cid];
-      const ok = !!(st?.done || (st?.correct || 0) >= (ch?.requiredCorrect || 999));
-      items.push({
-        key: `ch-${cid}`,
-        ok,
-        locked: false,
-        optional: true,
-        label: `【可選】完成主線「${ch?.title || cid}」以挑戰加分試`,
-        goto: "scroll",
-      });
-    }
-  }
-
-  const chaptersOk = (gate?.chapters || []).every((cid) => {
-    const ch = CHAPTERS[cid];
-    const st = p.chapters[cid];
-    return !!(st?.done || (st?.correct || 0) >= (ch?.requiredCorrect || 999));
-  });
-  const masteryOk = Object.entries(gate?.mastery || {}).every(([k, need]) => (p.mastery[k] || 0) >= need);
-  const skillsOk = Object.entries(gate?.skills || {}).every(([k, need]) => (p.skills[k] || 0) >= need);
-  const trialId = gate?.trialId;
-  const trialPassed = trialId ? !!p.trials?.[trialId]?.passed : false;
-  const canChallenge = !!(gate && chaptersOk && masteryOk && skillsOk && lv.level >= (gate.minLevel || 0) && !trialPassed);
-
-  if (gate) {
-    items.push({
-      key: "trial-opt",
-      ok: trialPassed,
-      optional: true,
-      label: trialPassed
-        ? `加分試「${gate.label}」已通過`
-        : `【可選】加分試「${gate.label}」——通過可獲額外經驗`,
-    });
-  }
 
   return {
     done: false,
     identity,
     next,
+    nextName,
     gate,
     items,
     canChallenge,
+    readyForTrial,
     trialPassed,
     trialId,
+    needLevel: needLv,
+    levelOk,
+    tasksOk,
     disclaimer: IDENTITY_DISCLAIMER,
-    autoLevel: true,
-    nextAutoLevel: nextLv,
   };
 }
 
@@ -333,12 +332,18 @@ export function flattenTrialParts(trial) {
 
 export function applyPromotion(user) {
   const order = buildPromotionOrder(user);
-  if (!order.canChallenge && !order.trialPassed) return { ok: false, reason: "尚未符合挑戰條件" };
+  if (!order.next) return { ok: false, reason: "已是最高身份" };
   const p = ensureProgress(user);
+  p.trials = p.trials || {};
   const gate = order.gate;
-  if (!p.trials[gate.trialId]?.passed) return { ok: false, reason: "尚未通過晉升試煉" };
-  if (user.identityId >= IDENTITIES.length - 1) return { ok: false, reason: "已是最高身份" };
+  if (gate?.isFinale && getFinaleState(user).allDone) {
+    p.trials[gate.trialId] = { ...(p.trials[gate.trialId] || {}), passed: true, at: Date.now() };
+  }
+  if (!order.trialPassed && !p.trials[gate?.trialId]?.passed) {
+    return { ok: false, reason: "尚未通過晉升試煉" };
+  }
   user.identityId += 1;
+  p.identityId = user.identityId;
   p.chronicle = p.chronicle || { promotions: [], restored: [], quotes: [] };
   p.chronicle.promotions.push({
     to: user.identityId,

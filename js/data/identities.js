@@ -5,7 +5,7 @@
  */
 
 export const IDENTITY_DISCLAIMER =
-  "身份稱謂與頭像隨角色等級自動轉換：到達該階段等級即轉相（例如 Lv.6→學子）。試煉為加分挑戰，並非轉相必需。";
+  "角色等級靠練習與小遊戲累積經驗。身份晉升要達到指定等級、完成學習任務，再通過短試煉才解鎖稱謂與造型。";
 
 export const STARTING_IDENTITY_ID = 0;
 
@@ -91,61 +91,46 @@ export const IDENTITIES = [
  */
 export const PROMOTION_GATES = {
   0: {
-    // 庶民 → 學子（自動：Lv.6；試煉可選）
     minLevel: 6,
     chapters: ["ch1_escape", "ch2_figures"],
-    mastery: { foundation: 0.65, figures: 0.7, chronology: 0.65 },
-    skills: { recall: 0.65, timeline: 0.6 },
     trialId: "trial_to_student",
-    label: "求學加分試（可選）",
+    label: "學子試煉",
   },
   1: {
     minLevel: 16,
     chapters: ["ch3_events"],
-    mastery: { events: 0.75, chronology: 0.7 },
-    skills: { timeline: 0.7, cause: 0.65 },
     trialId: "trial_to_shi",
-    label: "入仕加分試（可選）",
+    label: "士人試煉",
   },
   2: {
     minLevel: 26,
     chapters: ["ch4_cause"],
-    mastery: { cause: 0.75, institutions: 0.7 },
-    skills: { cause: 0.75, source: 0.65 },
     trialId: "trial_to_magistrate",
-    label: "初仕加分試（可選）",
+    label: "初仕試煉",
   },
   3: {
     minLevel: 41,
     chapters: ["ch5_policy"],
-    mastery: { policy: 0.8, sources: 0.8 },
-    skills: { timeline: 0.8, cause: 0.8, source: 0.8 },
     trialId: "trial_to_prefect",
-    label: "主政加分試（可選）",
+    label: "主政試煉",
   },
   4: {
     minLevel: 56,
     chapters: ["ch6_compare"],
-    mastery: { sources: 0.82, policy: 0.8 },
-    skills: { source: 0.8, argue: 0.75 },
     trialId: "trial_to_minister",
-    label: "重臣加分試（可選）",
+    label: "重臣試煉",
   },
   5: {
     minLevel: 71,
     chapters: ["ch7_synthesis"],
-    mastery: { synthesis: 0.8, sources: 0.82 },
-    skills: { source: 0.82, argue: 0.8, cause: 0.8 },
     trialId: "trial_to_lord",
-    label: "諸侯加分試（可選）",
+    label: "諸侯試煉",
   },
   6: {
     minLevel: 86,
     chapters: ["ch8_finale_prep"],
-    mastery: { synthesis: 0.85, sources: 0.85, policy: 0.8 },
-    skills: { timeline: 0.85, source: 0.85, argue: 0.85 },
     trialId: "trial_ascension",
-    label: "終章加分試（可選）",
+    label: "帝王試煉",
     isFinale: true,
   },
 };

@@ -297,6 +297,11 @@ select {
   color: var(--ink-soft);
 }
 
+#class-id-input {
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
 .name-roll,
 .hero-name-edit {
   display: flex;

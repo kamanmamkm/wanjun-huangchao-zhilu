@@ -4,6 +4,7 @@
 import { migrateIdentityId, STARTING_IDENTITY_ID } from "./data/identities.js";
 import { normalizeHeroName } from "./data/characters.js";
 import { syncIdentityToLevel } from "./data/levelStage.js";
+import { normalizeFormYear } from "./data/formYear.js";
 
 const USERS_KEY = "huangchao_users_v1";
 const SESSION_KEY = "huangchao_session_v1";
@@ -84,6 +85,9 @@ export function migrateUser(u) {
   if (!String(u.heroName || "").trim()) {
     u.heroName = u.heroName || "";
   }
+  const fy = normalizeFormYear(u.formYear);
+  if (fy) u.formYear = fy;
+  else if (u.formYear) delete u.formYear;
   // 已達等級帶（如 Lv.6）而身份仍落後 → 補升形象
   syncIdentityToLevel(u);
   return u;
@@ -105,10 +109,12 @@ export function clearSession() {
   localStorage.removeItem(SESSION_KEY);
 }
 
-export function registerUser({ username, password, gender, characterId, heroName }) {
+export function registerUser({ username, password, gender, characterId, heroName, formYear }) {
   const name = String(username || "").trim();
   if (!name || name.length < 2) throw new Error("帳號至少兩個字");
   if (!password || String(password).length < 3) throw new Error("密碼至少三個字");
+  const year = normalizeFormYear(formYear);
+  if (!year) throw new Error("請選擇年級（中一／中二／中三）");
   const hero = normalizeHeroName(heroName);
   const users = readUsers();
   if (users[name]) throw new Error("此帳號已被使用");
@@ -119,6 +125,7 @@ export function registerUser({ username, password, gender, characterId, heroName
     gender: g,
     characterId: g === "female" ? "hero_female" : "hero_male",
     heroName: hero,
+    formYear: year,
     xp: 0,
     streak: 0,
     answered: {},
@@ -133,12 +140,15 @@ export function registerUser({ username, password, gender, characterId, heroName
   return users[name];
 }
 
-export function loginUser(username, password) {
+export function loginUser(username, password, formYear) {
   const users = readUsers();
   const name = String(username || "").trim();
   let u = users[name];
   if (!u || u.password !== String(password)) throw new Error("帳號或密碼錯誤");
   u = migrateUser(u);
+  const year = normalizeFormYear(formYear) || normalizeFormYear(u.formYear);
+  if (!year) throw new Error("請選擇年級（中一／中二／中三）");
+  u.formYear = year;
   users[name] = u;
   writeUsers(users);
   setSession(u.username);

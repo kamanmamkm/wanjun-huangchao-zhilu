@@ -4,6 +4,7 @@
  */
 import { QUESTIONS, checkFill } from "./questions.js";
 import { RIVALS } from "./characters.js";
+import { filterByFormYear } from "./formYear.js";
 
 export const SHIZHAN_MAX_HP = 4;
 
@@ -38,19 +39,18 @@ export const CARD_TYPES = {
   },
 };
 
-function pickMc(hard = false) {
-  const list = QUESTIONS.mc;
-  // 難題：中二／中三優先
-  const pool = hard
-    ? list.filter((q) => q.grade === "中二" || q.grade === "中三")
-    : list;
-  const src = pool.length ? pool : list;
+function pickMc(hard = false, formYear) {
+  const list = filterByFormYear(QUESTIONS.mc, formYear);
+  const srcList = list.length ? list : QUESTIONS.mc;
+  const pool = hard ? srcList.filter((q) => q.grade === "中二" || q.grade === "中三") : srcList;
+  const src = pool.length ? pool : srcList;
   return src[Math.floor(Math.random() * src.length)];
 }
 
-function pickFill() {
-  const list = QUESTIONS.fill;
-  return list[Math.floor(Math.random() * list.length)];
+function pickFill(formYear) {
+  const list = filterByFormYear(QUESTIONS.fill, formYear);
+  const src = list.length ? list : QUESTIONS.fill;
+  return src[Math.floor(Math.random() * src.length)];
 }
 
 export function randomEnemy() {
@@ -67,10 +67,11 @@ export function createHand() {
   return hand;
 }
 
-export function createBattle(playerChar) {
+export function createBattle(playerChar, formYear) {
   const enemy = randomEnemy();
   return {
     phase: "player", // player | quiz | enemy | end
+    formYear: formYear || null,
     turn: 1,
     playerHp: SHIZHAN_MAX_HP,
     enemyHp: SHIZHAN_MAX_HP,
@@ -106,7 +107,7 @@ export function startPlayCard(battle, cardUid) {
   }
 
   const mode = card.type === "heal" ? "fill" : "mc";
-  const question = mode === "fill" ? pickFill() : pickMc(card.type === "strategy");
+  const question = mode === "fill" ? pickFill(battle.formYear) : pickMc(card.type === "strategy", battle.formYear);
   return {
     ...battle,
     quiz: {
@@ -181,7 +182,7 @@ export function resolvePlayerQuiz(battle, answer) {
 export function resolveEnemyTurn(battle) {
   if (battle.phase !== "enemy" || battle.winner) return battle;
   // 敵方發動問攻：你需要答題守禦，或若已有守勢則較易
-  const question = pickMc(false);
+  const question = pickMc(false, battle.formYear);
   return {
     ...battle,
     phase: "quiz",

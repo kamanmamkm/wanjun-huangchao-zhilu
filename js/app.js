@@ -1,11 +1,11 @@
-import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad21";
-import { QUESTIONS, checkFill } from "./data/questions.js?v=rad21";
-import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad21";
-import { levelFromXp } from "./data/levels.js?v=rad21";
-import { DIALOGUES } from "./data/dialogues.js?v=rad21";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad21";
-import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=rad21";
-import { renderAvatar } from "./avatar.js?v=rad21";
+import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad23";
+import { QUESTIONS, checkFill } from "./data/questions.js?v=rad23";
+import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad23";
+import { levelFromXp } from "./data/levels.js?v=rad23";
+import { DIALOGUES } from "./data/dialogues.js?v=rad23";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad23";
+import { VIDEOS, EXTERNAL_WORDWALL } from "./data/videos.js?v=rad23";
+import { renderAvatar } from "./avatar.js?v=rad23";
 import {
   CARD_TYPES,
   createBattle,
@@ -15,7 +15,7 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=rad21";
+} from "./data/shizhan.js?v=rad23";
 import {
   getCurrentUser,
   registerUser,
@@ -23,7 +23,7 @@ import {
   clearSession,
   addXp,
   updateUser,
-} from "./storage.js?v=rad21";
+} from "./storage.js?v=rad23";
 import {
   userSnapshot,
   buildPromotionOrder,
@@ -31,7 +31,7 @@ import {
   IDENTITY_DISCLAIMER,
   identityDisplayName,
   getIdentity,
-} from "./progress.js?v=rad21";
+} from "./progress.js?v=rad23";
 import {
   renderJourneyHome,
   renderScroll,
@@ -42,10 +42,17 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad21";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad21";
-import { renderPromoteReveal } from "./heroStage.js?v=rad21";
-import { getStageVisual } from "./data/stageVisuals.js?v=rad21";
+} from "./journey.js?v=rad23";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad23";
+import { renderPromoteReveal } from "./heroStage.js?v=rad23";
+import { getStageVisual } from "./data/stageVisuals.js?v=rad23";
+import {
+  FORM_YEARS,
+  normalizeFormYear,
+  allowedGradeKeys,
+  formYearHint,
+  filterByFormYear,
+} from "./data/formYear.js?v=rad23";
 
 const app = document.getElementById("app");
 let toastTimer = null;
@@ -54,6 +61,7 @@ let state = {
   authMode: "login",
   gender: "male",
   heroName: "",
+  formYear: "",
   practice: { mode: "mc", grade: "全部", index: 0 },
   match: { selectedLeft: null, selectedRight: null, solved: new Set() },
   flip: { cards: [], flipped: [], matched: new Set(), lock: false },
@@ -154,7 +162,7 @@ function refreshTopbarOnly() {
     <div class="avatar-ring">${renderAvatar(char, snap.stageId ?? snap.identity.id, "sm", { gender: user.gender })}</div>
     <div class="player-meta">
       <strong>${heroDisplayName(user, char)} · ${snap.identityName}</strong>
-      <span>${user.username}　Lv.${snap.level.level}　XP ${user.xp}</span>
+      <span>${user.username}　${user.formYear || ""}　Lv.${snap.level.level}　XP ${user.xp}</span>
       <div class="xp-bar"><i style="width:${snap.level.progress}%"></i></div>
     </div>`;
 }
@@ -179,6 +187,12 @@ function render() {
     document.body.className = "";
     app.innerHTML = renderAuth();
     bindAuth();
+    return;
+  }
+  if (!normalizeFormYear(user.formYear)) {
+    document.body.className = "";
+    app.innerHTML = renderFormYearGate(user);
+    bindFormYearGate();
     return;
   }
   const snap = userSnapshot(user);
@@ -250,6 +264,17 @@ function renderAuth() {
       <form id="auth-form" class="form-grid">
         <label>帳號<input name="username" required autocomplete="username" placeholder="例如：1A_陳大文" /></label>
         <label>密碼<input name="password" type="password" required autocomplete="current-password" placeholder="至少三個字" /></label>
+        <label>年級
+          <select name="formYear" id="form-year-select" required>
+            <option value="" ${!state.formYear ? "selected" : ""}>— 請選擇 —</option>
+            ${FORM_YEARS.map(
+              (y) =>
+                `<option value="${y}" ${state.formYear === y ? "selected" : ""}>${y}${
+                  y === "中一" ? "（只做中一題）" : y === "中二" ? "（中一＋中二）" : "（中一＋中二＋中三）"
+                }</option>`
+            ).join("")}
+          </select>
+        </label>
         ${
           state.authMode === "register"
             ? `
@@ -264,7 +289,7 @@ function renderAuth() {
           </select>
         </label>
         <p class="muted" style="margin:0;font-size:.88rem">已取消歷史人物原型——只選男女樣貌，角色名完全自訂。</p>`
-            : ""
+            : `<p class="muted" style="margin:0;font-size:.88rem">每次登入請揀年級：中一只做中一題；中二可做中一＋中二；中三三者皆可。</p>`
         }
         <p class="form-error" id="auth-error"></p>
         <button class="btn btn-wide" type="submit">${state.authMode === "login" ? "⚔️ 進入任平生" : "🏯 創角出發"}</button>
@@ -280,9 +305,51 @@ function escapeAttr(s) {
     .replace(/</g, "&lt;");
 }
 
+function renderFormYearGate(user) {
+  return `
+  <section class="hero-screen">
+    <div class="auth-panel" style="margin:auto">
+      <h2>請選擇年級</h2>
+      <p class="lead">中一只做中一題；中二可做中一＋中二；中三可做中一、中二、中三。</p>
+      <form id="form-year-gate" class="form-grid">
+        <label>年級
+          <select name="formYear" required>
+            <option value="">— 請選擇 —</option>
+            ${FORM_YEARS.map((y) => `<option value="${y}">${y}</option>`).join("")}
+          </select>
+        </label>
+        <p class="form-error" id="auth-error"></p>
+        <button class="btn btn-wide" type="submit">確認進入</button>
+      </form>
+      <p class="muted">帳號：${user.username}</p>
+    </div>
+  </section>`;
+}
+
+function bindFormYearGate() {
+  app.querySelector("#form-year-gate")?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const year = normalizeFormYear(fd.get("formYear"));
+    const err = app.querySelector("#auth-error");
+    if (!year) {
+      if (err) err.textContent = "請選擇年級";
+      return;
+    }
+    updateUser((u) => {
+      u.formYear = year;
+    });
+    state.practice = { mode: "mc", grade: "全部", index: 0 };
+    toast(formYearHint(year));
+    render();
+  });
+}
+
 function rememberAuthDraft() {
   const hero = app.querySelector("#hero-name-input");
   if (hero) state.heroName = hero.value;
+  const year = app.querySelector("#form-year-select");
+  if (year) state.formYear = year.value;
 }
 
 function bindAuth() {
@@ -301,6 +368,9 @@ function bindAuth() {
       render();
     });
   }
+  app.querySelector("#form-year-select")?.addEventListener("change", (e) => {
+    state.formYear = e.target.value;
+  });
   app.querySelector("#hero-name-input")?.addEventListener("input", (e) => {
     state.heroName = e.target.value;
     const strong = app.querySelector(".hero-caption strong");
@@ -312,19 +382,24 @@ function bindAuth() {
     const err = app.querySelector("#auth-error");
     try {
       if (state.authMode === "login") {
-        loginUser(fd.get("username"), fd.get("password"));
+        loginUser(fd.get("username"), fd.get("password"), fd.get("formYear"));
       } else {
         registerUser({
           username: fd.get("username"),
           password: fd.get("password"),
           gender: state.gender,
           heroName: fd.get("heroName"),
+          formYear: fd.get("formYear"),
         });
         state.heroName = "";
       }
+      state.formYear = normalizeFormYear(fd.get("formYear")) || "";
+      state.practice = { mode: "mc", grade: "全部", index: 0 };
+      state.timeline = { setId: TIMELINE_SETS[0].id };
       state.view = "home";
       render();
-      toast("歡迎踏上任平生——小升級靠努力，大晉升靠實力");
+      const year = getCurrentUser()?.formYear || "";
+      toast(`歡迎踏上任平生——${year}　${formYearHint(year)}`);
     } catch (ex) {
       err.textContent = ex.message;
     }
@@ -395,7 +470,7 @@ function renderShell(user) {
         <div class="avatar-ring">${renderAvatar(char, snap.stageId ?? idn.id, "sm", { gender: user.gender })}</div>
         <div class="player-meta">
           <strong>${heroDisplayName(user, char)} · ${snap.identityName}</strong>
-          <span>${user.username}　Lv.${snap.level.level}　XP ${user.xp}</span>
+          <span>${user.username}　${user.formYear || ""}　Lv.${snap.level.level}　XP ${user.xp}</span>
           <div class="xp-bar"><i style="width:${snap.level.progress}%"></i></div>
         </div>
       </div>
@@ -464,7 +539,8 @@ function renderProfile(user, char, snap) {
       ${renderAvatar(char, snap.stageId ?? snap.identity.id, "lg", { gender: user.gender })}
       <div>
         <h2>${name}</h2>
-        <p class="lead">身份「${snap.identityName}」· Lv.${snap.level.level} · 衣裝「${snap.outfit}」。${snap.identity.desc}</p>
+        <p class="lead">身份「${snap.identityName}」· ${user.formYear || ""} · Lv.${snap.level.level} · 衣裝「${snap.outfit}」。${snap.identity.desc}</p>
+        <p class="muted">${formYearHint(user.formYear)}</p>
         <p class="muted">${IDENTITY_DISCLAIMER}</p>
       </div>
     </div>
@@ -489,12 +565,25 @@ function renderProfile(user, char, snap) {
 
 /* ========== Practice ========== */
 function filteredList(mode) {
-  const list = QUESTIONS[mode] || [];
-  if (state.practice.grade === "全部") return list;
-  return list.filter((q) => q.grade === state.practice.grade || (q.grade || "").includes(state.practice.grade));
+  const user = getCurrentUser();
+  const year = user?.formYear;
+  const scoped = filterByFormYear(QUESTIONS[mode] || [], year);
+  if (state.practice.grade === "全部") return scoped;
+  const allowed = allowedGradeKeys(year);
+  if (!allowed.includes(state.practice.grade)) return scoped;
+  return scoped.filter(
+    (q) => q.grade === state.practice.grade || (q.grade || "").includes(state.practice.grade)
+  );
 }
 
 function renderPractice() {
+  const user = getCurrentUser();
+  const year = user?.formYear;
+  const chips = ["全部", ...allowedGradeKeys(year)];
+  if (state.practice.grade !== "全部" && !allowedGradeKeys(year).includes(state.practice.grade)) {
+    state.practice.grade = "全部";
+    state.practice.index = 0;
+  }
   const mode = state.practice.mode;
   const list = filteredList(mode);
   if (!list.length) {
@@ -569,7 +658,7 @@ function renderPractice() {
   return `
   <section class="panel">
     <h2>題目練習</h2>
-    <p class="lead">依齡記／初中中史課程主題自擬題目。選擇、填充、配對均可練；答對可獲經驗。</p>
+    <p class="lead">${year || "年級"}：${formYearHint(year)}。選擇、填充、配對均可練；答對可獲經驗。</p>
     <div class="toolbar">
       ${["mc|選擇題", "fill|填充題", "match|配對題"]
         .map((s) => {
@@ -578,10 +667,10 @@ function renderPractice() {
         })
         .join("")}
       <span style="opacity:.4">|</span>
-      ${["全部", "中一", "中二", "中三"]
+      ${chips
         .map(
           (g) =>
-            `<button type="button" class="chip ${state.practice.grade === g ? "active" : ""}" data-grade="${g}">${g}</button>`
+            `<button type="button" class="chip ${state.practice.grade === g ? "active" : ""}" data-grade="${g}">${g === "全部" ? "本年範圍" : g}</button>`
         )
         .join("")}
       <button class="btn ghost" type="button" id="next-q">下一題</button>
@@ -887,11 +976,11 @@ function renderShizhan(user, char, rank) {
 
 function bindShizhan(user, char) {
   app.querySelector("#shizhan-start")?.addEventListener("click", () => {
-    state.shizhan = createBattle(char);
+    state.shizhan = createBattle(char, user.formYear);
     render();
   });
   app.querySelector("#shizhan-again")?.addEventListener("click", () => {
-    state.shizhan = createBattle(char);
+    state.shizhan = createBattle(char, user.formYear);
     render();
   });
   app.querySelectorAll("[data-sz-card]").forEach((btn) => {
@@ -1069,7 +1158,16 @@ function dealTimelineRound(set) {
 }
 
 function renderTimeline() {
-  const set = TIMELINE_SETS.find((t) => t.id === state.timeline.setId) || TIMELINE_SETS[0];
+  const year = getCurrentUser()?.formYear;
+  const sets = filterByFormYear(TIMELINE_SETS, year);
+  const pool = sets.length ? sets : TIMELINE_SETS;
+  let set = pool.find((t) => t.id === state.timeline.setId) || pool[0];
+  if (!pool.some((t) => t.id === set.id)) set = pool[0];
+  if (state.timeline.setId !== set.id) {
+    state.timeline.setId = set.id;
+    state.timeline.shuffleId = null;
+    state.timeline.roundItems = null;
+  }
   // 每套題池較大：每次開局／重洗抽不同子集，減少重複感
   if (state.timeline.shuffleId !== set.id || !state.timeline.roundItems?.length) {
     const deal = dealTimelineRound(set);
@@ -1081,12 +1179,14 @@ function renderTimeline() {
   return `
   <section class="panel">
     <h2>人物／事件時間線</h2>
-    <p class="lead">${set.title}（${set.grade}）——本題抽 ${round.length}／${set.items.length} 件事件，配到正確年代。按「再抽一局」可換題。</p>
+    <p class="lead">${set.title}（${set.grade}）——本題抽 ${round.length}／${set.items.length} 件事件。${formYearHint(year)}</p>
     <div class="toolbar">
-      ${TIMELINE_SETS.map(
-        (t) =>
-          `<button type="button" class="chip ${state.timeline.setId === t.id ? "active" : ""}" data-tl="${t.id}">${t.title}</button>`
-      ).join("")}
+      ${pool
+        .map(
+          (t) =>
+            `<button type="button" class="chip ${state.timeline.setId === t.id ? "active" : ""}" data-tl="${t.id}">${t.title}</button>`
+        )
+        .join("")}
       <button class="btn ghost" type="button" id="tl-reshuffle">再抽一局</button>
     </div>
     <div class="timeline-list" id="tl-list">
@@ -1228,12 +1328,14 @@ function bindDialogue() {
 }
 
 function renderVideos() {
+  const year = getCurrentUser()?.formYear;
+  const list = filterByFormYear(VIDEOS, year);
   return `
   <section class="panel">
     <h2>影片學習區</h2>
-    <p class="lead">觀看教育影片鞏固知識。老師可在 <code>js/data/videos.js</code> 新增或替換 YouTube 影片 ID。</p>
+    <p class="lead">${formYearHint(year)}。老師可在 <code>js/data/videos.js</code> 新增或替換 YouTube 影片 ID。</p>
     <div class="video-grid">
-      ${VIDEOS.map(
+      ${list.map(
         (v) => `
         <article class="video-card">
           <iframe src="https://www.youtube.com/embed/${v.youtubeId}" title="${v.title}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>
@@ -1242,7 +1344,7 @@ function renderVideos() {
             <p>${v.grade} · ${v.topic}<br>${v.desc}</p>
           </div>
         </article>`
-      ).join("")}
+      ).join("") || "<p>本年級暫無影片。</p>"}
     </div>
   </section>`;
 }

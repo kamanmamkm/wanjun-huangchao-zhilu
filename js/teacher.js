@@ -77,7 +77,7 @@ export function listStudents() {
       ch1Done: !!ch1?.done,
       ch1Stages: Object.keys(ch1?.stages || {}).length,
       skillWeak: weakestSkills(u.progress?.skills || {}),
-      pendingArgue: (u.progress?.pendingReviews || []).length,
+      formYear: u.formYear || "—",
     };
   });
 }
@@ -200,7 +200,7 @@ export function renderTeacherPage() {
       <table class="teacher-table">
         <thead>
           <tr>
-            <th>帳號</th><th>角色名</th><th>身份</th><th>等級</th><th>答對/錯</th><th>第一章</th><th>弱項</th><th>未修錯題</th>
+            <th>帳號</th><th>角色名</th><th>年級</th><th>身份</th><th>等級</th><th>答對/錯</th><th>第一章</th><th>弱項</th><th>未修錯題</th>
           </tr>
         </thead>
         <tbody>
@@ -211,6 +211,7 @@ export function renderTeacherPage() {
             <tr>
               <td>${s.username}</td>
               <td>${s.heroName || "—"}</td>
+              <td>${s.formYear || "—"}</td>
               <td>${s.identityName}</td>
               <td>Lv.${s.level}</td>
               <td>${s.correct}/${s.wrong}</td>
@@ -219,7 +220,7 @@ export function renderTeacherPage() {
               <td>${s.openNotes}</td>
             </tr>`
               )
-              .join("") || `<tr><td colspan="7">尚未有學生帳號</td></tr>`
+              .join("") || `<tr><td colspan="9">尚未有學生帳號</td></tr>`
           }
         </tbody>
       </table>

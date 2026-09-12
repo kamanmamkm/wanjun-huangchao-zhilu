@@ -1,11 +1,11 @@
-import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad29";
-import { QUESTIONS, checkFill } from "./data/questions.js?v=rad29";
-import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad29";
-import { levelFromXp } from "./data/levels.js?v=rad29";
-import { DIALOGUES } from "./data/dialogues.js?v=rad29";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad29";
-import { VIDEOS } from "./data/videos.js?v=rad29";
-import { renderAvatar } from "./avatar.js?v=rad29";
+import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad30";
+import { QUESTIONS, checkFill } from "./data/questions.js?v=rad30";
+import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad30";
+import { levelFromXp } from "./data/levels.js?v=rad30";
+import { DIALOGUES } from "./data/dialogues.js?v=rad30";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad30";
+import { VIDEOS } from "./data/videos.js?v=rad30";
+import { renderAvatar } from "./avatar.js?v=rad30";
 import {
   CARD_TYPES,
   createBattle,
@@ -15,7 +15,7 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=rad29";
+} from "./data/shizhan.js?v=rad30";
 import {
   getCurrentUser,
   registerUser,
@@ -23,7 +23,7 @@ import {
   clearSession,
   addXp,
   updateUser,
-} from "./storage.js?v=rad29";
+} from "./storage.js?v=rad30";
 import {
   userSnapshot,
   buildPromotionOrder,
@@ -31,7 +31,7 @@ import {
   IDENTITY_DISCLAIMER,
   identityDisplayName,
   getIdentity,
-} from "./progress.js?v=rad29";
+} from "./progress.js?v=rad30";
 import {
   renderJourneyHome,
   renderScroll,
@@ -42,18 +42,18 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad29";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad29";
-import { renderPromoteReveal } from "./heroStage.js?v=rad29";
-import { getStageVisual } from "./data/stageVisuals.js?v=rad29";
+} from "./journey.js?v=rad30";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad30";
+import { renderPromoteReveal } from "./heroStage.js?v=rad30";
+import { getStageVisual } from "./data/stageVisuals.js?v=rad30";
 import {
   FORM_YEARS,
   normalizeFormYear,
   allowedGradeKeys,
   formYearHint,
   filterByFormYear,
-} from "./data/formYear.js?v=rad29";
-import { pickRandomHeroName, isPooledHeroName, HERO_NAME_COUNT } from "./data/heroNames.js?v=rad29";
+} from "./data/formYear.js?v=rad30";
+import { pickRandomHeroName, isPooledHeroName, HERO_NAME_COUNT } from "./data/heroNames.js?v=rad30";
 
 const app = document.getElementById("app");
 let toastTimer = null;
@@ -239,11 +239,6 @@ function renderAuth() {
     state.heroName = pickRandomHeroName(state.gender);
     state.heroNameFromPool = true;
   }
-  const stages = [
-    { id: 0, name: "庶民" },
-    { id: 1, name: "學子" },
-    { id: 7, name: "帝王" },
-  ];
   const gp = state.guestPlay;
   const tryQs = guestTryQuestions();
   const q = tryQs[gp.index] || tryQs[0];
@@ -326,30 +321,15 @@ function renderAuth() {
       <h1>任平生</h1>
       <p class="subtitle">歷千年風雨，成就我人生。</p>
       <div class="hero-cast">
-        <div class="hero-duo" aria-label="男女主角">
+        <div class="hero-duo" aria-label="開局庶民">
           <figure class="hero-duo-card">
             ${renderAvatar(male, 0, "lg", { gender: "male" })}
-            <figcaption>男主角 · 庶民</figcaption>
+            <figcaption>男 · 庶民</figcaption>
           </figure>
           <figure class="hero-duo-card">
             ${renderAvatar(female, 0, "lg", { gender: "female" })}
-            <figcaption>女主角 · 庶民</figcaption>
+            <figcaption>女 · 庶民</figcaption>
           </figure>
-        </div>
-        <div class="growth-preview" aria-label="成長造型">
-          ${stages
-            .map(
-              (s, i) => `
-            <div class="growth-preview-step">
-              <div class="growth-preview-pair">
-                ${renderAvatar(male, s.id, "sm", { gender: "male" })}
-                ${renderAvatar(female, s.id, "sm", { gender: "female" })}
-              </div>
-              <span>${s.name}</span>
-            </div>
-            ${i < stages.length - 1 ? `<span class="growth-preview-arrow" aria-hidden="true">→</span>` : ""}`
-            )
-            .join("")}
         </div>
       </div>
       <div class="tags">

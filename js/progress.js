@@ -14,7 +14,8 @@ import {
   IDENTITIES,
 } from "./data/identities.js";
 import { CHAPTERS, REMEDIALS } from "./data/chapters.js?v=rad41";
-import { relicFor } from "./data/flavor.js";
+import { relicFor, isoDay } from "./data/flavor.js";
+import { WHEEL_SLICES } from "./data/wheel.js?v=rad46";
 import { getTrial } from "./data/trials.js";
 import { stageIdFromLevel, stageIdForUser, syncIdentityToLevel, levelBandLines, nextStageMinLevel, LEVEL_STAGE_BANDS } from "./data/levelStage.js";
 
@@ -54,6 +55,8 @@ export function ensureProgress(user) {
   if (typeof user.identityId !== "number") user.identityId = STARTING_IDENTITY_ID;
   user.progress.relics = user.progress.relics || [];
   user.progress.flavor = user.progress.flavor || {};
+  user.progress.score = Number(user.progress.score) || 0;
+  user.progress.wheel = user.progress.wheel || { lastSpin: "", dayCorrect: "", todayCorrect: 0 };
   return user.progress;
 }
 
@@ -72,6 +75,7 @@ export function userSnapshot(user) {
     outfit: outfitForIdentity(stageId, user.gender),
     stageId,
     progress: p,
+    score: p.score || 0,
   };
 }
 
@@ -94,9 +98,10 @@ export function recordAttempt(user, payload = {}) {
   if (!recordId) return { ok: false, duplicate: false, reason: "missing-id" };
   if (hasAttempt(user, recordId)) return { ok: false, duplicate: true, recordId };
 
+  const qid = payload.qid || "";
+  const seenQid = !!(qid && user.answered?.[qid]);
   const correct = !!payload.correct && !payload.wrong;
   const wrong = !!payload.wrong || payload.correct === false;
-  const qid = payload.qid || "";
   const qText = String(payload.qText || "").slice(0, 160);
   const skill = payload.skill || "";
   const topic = payload.topic || "";
@@ -132,6 +137,15 @@ export function recordAttempt(user, payload = {}) {
   }
 
   const p = ensureProgress(user);
+  if (correct) {
+    p.score = (p.score || 0) + (seenQid ? 2 : 10);
+    const day = isoDay();
+    if (p.wheel.dayCorrect !== day) {
+      p.wheel.dayCorrect = day;
+      p.wheel.todayCorrect = 0;
+    }
+    p.wheel.todayCorrect = (p.wheel.todayCorrect || 0) + 1;
+  }
   const bump = (obj, key, ok) => {
     if (!key) return;
     const cur = obj[key] || 0.35;
@@ -312,6 +326,35 @@ export function grantRelic(user, chapterId, stageId) {
   if (p.relics.some((r) => r.id === spec.id)) return null;
   p.relics.push({ id: spec.id, name: spec.name, hint: spec.hint, at: Date.now() });
   return spec;
+}
+
+export function wheelStatus(user, day = isoDay()) {
+  const p = ensureProgress(user);
+  const w = p.wheel || {};
+  const todayCorrect = w.dayCorrect === day ? w.todayCorrect || 0 : 0;
+  const spun = w.lastSpin === day;
+  return {
+    score: p.score || 0,
+    todayCorrect,
+    spun,
+    lastPrize: w.lastPrize || null,
+    canSpin: !spun && todayCorrect >= 1,
+  };
+}
+
+export function applyWheelPrize(user, sliceIndex, day = isoDay()) {
+  const slice = WHEEL_SLICES[sliceIndex];
+  if (!slice) return { ok: false, reason: "bad-slice" };
+  const st = wheelStatus(user, day);
+  if (st.spun) return { ok: false, reason: "already" };
+  if (st.todayCorrect < 1) return { ok: false, reason: "need-correct" };
+  const p = ensureProgress(user);
+  p.wheel = p.wheel || { lastSpin: "", dayCorrect: "", todayCorrect: 0 };
+  p.score = (p.score || 0) + (Number(slice.score) || 0);
+  p.wheel.lastSpin = day;
+  p.wheel.lastPrize = { id: slice.id, label: slice.label, xp: slice.xp || 0, score: slice.score || 0, at: Date.now() };
+  p.wheel.log = [{ ...p.wheel.lastPrize }, ...(p.wheel.log || [])].slice(0, 20);
+  return { ok: true, slice };
 }
 
 /** 標記本關已完成（未必然掌握）。故事／互動關用。 */

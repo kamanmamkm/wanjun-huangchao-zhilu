@@ -2030,9 +2030,24 @@ select {
   background: rgba(163, 49, 43, 0.08);
   border-color: rgba(163, 49, 43, 0.28);
 }
+.cuoshi-line small {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  opacity: 0.75;
+}
 .cuoshi-line.is-miss {
-  background: rgba(37, 40, 32, 0.05);
-  opacity: 0.72;
+  background: rgba(37, 40, 32, 0.04);
+  border-style: dotted;
+  border-color: rgba(138, 115, 64, 0.35);
+  opacity: 1;
+  cursor: pointer;
+}
+.cuoshi-hint {
+  margin: 0.35rem 0 0.2rem;
+  color: #7a3a22;
+  font-weight: 700;
 }
 .cuoshi-line.is-hit {
   background: rgba(163, 49, 43, 0.14);

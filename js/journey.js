@@ -2,7 +2,7 @@
  * 《任平生》主介面：行旅首頁、歷史長卷、晉升殿、待考札記、史冊
  */
 import { CHAPTERS, chapterList } from "./data/chapters.js?v=rad56";
-import { XP_REWARDS } from "./data/levels.js?v=rad50";
+import { XP_REWARDS } from "./data/levels.js?v=rad66";
 import { CUOSHI_BATTLES, CHAPTER_BOSS_PAGES, getCuoshi, wrongLineOf } from "./data/cuoshi.js?v=rad64";
 import { IDENTITIES } from "./data/identities.js?v=rad50";
 import { getStageVisual, SKILL_BARS, skillFill, STAGE_RELIC, realmLabel } from "./data/stageVisuals.js";
@@ -599,15 +599,18 @@ export function renderCuoshi(user, opts = {}) {
       </button>
     </article>`
   ).join("");
-  const back = opts.backUnit
+  const back = opts.inRun
+    ? `<button type="button" class="btn ghost" data-run-abort>放棄闖關</button>`
+    : opts.backUnit
     ? `<button type="button" class="btn ghost" data-games-unit="${opts.backUnit}">返回本單元</button>`
     : `<button type="button" class="btn ghost" data-goto="games">返回大廳</button>`;
   return `
   <section class="panel-paper cuoshi-view">
+    ${opts.hud || ""}
     <p class="eyebrow ink-red">趣味關卡 · 錯史之戰</p>
     <h2>修復被改亂的史頁</h2>
-    <p class="lead">Boss 是錯史本身：讀殘卷，撳出錯句，再揀修正。一關大約三分鐘。</p>
-    <div class="cuoshi-grid">${cards}</div>
+    <p class="lead">Boss 是錯史本身：讀殘卷，撳出錯句，再揀修正。</p>
+    <div class="cuoshi-grid${opts.inRun ? " hidden" : ""}">${cards}</div>
     <div id="cuoshi-panel" class="hidden"></div>
     ${back}
   </section>`;
@@ -821,12 +824,16 @@ function paintCuoshi(ctx) {
     pushRecent(`戰勝錯史：${battle.title}`);
     addXp(XP_REWARDS.chapterBonus || 20, { correct: true });
     const repaired = battle.fix?.repaired || "";
+    const nextBtn =
+      ctx.state.unitRun?.phase === "play"
+        ? `<button type="button" class="btn" data-run-next>下一關</button>`
+        : `<button type="button" class="btn" data-cuoshi-back>返回關卡列表</button>`;
     panel.innerHTML = `
       <div class="trial-result">
         <h3>史頁已修復</h3>
         <p>你完成了「${battle.title}」。</p>
         ${repaired ? `<p class="cuoshi-repaired">改寫：${repaired}</p>` : ""}
-        <button type="button" class="btn" data-cuoshi-back>返回關卡列表</button>
+        ${nextBtn}
       </div>`;
     toast("錯史之戰勝利！");
     bindCuoshiListBack(panel, ctx);

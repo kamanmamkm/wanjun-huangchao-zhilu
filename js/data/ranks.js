@@ -2,7 +2,7 @@
  * 兼容層：舊 import 仍可用。
  * 真正規則：levels.js（經驗等級）+ identities.js（身份晉升）
  */
-export { XP_REWARDS, levelFromXp, LEVEL_THRESHOLDS } from "./levels.js";
+export { XP_REWARDS, levelFromXp, LEVEL_THRESHOLDS } from "./levels.js?v=rad66";
 export {
   IDENTITIES,
   getIdentity,

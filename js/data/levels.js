@@ -8,6 +8,7 @@ export const XP_REWARDS = {
   matchPair: 3,
   wordwallRound: 10,
   timelineComplete: 12,
+  unitRunClear: 16,
   dialogueGood: 6,
   streakBonus: 1,
   repeatScale: 0.25,

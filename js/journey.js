@@ -3,7 +3,7 @@
  */
 import { CHAPTERS, chapterList } from "./data/chapters.js?v=rad56";
 import { XP_REWARDS } from "./data/levels.js?v=rad50";
-import { CUOSHI_BATTLES, CHAPTER_BOSS_PAGES, getCuoshi, wrongLineOf } from "./data/cuoshi.js?v=rad57";
+import { CUOSHI_BATTLES, CHAPTER_BOSS_PAGES, getCuoshi, wrongLineOf } from "./data/cuoshi.js?v=rad64";
 import { IDENTITIES } from "./data/identities.js?v=rad50";
 import { getStageVisual, SKILL_BARS, skillFill, STAGE_RELIC, realmLabel } from "./data/stageVisuals.js";
 import { heroDisplayName, normalizeHeroName } from "./data/characters.js";

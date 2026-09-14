@@ -3,7 +3,7 @@ import { QUESTIONS } from "./data/questions.js?v=rad50";
 import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad50";
 import { levelFromXp } from "./data/levels.js?v=rad50";
 import { DIALOGUES } from "./data/dialogues.js?v=rad62";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad50";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad64";
 import { VIDEOS } from "./data/videos.js?v=rad50";
 import { renderAvatar } from "./avatar.js?v=rad50";
 import {
@@ -49,7 +49,7 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad63";
+} from "./journey.js?v=rad64";
 import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad50";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad50";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";
@@ -879,7 +879,7 @@ function renderGamesHub() {
       </article>
       <article class="quest-card tone-jade" data-goto="wordwall" style="--i:2">
         <div class="quest-icon"><span class="ico ico-game" style="width:1.4em;height:1.4em"></span></div>
-        <div class="quest-body"><h3>機緣翻牌</h3><p>翻牌配對／問答</p></div>
+        <div class="quest-body"><h3>機緣翻牌</h3><p>撳兩張有關嘅牌配對（可再抽）</p></div>
         <span class="quest-xp">+${XP_REWARDS.wordwallRound}</span>
       </article>
       <article class="quest-card tone-indigo" data-goto="timeline" style="--i:3">
@@ -1064,154 +1064,147 @@ function finishShizhanIfEnded(user) {
   }
 }
 
+function dealFlipRound(round, roundIndex) {
+  const pool = round?.pairs || [];
+  const n = Math.min(round?.pick || 4, pool.length);
+  const chosen = shuffle(pool).slice(0, n);
+  const cards = shuffle(
+    chosen.flatMap((p, i) => [
+      { id: `${round.id}-${i}a`, pair: i, text: p.a, note: p.note || "" },
+      { id: `${round.id}-${i}b`, pair: i, text: p.b, note: p.note || "" },
+    ])
+  );
+  return {
+    cards,
+    flipped: [],
+    matched: new Set(),
+    lock: false,
+    roundId: round.id,
+    roundIndex: roundIndex ?? 0,
+    pairCount: chosen.length,
+    combo: 0,
+    maxCombo: 0,
+    lastNote: "",
+    won: false,
+    missFlash: [],
+  };
+}
+
 function renderWordwall() {
   const round = WORDWALL_ROUNDS[state.flip.roundIndex || 0] || WORDWALL_ROUNDS[0];
-  if (round.type === "flip") {
-    if (!state.flip.cards.length || state.flip.roundId !== round.id) {
-      const cards = shuffle(
-        round.pairs.flatMap(([a, b], i) => [
-          { id: `${i}a`, pair: i, text: a },
-          { id: `${i}b`, pair: i, text: b },
-        ])
-      );
-      state.flip = { cards, flipped: [], matched: new Set(), lock: false, roundId: round.id, roundIndex: state.flip.roundIndex || 0 };
-    }
-    return `
+  const idx = WORDWALL_ROUNDS.findIndex((r) => r.id === round.id);
+  if (!state.flip.cards.length || state.flip.roundId !== round.id) {
+    state.flip = dealFlipRound(round, idx < 0 ? 0 : idx);
+  }
+  const f = state.flip;
+  const done = f.matched.size === (f.pairCount || 0) && (f.pairCount || 0) > 0;
+  const chips = WORDWALL_ROUNDS.map(
+    (r, i) =>
+      `<button type="button" class="chip ${(f.roundIndex || 0) === i ? "active" : ""}" data-ww="${i}">${r.title}</button>`
+  ).join("");
+  return `
     <section class="panel">
-      <h2>Wordwall 風 · ${round.title}</h2>
-      <p class="lead">翻開兩張卡，配對正確即可消去。全部完成獲經驗。</p>
+      <h2>機緣翻牌 · ${round.title}</h2>
+      <p class="lead">牌面一開始就睇到。撳兩張<strong>有關</strong>嘅牌配成一對。本題抽 ${f.pairCount}／${round.pairs.length} 對。</p>
+      <p class="muted">已配 ${f.matched.size}／${f.pairCount}　連擊 ${f.combo || 0}${f.maxCombo ? `　最高 ${f.maxCombo}` : ""}</p>
       <div class="toolbar">
-        ${WORDWALL_ROUNDS.map(
-          (r, i) =>
-            `<button type="button" class="chip ${(state.flip.roundIndex || 0) === i ? "active" : ""}" data-ww="${i}">${r.title}</button>`
-        ).join("")}
+        ${chips}
+        <button class="btn ghost" type="button" id="ww-reshuffle">再抽一局</button>
       </div>
       <div class="flip-grid" id="flip-grid">
-        ${state.flip.cards
-          .map((c, idx) => {
-            const show = state.flip.flipped.includes(idx) || state.flip.matched.has(c.pair);
-            return `<button type="button" class="flip-card ${show ? "revealed" : ""} ${state.flip.matched.has(c.pair) ? "matched" : ""}" data-flip="${idx}"><span>${show ? c.text : "史"}</span></button>`;
+        ${f.cards
+          .map((c, i) => {
+            const picked = f.flipped.includes(i);
+            const ok = f.matched.has(c.pair);
+            const miss = (f.missFlash || []).includes(i);
+            return `<button type="button" class="flip-card is-face${picked ? " is-picked" : ""}${ok ? " matched" : ""}${miss ? " is-miss" : ""}" data-flip="${i}" ${ok ? "disabled" : ""}><span>${c.text}</span></button>`;
           })
           .join("")}
       </div>
-    </section>`;
-  }
-
-  // quiz type
-  const qi = state.flip.quizIndex || 0;
-  const qq = round.questions[qi];
-  return `
-  <section class="panel">
-    <h2>Wordwall 風 · ${round.title}</h2>
-    <p class="lead">限時不必緊張——答對得分。題目 ${qi + 1}/${round.questions.length}</p>
-    <div class="toolbar">
-      ${WORDWALL_ROUNDS.map(
-        (r, i) =>
-          `<button type="button" class="chip ${(state.flip.roundIndex || 0) === i ? "active" : ""}" data-ww="${i}">${r.title}</button>`
-      ).join("")}
-    </div>
-    <div class="question-box">
-      <div class="q-text">${qq.q}</div>
-      <div class="options">
-        ${qq.options.map((o, i) => `<button type="button" class="option" data-wq="${i}">${o}</button>`).join("")}
+      <p class="flip-note">${f.lastNote || "揀兩張牌，睇佢哋係咪同一條史線。"}</p>
+      ${done ? `<p class="feedback">本局全對！可再抽一局繼續。</p>` : ""}
+      <div class="row-actions">
+        <button class="btn ghost" type="button" data-goto="games">返回大廳</button>
       </div>
-    </div>
-  </section>`;
+    </section>`;
 }
 
 function bindWordwall() {
   app.querySelectorAll("[data-ww]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      state.flip = { cards: [], flipped: [], matched: new Set(), lock: false, roundIndex: Number(btn.dataset.ww), quizIndex: 0 };
+      const i = Number(btn.dataset.ww);
+      state.flip = dealFlipRound(WORDWALL_ROUNDS[i] || WORDWALL_ROUNDS[0], i);
       render();
     });
   });
+  app.querySelector("#ww-reshuffle")?.addEventListener("click", () => {
+    const i = state.flip.roundIndex || 0;
+    state.flip = dealFlipRound(WORDWALL_ROUNDS[i] || WORDWALL_ROUNDS[0], i);
+    render();
+  });
 
-  const round = WORDWALL_ROUNDS[state.flip.roundIndex || 0];
-  if (round.type === "flip") {
-    app.querySelectorAll("[data-flip]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        if (state.flip.lock) return;
-        const idx = Number(btn.dataset.flip);
-        const card = state.flip.cards[idx];
-        if (state.flip.matched.has(card.pair) || state.flip.flipped.includes(idx)) return;
-        state.flip.flipped.push(idx);
-        render();
-        if (state.flip.flipped.length === 2) {
-          state.flip.lock = true;
-          const [i1, i2] = state.flip.flipped;
-          const c1 = state.flip.cards[i1];
-          const c2 = state.flip.cards[i2];
-          setTimeout(() => {
-            if (c1.pair === c2.pair) {
-              state.flip.matched.add(c1.pair);
-              if (state.flip.matched.size === round.pairs.length) {
-                submitAnswer(XP_REWARDS.wordwallRound, {
-                  recordId: makeAttemptId(),
-                  correct: true,
-                  game: true,
-                  qid: `ww-${round.id}`,
-                  qText: round.title,
-                  source: "遊戲",
-                  keepView: true,
-                });
-              }
-            } else {
-              submitAnswer(0, {
-                recordId: makeAttemptId(),
-                wrong: true,
-                game: true,
-                qid: `ww-${round.id}-miss`,
-                qText: round.title,
-                source: "遊戲",
-                keepView: true,
-              });
-            }
-            state.flip.flipped = [];
-            state.flip.lock = false;
-            render();
-          }, 550);
+  const round = WORDWALL_ROUNDS[state.flip.roundIndex || 0] || WORDWALL_ROUNDS[0];
+  app.querySelectorAll("[data-flip]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const f = state.flip;
+      if (f.lock || f.won) return;
+      const idx = Number(btn.dataset.flip);
+      const card = f.cards[idx];
+      if (!card || f.matched.has(card.pair) || f.flipped.includes(idx)) {
+        if (f.flipped.length === 1 && f.flipped[0] === idx) {
+          f.flipped = [];
+          render();
         }
-      });
-    });
-  } else {
-    app.querySelectorAll("[data-wq]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const i = Number(btn.dataset.wq);
-        const qi = state.flip.quizIndex || 0;
-        const qq = round.questions[qi];
-        if (i === qq.a) {
-          submitAnswer(Math.round(XP_REWARDS.wordwallRound / round.questions.length) + 2, {
+        return;
+      }
+      f.flipped = [...f.flipped, idx];
+      f.missFlash = [];
+      if (f.flipped.length < 2) {
+        render();
+        return;
+      }
+      const [i1, i2] = f.flipped;
+      const c1 = f.cards[i1];
+      const c2 = f.cards[i2];
+      if (c1.pair === c2.pair) {
+        f.matched.add(c1.pair);
+        f.combo = (f.combo || 0) + 1;
+        f.maxCombo = Math.max(f.maxCombo || 0, f.combo);
+        f.lastNote = c1.note || "配對正確。";
+        f.flipped = [];
+        if (f.matched.size === f.pairCount) {
+          f.won = true;
+          submitAnswer(XP_REWARDS.wordwallRound, {
             recordId: makeAttemptId(),
             correct: true,
             game: true,
-            qid: `wwq-${round.id}-${qi}`,
-            qText: qq.q,
+            qid: `ww-${round.id}`,
+            qText: round.title,
             source: "遊戲",
             keepView: true,
           });
+          toast("全對！可按「再抽一局」繼續");
         } else {
-          toast(`正解：${qq.options[qq.a]}`);
-          submitAnswer(0, {
-            recordId: makeAttemptId(),
-            wrong: true,
-            game: true,
-            qid: `wwq-${round.id}-${qi}`,
-            qText: qq.q,
-            source: "遊戲",
-            keepView: true,
-          });
-        }
-        if (qi + 1 < round.questions.length) {
-          state.flip.quizIndex = qi + 1;
-        } else {
-          state.flip.quizIndex = 0;
-          toast("本輪問答完成！");
+          toast(f.lastNote);
         }
         render();
-      });
+        return;
+      }
+      f.lock = true;
+      f.combo = 0;
+      f.missFlash = [i1, i2];
+      f.lastNote = "唔係一對，再試。";
+      render();
+      setTimeout(() => {
+        if (state.view !== "wordwall") return;
+        if (state.flip.roundId !== f.roundId) return;
+        state.flip.flipped = [];
+        state.flip.missFlash = [];
+        state.flip.lock = false;
+        render();
+      }, preferReduceMotion() ? 0 : 520);
     });
-  }
+  });
 }
 
 function formatEraYear(y) {

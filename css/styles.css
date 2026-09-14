@@ -1423,7 +1423,7 @@ select {
   font-weight: 700;
   font-family: var(--font-display);
   letter-spacing: 0.12em;
-  transition: transform 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
 }
 
 .flip-card span {
@@ -1435,16 +1435,57 @@ select {
 }
 
 .flip-card.revealed,
-.flip-card.matched {
-  background: linear-gradient(145deg, #e8d09a, var(--gold));
+.flip-card.matched,
+.flip-card.is-face {
+  background:
+    linear-gradient(180deg, #f7ecd2 0%, #ead4a4 100%);
   color: var(--ink);
   font-family: var(--font-ui);
   letter-spacing: 0.02em;
+  font-weight: 600;
+}
+
+.flip-card.is-face span {
+  font-size: clamp(0.82rem, 2.4vw, 1.02rem);
+  line-height: 1.35;
+}
+
+.flip-card.is-picked {
+  transform: translateY(-3px);
+  box-shadow: 0 0 0 2px var(--gold, #d7aa50), 0 8px 16px rgba(80, 40, 10, 0.18);
+}
+
+.flip-card.is-miss {
+  animation: flip-miss 0.45s ease;
+  box-shadow: 0 0 0 2px #b23b3b;
 }
 
 .flip-card.matched {
   opacity: 0.55;
   pointer-events: none;
+  background: linear-gradient(180deg, #dce8d4, #c5d4b0);
+}
+
+.flip-note {
+  margin: 0.75rem 0 0;
+  padding: 0.65rem 0.8rem;
+  border-radius: 8px;
+  background: rgba(215, 170, 80, 0.12);
+  color: var(--ink);
+  font-size: 0.95rem;
+}
+
+@keyframes flip-miss {
+  0%,
+  100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flip-card.is-miss {
+    animation: none;
+  }
 }
 
 .timeline-river {

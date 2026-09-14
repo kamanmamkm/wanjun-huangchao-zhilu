@@ -117,6 +117,20 @@ export function renderPromoteReveal({ char, fromId, toId, gender, quote }) {
   </div>`;
 }
 
+/** 首次過關偶得信物 */
+export function renderRelicReveal(relic) {
+  if (!relic) return "";
+  return `
+  <div class="relic-reveal" id="relic-reveal" role="dialog" aria-modal="true" aria-label="偶得信物">
+    <div class="relic-reveal-inner">
+      <p class="eyebrow">偶得信物</p>
+      <p class="relic-reveal-name">${relic.name}</p>
+      <p class="relic-reveal-hint">${relic.hint || ""}</p>
+      <button type="button" class="btn" id="relic-continue">收進行囊</button>
+    </div>
+  </div>`;
+}
+
 /** 角色經驗升級（唔係身份晉升） */
 export function renderLevelUpReveal({ fromLv, toLv }) {
   const from = Math.max(1, Number(fromLv) || 1);

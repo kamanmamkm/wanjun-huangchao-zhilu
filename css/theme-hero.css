@@ -503,4 +503,5 @@
     bottom: 0.5rem;
   }
   .study-bubble { display: none; }
+  .study-companion.is-speaking .study-bubble { display: block; }
 }

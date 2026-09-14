@@ -1993,3 +1993,78 @@ button:active:not(:disabled):not(.locked),
     animation: none;
   }
 }
+
+.next-hook {
+  margin: 0.35rem 0 0;
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+.flavor-card {
+  margin-top: 0.35rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid rgba(110, 84, 48, 0.22);
+  border-radius: 8px;
+  background: rgba(255, 252, 245, 0.72);
+}
+.flavor-card .eyebrow { margin: 0 0 0.25rem; letter-spacing: 0.16em; }
+.flavor-card p { margin: 0 0 0.5rem; }
+.flavor-card.done p { margin: 0; color: var(--ink-soft); }
+.flavor-card .options { display: grid; gap: 0.4rem; }
+.relic-tray {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+  flex: 1 1 160px;
+}
+.relic-stamp {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid rgba(110, 84, 48, 0.28);
+  border-radius: 4px;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  background: rgba(255, 248, 230, 0.9);
+}
+.combo-pill {
+  position: absolute;
+  top: -0.35rem;
+  right: 0.2rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  padding: 0.12rem 0.4rem;
+  border-radius: 4px;
+  background: rgba(255, 248, 230, 0.95);
+  border: 1px solid rgba(110, 84, 48, 0.25);
+  color: var(--ink);
+}
+.relic-reveal {
+  position: fixed;
+  inset: 0;
+  z-index: 74;
+  display: grid;
+  place-items: center;
+  background: rgba(37, 40, 32, 0.28);
+  padding: 1rem;
+}
+.relic-reveal-inner {
+  max-width: 380px;
+  width: 100%;
+  padding: 1.2rem 1.3rem 1.1rem;
+  background: #fffcf5;
+  border: 1px solid rgba(110, 84, 48, 0.28);
+  border-radius: 10px;
+  text-align: center;
+}
+.relic-reveal-name {
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  margin: 0.35rem 0 0.4rem;
+  letter-spacing: 0.08em;
+}
+.relic-reveal-hint {
+  margin: 0 0 1rem;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}

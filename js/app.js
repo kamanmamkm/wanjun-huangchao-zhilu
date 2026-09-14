@@ -4,6 +4,15 @@ import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad50";
 import { levelFromXp } from "./data/levels.js?v=rad50";
 import { DIALOGUES } from "./data/dialogues.js?v=rad62";
 import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad64";
+import {
+  getUnit,
+  unitsOfGrade,
+  unitGameCount,
+  UNIT_FLIPS,
+  UNIT_TIMELINES,
+  unitTimeline,
+  unitFlip,
+} from "./data/units.js?v=rad65";
 import { VIDEOS } from "./data/videos.js?v=rad50";
 import { renderAvatar } from "./avatar.js?v=rad50";
 import {
@@ -49,7 +58,7 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad64";
+} from "./journey.js?v=rad65";
 import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad50";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad50";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";
@@ -59,6 +68,7 @@ import {
   normalizeFormYear,
   formYearHint,
   filterByFormYear,
+  allowedGradeKeys,
   normalizeClassId,
   formYearFromClassId,
   classIdHint,
@@ -81,6 +91,9 @@ let state = {
   timeline: { setId: TIMELINE_SETS[0].id },
   timelineFromStage: null,
   stageInteract: null,
+  gamesYear: "",
+  gamesUnit: null,
+  gameFromUnit: false,
   dialogue: { id: DIALOGUES[0].id, step: 0, replied: false, good: 0 },
   shizhan: null,
   scrollChapter: "ch1_escape",
@@ -712,7 +725,7 @@ function renderShell(user) {
               : state.view === "chronicle"
                 ? renderChronicle(user, char)
                 : state.view === "cuoshi"
-                  ? renderCuoshi(user)
+                  ? renderCuoshi(user, cuoshiHubOpts())
                   : state.view === "growth"
                     ? renderGrowthScroll(user, char, state.growthFocus)
                     : state.view === "wheel"
@@ -771,7 +784,8 @@ function renderShell(user) {
             state.view === id ||
             (id === "scroll" && state.view === "chapter") ||
             (id === "promote" && state.view === "notes") ||
-            (id === "games" && ["cuoshi", "wordwall", "timeline", "dialogue", "shizhan"].includes(state.view));
+            (id === "games" &&
+              ["cuoshi", "wordwall", "timeline", "dialogue", "shizhan"].includes(state.view));
           return `<button type="button" data-nav="${id}" class="${active ? "active" : ""}"><span class="ico ${ico}" aria-hidden="true"></span>${label}</button>`;
         })
         .join("")}
@@ -788,8 +802,36 @@ function bindShellNav() {
     if (nav) {
       state.view = nav.dataset.nav;
       if (state.view === "scroll") state.scrollStage = null;
-      if (state.view === "games" || state.view === "cuoshi") state.cuoshi = null;
+      if (state.view === "games") {
+        state.gamesUnit = null;
+        state.gameFromUnit = false;
+        state.cuoshi = null;
+      }
+      if (state.view === "cuoshi") state.cuoshi = null;
       render();
+      return;
+    }
+    const yearBtn = e.target.closest("[data-games-year]");
+    if (yearBtn) {
+      if (yearBtn.disabled) return;
+      state.view = "games";
+      state.gamesYear = yearBtn.dataset.gamesYear;
+      state.gamesUnit = null;
+      state.gameFromUnit = false;
+      render();
+      return;
+    }
+    const unitBtn = e.target.closest("[data-games-unit]");
+    if (unitBtn) {
+      state.view = "games";
+      state.gamesUnit = unitBtn.dataset.gamesUnit || null;
+      state.gameFromUnit = false;
+      render();
+      return;
+    }
+    const playBtn = e.target.closest("[data-unit-play]");
+    if (playBtn) {
+      openUnitPlay(playBtn.dataset.unitPlay, playBtn.dataset.playId || "");
       return;
     }
     const go = e.target.closest("[data-goto]");
@@ -797,9 +839,82 @@ function bindShellNav() {
     const dest = go.dataset.goto === "practice" ? "home" : go.dataset.goto;
     state.view = dest;
     if (state.view === "scroll") state.scrollStage = null;
-    if (dest === "games" || dest === "cuoshi") state.cuoshi = null;
+    if (dest === "games") {
+      if (!go.dataset.keepUnit) {
+        state.gamesUnit = null;
+        state.gameFromUnit = false;
+      }
+      state.cuoshi = null;
+    }
+    if (dest === "cuoshi") state.cuoshi = null;
     render();
   });
+}
+
+function currentGamesYear(user) {
+  const y = normalizeFormYear(state.gamesYear) || normalizeFormYear(user?.formYear) || "中一";
+  const allowed = allowedGradeKeys(user?.formYear);
+  return allowed.includes(y) ? y : allowed[allowed.length - 1] || "中一";
+}
+
+function unitBackButton() {
+  if (!state.gameFromUnit || !state.gamesUnit) {
+    return `<button class="btn ghost" type="button" data-goto="games">返回大廳</button>`;
+  }
+  return `<button class="btn ghost" type="button" data-games-unit="${state.gamesUnit}">返回本單元</button>`;
+}
+
+function cuoshiHubOpts() {
+  if (!state.gameFromUnit) return {};
+  const unit = getUnit(state.gamesUnit);
+  return { ids: unit?.cuoshi || [], backUnit: state.gamesUnit };
+}
+
+function flipRoundPool() {
+  if (state.gameFromUnit) {
+    const round = unitFlip(getUnit(state.gamesUnit));
+    return round ? [round] : UNIT_FLIPS;
+  }
+  return WORDWALL_ROUNDS;
+}
+
+function timelineSetPool(formYear) {
+  if (state.gameFromUnit) {
+    const set = unitTimeline(getUnit(state.gamesUnit));
+    return set ? [set] : UNIT_TIMELINES;
+  }
+  const sets = filterByFormYear(TIMELINE_SETS, formYear);
+  return sets.length ? sets : TIMELINE_SETS;
+}
+
+function openUnitPlay(type, playId) {
+  const unit = getUnit(state.gamesUnit);
+  state.gameFromUnit = !!state.gamesUnit;
+  if (type === "timeline") {
+    const set = unitTimeline(unit);
+    if (set) {
+      state.timeline.setId = set.id;
+      state.timeline.shuffleId = null;
+      state.timeline.roundItems = null;
+    }
+    state.view = "timeline";
+  } else if (type === "flip") {
+    const round = unitFlip(unit);
+    const idx = UNIT_FLIPS.findIndex((r) => r.id === round?.id);
+    if (round) state.flip = dealFlipRound(round, idx < 0 ? 0 : idx);
+    state.view = "wordwall";
+  } else if (type === "cuoshi") {
+    state.cuoshi = null;
+    state.view = "cuoshi";
+  } else if (type === "dialogue") {
+    const id = playId || unit?.dialogues?.[0] || DIALOGUES[0].id;
+    state.dialogue = { id, step: 0, replied: false, good: 0 };
+    state.view = "dialogue";
+  } else if (type === "shizhan") {
+    state.shizhan = null;
+    state.view = "shizhan";
+  }
+  render();
 }
 
 function bindShell(user) {
@@ -862,37 +977,105 @@ function renderProfile(user, char, snap) {
 
 /* ========== Games ========== */
 function renderGamesHub() {
+  const user = getCurrentUser();
+  const year = currentGamesYear(user);
+  state.gamesYear = year;
+  const allowed = allowedGradeKeys(user?.formYear);
+  const unit = getUnit(state.gamesUnit);
+  const yearTabs = FORM_YEARS.map((g) => {
+    const open = allowed.includes(g);
+    return `<button type="button" class="chip ${g === year ? "active" : ""}" data-games-year="${g}" ${open ? "" : "disabled"}>${g}${open ? "" : " · 未開放"}</button>`;
+  }).join("");
+
+  if (unit && unit.grade === year) {
+    const games = [];
+    if (unit.timelineId) {
+      games.push({
+        play: "timeline",
+        tone: "tone-indigo",
+        title: "時光長河",
+        blurb: "把本單元事件排成由早到晚",
+        xp: `+${XP_REWARDS.timelineComplete}`,
+        ico: "ico-scroll",
+      });
+    }
+    if (unit.flipId) {
+      games.push({
+        play: "flip",
+        tone: "tone-jade",
+        title: "機緣翻牌",
+        blurb: "撳兩張有關嘅牌，溫習本單元史識",
+        xp: `+${XP_REWARDS.wordwallRound}`,
+        ico: "ico-game",
+      });
+    }
+    if ((unit.cuoshi || []).length) {
+      games.push({
+        play: "cuoshi",
+        tone: "tone-cinnabar",
+        title: "錯史之戰",
+        blurb: `本單元 ${unit.cuoshi.length} 關殘卷`,
+        xp: "多關",
+        ico: "ico-battle",
+      });
+    }
+    if ((unit.dialogues || []).length) {
+      games.push({
+        play: "dialogue",
+        tone: "tone-cinnabar",
+        title: "古人問答",
+        blurb: "與本單元相關人物對話",
+        xp: `+${XP_REWARDS.dialogueGood}`,
+        ico: "ico-note",
+      });
+    }
+    const cards = games
+      .map(
+        (g, i) => `
+      <article class="quest-card ${g.tone}" data-unit-play="${g.play}" style="--i:${i}">
+        <div class="quest-icon"><span class="ico ${g.ico}" style="width:1.4em;height:1.4em"></span></div>
+        <div class="quest-body"><h3>${g.title}</h3><p>${g.blurb}</p></div>
+        <span class="quest-xp">${g.xp}</span>
+      </article>`
+      )
+      .join("");
+    return `
+    <section class="panel panel-paper">
+      <p class="eyebrow ink-gold">${unit.grade} · 單元${unit.no}</p>
+      <h2>${unit.era}</h2>
+      <p class="lead">${unit.title}。${unit.blurb}</p>
+      <div class="toolbar">${yearTabs}</div>
+      <div class="quest-grid games-quest">${cards}</div>
+      <div class="row-actions">
+        <button type="button" class="btn ghost" data-games-unit="">返回${year}單元列表</button>
+      </div>
+    </section>`;
+  }
+
+  const units = unitsOfGrade(year);
+  const unitCards = units
+    .map(
+      (u, i) => `
+    <article class="unit-card" data-games-unit="${u.id}" style="--i:${i}">
+      <p class="eyebrow">單元 ${u.no}</p>
+      <h3>${u.era}</h3>
+      <p>${u.title}</p>
+      <p class="muted">${u.blurb}</p>
+      <span class="quest-xp">${unitGameCount(u)} 個遊戲</span>
+    </article>`
+    )
+    .join("");
   return `
   <section class="panel panel-paper">
     <h2>趣味關卡</h2>
-    <p class="lead">挑一關挑戰吧！破關可獲經驗。</p>
-    <div class="quest-grid games-quest">
-      <article class="quest-card tone-cinnabar" data-goto="cuoshi" style="--i:0">
-        <div class="quest-icon"><span class="ico ico-battle" style="width:1.4em;height:1.4em"></span></div>
-        <div class="quest-body"><h3>錯史之戰</h3><p>讀殘卷，撳出錯句，再改返正確</p></div>
-        <span class="quest-xp">多關</span>
-      </article>
-      <article class="quest-card tone-gold" data-goto="shizhan" style="--i:1">
-        <div class="quest-icon"><span class="ico ico-seal" style="width:1.4em;height:1.4em"></span></div>
-        <div class="quest-body"><h3>史戰風雲</h3><p>體力、出牌、答題攻防</p></div>
-        <span class="quest-xp">+${XP_REWARDS.shizhanWin}</span>
-      </article>
-      <article class="quest-card tone-jade" data-goto="wordwall" style="--i:2">
-        <div class="quest-icon"><span class="ico ico-game" style="width:1.4em;height:1.4em"></span></div>
-        <div class="quest-body"><h3>機緣翻牌</h3><p>撳兩張有關嘅牌配對（可再抽）</p></div>
-        <span class="quest-xp">+${XP_REWARDS.wordwallRound}</span>
-      </article>
-      <article class="quest-card tone-indigo" data-goto="timeline" style="--i:3">
-        <div class="quest-icon"><span class="ico ico-scroll" style="width:1.4em;height:1.4em"></span></div>
-        <div class="quest-body"><h3>時光長河</h3><p>由早到晚排好事件（可再抽一局）</p></div>
-        <span class="quest-xp">+${XP_REWARDS.timelineComplete}</span>
-      </article>
-      <article class="quest-card tone-cinnabar" data-goto="dialogue" style="--i:4">
-        <div class="quest-icon"><span class="ico ico-note" style="width:1.4em;height:1.4em"></span></div>
-        <div class="quest-body"><h3>古人問答</h3><p>與名君對話，考你史識</p></div>
-        <span class="quest-xp">+${XP_REWARDS.dialogueGood}</span>
-      </article>
-    </div>
+    <p class="lead">按齡記單元揀課題。${formYearHint(user?.formYear)} 每個單元有時光長河、翻牌，部分仲有錯史同對話。</p>
+    <div class="toolbar">${yearTabs}</div>
+    <div class="unit-grid">${unitCards}</div>
+    <article class="quest-card tone-gold" data-unit-play="shizhan" style="margin-top:1rem">
+      <div class="quest-icon"><span class="ico ico-seal" style="width:1.4em;height:1.4em"></span></div>
+      <div class="quest-body"><h3>史戰風雲</h3><p>${year}綜合演習：體力、出牌、答題攻防</p></div>
+      <span class="quest-xp">+${XP_REWARDS.shizhanWin}</span>
+    </article>
   </section>`;
 }
 
@@ -1091,17 +1274,23 @@ function dealFlipRound(round, roundIndex) {
 }
 
 function renderWordwall() {
-  const round = WORDWALL_ROUNDS[state.flip.roundIndex || 0] || WORDWALL_ROUNDS[0];
-  const idx = WORDWALL_ROUNDS.findIndex((r) => r.id === round.id);
+  const pool = flipRoundPool();
+  let round = pool.find((r) => r.id === state.flip.roundId) || pool[state.flip.roundIndex || 0] || pool[0];
+  const idx = pool.findIndex((r) => r.id === round.id);
   if (!state.flip.cards.length || state.flip.roundId !== round.id) {
     state.flip = dealFlipRound(round, idx < 0 ? 0 : idx);
   }
   const f = state.flip;
   const done = f.matched.size === (f.pairCount || 0) && (f.pairCount || 0) > 0;
-  const chips = WORDWALL_ROUNDS.map(
-    (r, i) =>
-      `<button type="button" class="chip ${(f.roundIndex || 0) === i ? "active" : ""}" data-ww="${i}">${r.title}</button>`
-  ).join("");
+  const chips =
+    pool.length > 1
+      ? pool
+          .map(
+            (r, i) =>
+              `<button type="button" class="chip ${f.roundId === r.id ? "active" : ""}" data-ww="${i}">${r.title}</button>`
+          )
+          .join("")
+      : "";
   return `
     <section class="panel">
       <h2>機緣翻牌 · ${round.title}</h2>
@@ -1124,26 +1313,28 @@ function renderWordwall() {
       <p class="flip-note">${f.lastNote || "揀兩張牌，睇佢哋係咪同一條史線。"}</p>
       ${done ? `<p class="feedback">本局全對！可再抽一局繼續。</p>` : ""}
       <div class="row-actions">
-        <button class="btn ghost" type="button" data-goto="games">返回大廳</button>
+        ${unitBackButton()}
       </div>
     </section>`;
 }
 
 function bindWordwall() {
+  const pool = flipRoundPool();
   app.querySelectorAll("[data-ww]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const i = Number(btn.dataset.ww);
-      state.flip = dealFlipRound(WORDWALL_ROUNDS[i] || WORDWALL_ROUNDS[0], i);
+      state.flip = dealFlipRound(pool[i] || pool[0], i);
       render();
     });
   });
   app.querySelector("#ww-reshuffle")?.addEventListener("click", () => {
-    const i = state.flip.roundIndex || 0;
-    state.flip = dealFlipRound(WORDWALL_ROUNDS[i] || WORDWALL_ROUNDS[0], i);
+    const round = pool.find((r) => r.id === state.flip.roundId) || pool[0];
+    const i = pool.findIndex((r) => r.id === round.id);
+    state.flip = dealFlipRound(round, i < 0 ? 0 : i);
     render();
   });
 
-  const round = WORDWALL_ROUNDS[state.flip.roundIndex || 0] || WORDWALL_ROUNDS[0];
+  const round = pool.find((r) => r.id === state.flip.roundId) || pool[0];
   app.querySelectorAll("[data-flip]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const f = state.flip;
@@ -1270,8 +1461,7 @@ function swapTimelineCards(a, b) {
 
 function renderTimeline() {
   const year = getCurrentUser()?.formYear;
-  const sets = filterByFormYear(TIMELINE_SETS, year);
-  const pool = sets.length ? sets : TIMELINE_SETS;
+  const pool = timelineSetPool(year);
   let set = pool.find((t) => t.id === state.timeline.setId) || pool[0];
   if (!pool.some((t) => t.id === set.id)) set = pool[0];
   if (state.timeline.setId !== set.id) {
@@ -1293,12 +1483,16 @@ function renderTimeline() {
     <p class="lead">${set.title}（${set.grade}）——本題抽 ${order.length}／${set.items.length} 件。由上至下排成<strong>由早到晚</strong>，核對後才顯示年份。${formYearHint(year)}</p>
     <p class="muted">${reduce ? "撳兩張牌可交換位置。" : "拖曳排序，或撳兩張牌交換位置。"}</p>
     <div class="toolbar">
-      ${pool
-        .map(
-          (t) =>
-            `<button type="button" class="chip ${state.timeline.setId === t.id ? "active" : ""}" data-tl="${t.id}">${t.title}</button>`
-        )
-        .join("")}
+      ${
+        pool.length > 1
+          ? pool
+              .map(
+                (t) =>
+                  `<button type="button" class="chip ${state.timeline.setId === t.id ? "active" : ""}" data-tl="${t.id}">${t.title}</button>`
+              )
+              .join("")
+          : ""
+      }
       <button class="btn ghost" type="button" id="tl-reshuffle">再抽一局</button>
     </div>
     <div class="timeline-river" id="tl-list" role="list">
@@ -1322,7 +1516,7 @@ function renderTimeline() {
       ${
         state.stageInteract?.game === "timeline" || state.timelineFromStage
           ? `<button class="btn ghost" type="button" id="tl-back-stage">返回本關</button>`
-          : `<button class="btn ghost" type="button" data-goto="games">返回大廳</button>`
+          : unitBackButton()
       }
     </div>
     <div class="feedback ${state.timeline.feedback ? "" : "hidden"}" id="feedback">${state.timeline.feedback || ""}</div>
@@ -1465,7 +1659,11 @@ function bindTimeline() {
 }
 
 function renderDialogue() {
-  const d = DIALOGUES.find((x) => x.id === state.dialogue.id) || DIALOGUES[0];
+  const unit = state.gameFromUnit ? getUnit(state.gamesUnit) : null;
+  const people =
+    unit?.dialogues?.length ? DIALOGUES.filter((x) => unit.dialogues.includes(x.id)) : DIALOGUES;
+  const d = people.find((x) => x.id === state.dialogue.id) || people[0] || DIALOGUES[0];
+  if (state.dialogue.id !== d.id) state.dialogue = { id: d.id, step: 0, replied: false, good: 0 };
   const step = d.steps[state.dialogue.step];
   return `
   <section class="panel">
@@ -1474,7 +1672,7 @@ function renderDialogue() {
       state.stageInteract?.game === "dialogue" ? "完成與一位古人的整段對話即過關。" : ""
     }</p>
     <div class="toolbar">
-      ${DIALOGUES.map(
+      ${people.map(
         (x) =>
           `<button type="button" class="chip ${state.dialogue.id === x.id ? "active" : ""}" data-dlg="${x.id}">${x.character}</button>`
       ).join("")}
@@ -1506,7 +1704,7 @@ function renderDialogue() {
     ${
       state.stageInteract?.game === "dialogue"
         ? `<div style="margin-top:1rem"><button class="btn ghost" type="button" id="dlg-back-stage">返回本關</button></div>`
-        : ""
+        : `<div style="margin-top:1rem">${unitBackButton()}</div>`
     }
   </section>`;
 }

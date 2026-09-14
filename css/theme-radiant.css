@@ -995,12 +995,11 @@ button:active:not(:disabled):not(.locked),
 .chip:active,
 .stage-card:active:not(:disabled):not(.locked) {
   box-shadow:
-    0 0 0 3px rgba(255, 244, 170, 1),
-    0 0 22px 8px rgba(255, 214, 70, 0.9),
-    0 0 48px 16px rgba(255, 196, 50, 0.5) !important;
-  filter: brightness(1.22);
+    0 0 12px 4px rgba(255, 248, 230, 0.45),
+    0 0 26px 10px rgba(210, 180, 120, 0.24) !important;
+  filter: brightness(1.06);
 }
 
 .is-gold-flash {
-  animation: goldPressFlash 0.55s ease-out;
+  animation: goldPressFlash 0.7s ease-out;
 }

@@ -2368,6 +2368,12 @@ button:active:not(:disabled):not(.locked),
   }
 }
 
+.visit-streak {
+  margin: 0.2rem 0 0;
+  color: var(--gold-deep, #8a7340);
+  font-size: 0.88rem;
+  letter-spacing: 0.04em;
+}
 .next-hook {
   margin: 0.35rem 0 0;
   color: var(--ink-soft);

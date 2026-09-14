@@ -57,6 +57,8 @@ export function ensureProgress(user) {
   user.progress.flavor = user.progress.flavor || {};
   user.progress.score = Number(user.progress.score) || 0;
   user.progress.charms = user.progress.charms || {};
+  user.progress.visit = user.progress.visit || { day: "", streak: 0 };
+  user.progress.homeRun = user.progress.homeRun || null;
   user.progress.wheel = user.progress.wheel || {};
   const w = user.progress.wheel;
   w.lastSpin = w.lastSpin || "";
@@ -361,6 +363,60 @@ export function consumeCharm(user, id) {
   if (n < 1) return false;
   bag[id] = n - 1;
   return true;
+}
+
+function prevIsoDay(day) {
+  const [y, m, d] = String(day).split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() - 1);
+  return isoDay(dt);
+}
+
+/** 每日打開計連歸；每滿 3 日送一張續燈（唔加史績）。 */
+export function touchDailyVisit(user, day = isoDay()) {
+  const p = ensureProgress(user);
+  p.visit = p.visit || { day: "", streak: 0 };
+  const v = p.visit;
+  if (v.day === day) return { streak: v.streak || 1, granted: false };
+  const prev = v.day && v.day === prevIsoDay(day) ? (Number(v.streak) || 0) + 1 : 1;
+  v.day = day;
+  v.streak = prev;
+  let granted = false;
+  if (prev > 0 && prev % 3 === 0) {
+    grantCharm(user, "lamp");
+    granted = true;
+  }
+  return { streak: prev, granted };
+}
+
+export function visitStreak(user) {
+  return Math.max(0, Number(ensureProgress(user).visit?.streak) || 0);
+}
+
+export function getHomeRun(user) {
+  const run = ensureProgress(user).homeRun;
+  if (!run?.unitId || !Array.isArray(run.steps) || !run.steps.length) return null;
+  return run;
+}
+
+export function setHomeRun(user, run) {
+  const p = ensureProgress(user);
+  if (!run || run.phase !== "play" || !run.unitId) {
+    p.homeRun = null;
+    return;
+  }
+  p.homeRun = {
+    unitId: run.unitId,
+    lives: Math.max(0, Number(run.lives) || 0),
+    combo: Number(run.combo) || 0,
+    step: Math.max(0, Number(run.step) || 0),
+    steps: [...run.steps],
+    phase: "play",
+  };
+}
+
+export function clearHomeRun(user) {
+  ensureProgress(user).homeRun = null;
 }
 
 export function wheelStatus(user, day = isoDay()) {

@@ -46,9 +46,13 @@ import {
   IDENTITY_DISCLAIMER,
   identityDisplayName,
   getIdentity,
+  touchDailyVisit,
+  getHomeRun,
+  setHomeRun,
+  clearHomeRun,
   charmCount,
   consumeCharm,
-} from "./progress.js?v=rad67";
+} from "./progress.js?v=rad68";
 import { renderWheelPage, bindWheel } from "./wheel.js?v=rad67";
 import {
   renderJourneyHome,
@@ -60,11 +64,11 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad67";
+} from "./journey.js?v=rad68";
 import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad50";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad50";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";
-import { flavorLine } from "./data/flavor.js?v=rad50";
+import { flavorLine, isoDay } from "./data/flavor.js?v=rad68";
 import {
   FORM_YEARS,
   normalizeFormYear,
@@ -333,7 +337,7 @@ function render() {
   clearTimeout(levelUpTimer);
   levelUpTimer = null;
   applyLevelUpPreview();
-  const user = getCurrentUser();
+  let user = getCurrentUser();
   if (!user) {
     document.body.className = "";
     app.innerHTML = renderAuth();
@@ -357,6 +361,17 @@ function render() {
       !!state.scrollStage &&
       /boss|試煉/i.test(String(state.scrollStage)));
   document.body.className = `stage-visual-${id}${isCourt ? " theme-court" : ""}`;
+  if (state.view === "home") {
+    const day = isoDay();
+    if (user.progress?.visit?.day !== day) {
+      let visit = null;
+      updateUser((u) => {
+        visit = touchDailyVisit(u);
+      });
+      user = getCurrentUser() || user;
+      if (visit?.granted) toast(`連歸 ${visit.streak} 日，獲錦囊·續燈`);
+    }
+  }
   app.innerHTML = renderShell(user);
   bindShell(user);
   if (state.promoteReveal) {
@@ -806,6 +821,7 @@ function bindShellNav() {
       state.view = nav.dataset.nav;
       if (state.view === "scroll") state.scrollStage = null;
       if (state.view === "games") {
+        persistHomeRun();
         state.gamesUnit = null;
         state.gameFromUnit = false;
         state.unitRun = null;
@@ -834,9 +850,14 @@ function bindShellNav() {
     if (e.target.closest("[data-run-abort]")) {
       const unitId = state.unitRun?.unitId || state.gamesUnit;
       state.unitRun = null;
+      clearPersistedRun();
       state.view = "games";
       state.gamesUnit = unitId || null;
       render();
+      return;
+    }
+    if (e.target.closest("[data-resume-run]")) {
+      resumeHomeRun();
       return;
     }
     if (e.target.closest("[data-run-next]")) {
@@ -868,6 +889,7 @@ function bindShellNav() {
     state.view = dest;
     if (state.view === "scroll") state.scrollStage = null;
     if (dest === "games") {
+      persistHomeRun();
       if (!go.dataset.keepUnit) {
         state.gamesUnit = null;
         state.gameFromUnit = false;
@@ -917,6 +939,29 @@ function unitRunSteps(unit) {
   return steps;
 }
 
+function persistHomeRun() {
+  const r = state.unitRun;
+  if (r?.phase === "play") {
+    updateUser((u) => setHomeRun(u, r));
+  }
+}
+
+function clearPersistedRun() {
+  updateUser((u) => clearHomeRun(u));
+}
+
+function resumeHomeRun() {
+  const saved = getHomeRun(getCurrentUser());
+  if (!saved) {
+    toast("冇未完嘅闖關");
+    return;
+  }
+  state.gamesUnit = saved.unitId;
+  state.gameFromUnit = true;
+  state.unitRun = { ...saved, combo: saved.combo || 0, phase: "play" };
+  openUnitPlay(saved.steps[saved.step] || saved.steps[0], "", { keepRun: true });
+}
+
 function startUnitRun(unitId) {
   const unit = getUnit(unitId);
   const steps = unitRunSteps(unit);
@@ -927,6 +972,7 @@ function startUnitRun(unitId) {
   state.gamesUnit = unitId;
   state.gameFromUnit = true;
   state.unitRun = { unitId, lives: 3, combo: 0, step: 0, steps, phase: "play" };
+  persistHomeRun();
   openUnitPlay(steps[0], "", { keepRun: true });
 }
 
@@ -937,11 +983,13 @@ function burnRunLife(msg) {
   r.combo = 0;
   if (r.lives <= 0) {
     r.phase = "fail";
+    clearPersistedRun();
     toast(msg || "燈火盡熄");
     state.view = "games";
     render();
     return true;
   }
+  persistHomeRun();
   toast(msg || `燈火少一盞，仲有 ${r.lives} 盞`);
   return false;
 }
@@ -953,6 +1001,7 @@ function advanceUnitRun() {
   r.combo = 0;
   if (r.step >= r.steps.length) {
     r.phase = "win";
+    clearPersistedRun();
     submitAnswer(XP_REWARDS.unitRunClear || 16, {
       recordId: makeAttemptId(),
       correct: true,
@@ -967,6 +1016,7 @@ function advanceUnitRun() {
     render();
     return;
   }
+  persistHomeRun();
   openUnitPlay(r.steps[r.step], "", { keepRun: true });
 }
 
@@ -1014,6 +1064,7 @@ function useGameCharm(id) {
       });
       if (!ok) return;
       state.unitRun.lives += 1;
+      persistHomeRun();
       toast("續燈：燈火＋1");
       render();
       return;

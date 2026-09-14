@@ -1,16 +1,16 @@
 /**
  * 《任平生》主介面：行旅首頁、歷史長卷、晉升殿、待考札記、史冊
  */
-import { CHAPTERS, chapterList } from "./data/chapters.js?v=rad49";
-import { XP_REWARDS } from "./data/levels.js?v=rad49";
+import { CHAPTERS, chapterList } from "./data/chapters.js?v=rad50";
+import { XP_REWARDS } from "./data/levels.js?v=rad50";
 import { CUOSHI_BATTLES, getCuoshi } from "./data/cuoshi.js";
-import { IDENTITIES } from "./data/identities.js?v=rad49";
+import { IDENTITIES } from "./data/identities.js?v=rad50";
 import { getStageVisual, SKILL_BARS, skillFill, STAGE_RELIC, realmLabel } from "./data/stageVisuals.js";
 import { heroDisplayName, normalizeHeroName } from "./data/characters.js";
 import { pickRandomHeroName, HERO_NAME_COUNT } from "./data/heroNames.js";
 import { renderAvatar } from "./avatar.js";
 import { renderHeroStage, renderStudyCompanion, renderPromoteReveal } from "./heroStage.js";
-import { nextHook, nextStageAfter, todayEncounter } from "./data/flavor.js?v=rad49";
+import { nextHook, nextStageAfter, todayEncounter } from "./data/flavor.js?v=rad50";
 import {
   userSnapshot,
   wheelStatus,
@@ -39,7 +39,7 @@ import {
   markCuoshiWon,
   levelBandLines,
   stageIdForUser,
-} from "./progress.js?v=rad49";
+} from "./progress.js?v=rad53";
 import { updateUser, addXp, pushRecent } from "./storage.js";
 import { getTrial } from "./data/trials.js";
 
@@ -297,7 +297,7 @@ export function renderJourneyHome(user, char, ui = {}) {
         wheelStatus(user).canSpin
           ? `<div class="wheel-teaser edict">
         <p class="eyebrow">天機輪</p>
-        <p>今日可轉天機輪</p>
+        <p>尚有 ${wheelStatus(user).charges} 次可轉天機輪</p>
         <button type="button" class="btn" data-goto="wheel">前往天機輪</button>
       </div>`
           : ""

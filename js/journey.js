@@ -584,9 +584,11 @@ export function renderGrowthScroll(user, char, growthFocus) {
   </section>`;
 }
 
-export function renderCuoshi(user) {
+export function renderCuoshi(user, opts = {}) {
   const won = user.progress?.cuoshi || {};
-  const cards = CUOSHI_BATTLES.map(
+  const ids = opts.ids;
+  const list = ids?.length ? CUOSHI_BATTLES.filter((b) => ids.includes(b.id)) : CUOSHI_BATTLES;
+  const cards = list.map(
     (b) => `
     <article class="chapter-card ${won[b.id]?.won ? "done" : ""}">
       <p class="eyebrow">${b.difficulty || "關卡"}</p>
@@ -597,6 +599,9 @@ export function renderCuoshi(user) {
       </button>
     </article>`
   ).join("");
+  const back = opts.backUnit
+    ? `<button type="button" class="btn ghost" data-games-unit="${opts.backUnit}">返回本單元</button>`
+    : `<button type="button" class="btn ghost" data-goto="games">返回大廳</button>`;
   return `
   <section class="panel-paper cuoshi-view">
     <p class="eyebrow ink-red">趣味關卡 · 錯史之戰</p>
@@ -604,7 +609,7 @@ export function renderCuoshi(user) {
     <p class="lead">Boss 是錯史本身：讀殘卷，撳出錯句，再揀修正。一關大約三分鐘。</p>
     <div class="cuoshi-grid">${cards}</div>
     <div id="cuoshi-panel" class="hidden"></div>
-    <button type="button" class="btn ghost" data-goto="games">返回大廳</button>
+    ${back}
   </section>`;
 }
 

@@ -49,7 +49,7 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad61";
+} from "./journey.js?v=rad63";
 import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad50";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad50";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";
@@ -770,7 +770,8 @@ function renderShell(user) {
           const active =
             state.view === id ||
             (id === "scroll" && state.view === "chapter") ||
-            (id === "games" && ["cuoshi", "notes", "wordwall", "timeline", "dialogue", "shizhan"].includes(state.view));
+            (id === "promote" && state.view === "notes") ||
+            (id === "games" && ["cuoshi", "wordwall", "timeline", "dialogue", "shizhan"].includes(state.view));
           return `<button type="button" data-nav="${id}" class="${active ? "active" : ""}"><span class="ico ${ico}" aria-hidden="true"></span>${label}</button>`;
         })
         .join("")}
@@ -871,27 +872,22 @@ function renderGamesHub() {
         <div class="quest-body"><h3>錯史之戰</h3><p>讀殘卷，撳出錯句，再改返正確</p></div>
         <span class="quest-xp">多關</span>
       </article>
-      <article class="quest-card tone-bronze" data-goto="notes" style="--i:1">
-        <div class="quest-icon"><span class="ico ico-note" style="width:1.4em;height:1.4em"></span></div>
-        <div class="quest-body"><h3>待考札記</h3><p>錯題修練，蓋章後再戰</p></div>
-        <span class="quest-xp">複習</span>
-      </article>
-      <article class="quest-card tone-gold" data-goto="shizhan" style="--i:2">
+      <article class="quest-card tone-gold" data-goto="shizhan" style="--i:1">
         <div class="quest-icon"><span class="ico ico-seal" style="width:1.4em;height:1.4em"></span></div>
         <div class="quest-body"><h3>史戰風雲</h3><p>體力、出牌、答題攻防</p></div>
         <span class="quest-xp">+${XP_REWARDS.shizhanWin}</span>
       </article>
-      <article class="quest-card tone-jade" data-goto="wordwall" style="--i:3">
+      <article class="quest-card tone-jade" data-goto="wordwall" style="--i:2">
         <div class="quest-icon"><span class="ico ico-game" style="width:1.4em;height:1.4em"></span></div>
         <div class="quest-body"><h3>機緣翻牌</h3><p>翻牌配對／問答</p></div>
         <span class="quest-xp">+${XP_REWARDS.wordwallRound}</span>
       </article>
-      <article class="quest-card tone-indigo" data-goto="timeline" style="--i:4">
+      <article class="quest-card tone-indigo" data-goto="timeline" style="--i:3">
         <div class="quest-icon"><span class="ico ico-scroll" style="width:1.4em;height:1.4em"></span></div>
         <div class="quest-body"><h3>時光長河</h3><p>由早到晚排好事件（可再抽一局）</p></div>
         <span class="quest-xp">+${XP_REWARDS.timelineComplete}</span>
       </article>
-      <article class="quest-card tone-cinnabar" data-goto="dialogue" style="--i:5">
+      <article class="quest-card tone-cinnabar" data-goto="dialogue" style="--i:4">
         <div class="quest-icon"><span class="ico ico-note" style="width:1.4em;height:1.4em"></span></div>
         <div class="quest-body"><h3>古人問答</h3><p>與名君對話，考你史識</p></div>
         <span class="quest-xp">+${XP_REWARDS.dialogueGood}</span>

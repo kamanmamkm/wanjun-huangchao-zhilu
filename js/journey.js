@@ -1,16 +1,16 @@
 /**
  * 《任平生》主介面：行旅首頁、歷史長卷、晉升殿、待考札記、史冊
  */
-import { CHAPTERS, chapterList } from "./data/chapters.js?v=rad41";
-import { XP_REWARDS } from "./data/levels.js";
+import { CHAPTERS, chapterList } from "./data/chapters.js?v=rad48";
+import { XP_REWARDS } from "./data/levels.js?v=rad48";
 import { CUOSHI_BATTLES, getCuoshi } from "./data/cuoshi.js";
-import { IDENTITIES } from "./data/identities.js";
+import { IDENTITIES } from "./data/identities.js?v=rad48";
 import { getStageVisual, SKILL_BARS, skillFill, STAGE_RELIC, realmLabel } from "./data/stageVisuals.js";
 import { heroDisplayName, normalizeHeroName } from "./data/characters.js";
 import { pickRandomHeroName, HERO_NAME_COUNT } from "./data/heroNames.js";
 import { renderAvatar } from "./avatar.js";
 import { renderHeroStage, renderStudyCompanion, renderPromoteReveal } from "./heroStage.js";
-import { nextHook, nextStageAfter, todayEncounter } from "./data/flavor.js";
+import { nextHook, nextStageAfter, todayEncounter } from "./data/flavor.js?v=rad48";
 import {
   userSnapshot,
   wheelStatus,
@@ -39,7 +39,7 @@ import {
   markCuoshiWon,
   levelBandLines,
   stageIdForUser,
-} from "./progress.js?v=rad47";
+} from "./progress.js?v=rad48";
 import { updateUser, addXp, pushRecent } from "./storage.js";
 import { getTrial } from "./data/trials.js";
 
@@ -382,7 +382,7 @@ export function renderScroll(user) {
             <p>${ch.blurb}</p>
             <p class="muted">${
               !hasStages
-                ? "關卡製作中（可先用練習／遊戲）"
+                ? "關卡製作中（可先用趣味關卡）"
                 : enterable
                   ? `已完成 ${doneN}/${total} · 已掌握 ${masteredN}/${total}`
                   : lockHint
@@ -566,7 +566,7 @@ export function renderGrowthScroll(user, char, growthFocus) {
   <section class="panel-paper growth-scroll-view">
     <p class="eyebrow ink-gold">人物成長長卷</p>
     <h2>同一人物 · 試煉通過即轉相轉頭像</h2>
-    <p class="lead">等級靠練習與遊戲累積；身份造型要通過短試煉才解鎖。${STAGE_RELIC.note}</p>
+    <p class="lead">等級靠長卷與遊戲累積；身份造型要通過短試煉才解鎖。${STAGE_RELIC.note}</p>
     <p class="muted">${IDENTITY_DISCLAIMER}</p>
     <div class="growth-rail">${cards}</div>
     <div class="growth-focus thin-card">
@@ -698,7 +698,7 @@ export function bindJourney(user, ctx) {
     const cid = btn.dataset.openChapter;
     const ch = CHAPTERS[cid];
     if (!(ch?.stages || []).length) {
-      toast("本章關卡製作中，可先用練習／遊戲。");
+      toast("本章關卡製作中，可先用趣味關卡。");
       return;
     }
     if (!isChapterEnterable(user, cid)) {
@@ -1149,7 +1149,7 @@ function paintBoss(root, ctx) {
       });
       if (recorded?.duplicate) return;
       if (!ok) {
-        toast("未中——再想一次（練習可重試）");
+        toast("未中——再想一次");
         return;
       }
       state.bossStep++;
@@ -1247,7 +1247,7 @@ export function renderPromote(user, char) {
               ? `<button type="button" class="btn" id="btn-trial">開始試煉</button>`
               : ""
           }
-          ${!order.levelOk ? `<button type="button" class="btn" data-goto="practice">去練習升級</button>` : ""}
+          ${!order.levelOk ? `<button type="button" class="btn" data-goto="home">去行旅升級</button>` : ""}
           ${order.levelOk && !order.tasksOk ? `<button type="button" class="btn" data-goto="scroll">去完成學習任務</button>` : ""}
           ${
             order.trialPassed && order.next && !isFinale
@@ -1456,10 +1456,10 @@ export function renderNotes(user) {
   return `
   <section class="panel-paper">
     <h2>待考札記</h2>
-    <p class="lead">錯題變成修練——指出弱項，補強後再戰。練習可提示；考核另用新題。</p>
-    <div class="note-grid">${cards || "<p>暫無未掌握錯題。繼續長卷或練習吧。</p>"}</div>
+    <p class="lead">錯題變成修練——指出弱項，補強後再戰。長卷可重答；考核另用新題。</p>
+    <div class="note-grid">${cards || "<p>暫無未掌握錯題。繼續長卷或趣味關卡吧。</p>"}</div>
     <div class="row-actions">
-      <button type="button" class="btn" data-goto="practice">去練習</button>
+      <button type="button" class="btn" data-goto="scroll">去長卷</button>
       <button type="button" class="btn ghost" data-goto="timeline">時序長廊</button>
       <button type="button" class="btn ghost" data-goto="dialogue">朝堂議事·對話</button>
     </div>

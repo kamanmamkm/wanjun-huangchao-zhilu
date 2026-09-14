@@ -1,11 +1,11 @@
-import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad47";
-import { QUESTIONS, checkFill } from "./data/questions.js?v=rad47";
-import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad47";
-import { levelFromXp } from "./data/levels.js?v=rad47";
-import { DIALOGUES } from "./data/dialogues.js?v=rad47";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad47";
-import { VIDEOS } from "./data/videos.js?v=rad47";
-import { renderAvatar } from "./avatar.js?v=rad47";
+import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad48";
+import { QUESTIONS } from "./data/questions.js?v=rad48";
+import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad48";
+import { levelFromXp } from "./data/levels.js?v=rad48";
+import { DIALOGUES } from "./data/dialogues.js?v=rad48";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad48";
+import { VIDEOS } from "./data/videos.js?v=rad48";
+import { renderAvatar } from "./avatar.js?v=rad48";
 import {
   CARD_TYPES,
   createBattle,
@@ -15,7 +15,7 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=rad47";
+} from "./data/shizhan.js?v=rad48";
 import {
   getCurrentUser,
   registerUser,
@@ -24,7 +24,7 @@ import {
   addXp,
   updateUser,
   pushRecent,
-} from "./storage.js?v=rad47";
+} from "./storage.js?v=rad48";
 import {
   userSnapshot,
   buildPromotionOrder,
@@ -37,8 +37,8 @@ import {
   IDENTITY_DISCLAIMER,
   identityDisplayName,
   getIdentity,
-} from "./progress.js?v=rad47";
-import { renderWheelPage, bindWheel } from "./wheel.js?v=rad47";
+} from "./progress.js?v=rad48";
+import { renderWheelPage, bindWheel } from "./wheel.js?v=rad48";
 import {
   renderJourneyHome,
   renderScroll,
@@ -49,22 +49,21 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad47";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad47";
-import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad47";
-import { getStageVisual } from "./data/stageVisuals.js?v=rad47";
-import { flavorLine } from "./data/flavor.js?v=rad47";
+} from "./journey.js?v=rad48";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad48";
+import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad48";
+import { getStageVisual } from "./data/stageVisuals.js?v=rad48";
+import { flavorLine } from "./data/flavor.js?v=rad48";
 import {
   FORM_YEARS,
   normalizeFormYear,
-  allowedGradeKeys,
   formYearHint,
   filterByFormYear,
   normalizeClassId,
   formYearFromClassId,
   classIdHint,
-} from "./data/formYear.js?v=rad47";
-import { pickRandomHeroName, isPooledHeroName, HERO_NAME_COUNT } from "./data/heroNames.js?v=rad47";
+} from "./data/formYear.js?v=rad48";
+import { pickRandomHeroName, isPooledHeroName, HERO_NAME_COUNT } from "./data/heroNames.js?v=rad48";
 
 const app = document.getElementById("app");
 let toastTimer = null;
@@ -77,7 +76,6 @@ let state = {
   heroNameFromPool: true,
   username: "",
   formYear: "",
-  practice: { mode: "mc", grade: "全部", index: 0 },
   match: { selectedLeft: null, selectedRight: null, solved: new Set() },
   flip: { cards: [], flipped: [], matched: new Set(), lock: false },
   timeline: { setId: TIMELINE_SETS[0].id },
@@ -559,7 +557,6 @@ function bindFormYearGate() {
     updateUser((u) => {
       u.formYear = year;
     });
-    state.practice = { mode: "mc", grade: "全部", index: 0 };
     toast(formYearHint(year));
     render();
   });
@@ -651,7 +648,6 @@ function bindAuth() {
         state.username = "";
         state.formYear = normalizeFormYear(fd.get("formYear")) || formYearFromClassId(classId) || "";
       }
-      state.practice = { mode: "mc", grade: "全部", index: 0 };
       state.timeline = { setId: TIMELINE_SETS[0].id };
       state.view = "home";
       render();
@@ -697,6 +693,7 @@ function bindAuth() {
 
 /* ========== Shell ========== */
 function renderShell(user) {
+  if (state.view === "practice") state.view = "home";
   const char = getCharacter(user.gender, user.characterId);
   const snap = userSnapshot(user);
   const idn = snap.identity;
@@ -721,8 +718,6 @@ function renderShell(user) {
                       ? renderWheelPage(user)
                       : state.view === "teacher"
                         ? renderTeacherPage(state)
-                      : state.view === "practice"
-                        ? renderPractice()
                         : state.view === "games"
                           ? renderGamesHub()
                           : state.view === "videos"
@@ -749,7 +744,6 @@ function renderShell(user) {
     ["cuoshi", "錯史", "ico-battle"],
     ["notes", "札記", "ico-note"],
     ["chronicle", "史冊", "ico-book"],
-    ["practice", "練習", "ico-practice"],
     ["wheel", "天機輪", "ico-wheel"],
     ["games", "遊戲", "ico-game"],
     ["teacher", "老師", "ico-teacher"],
@@ -806,7 +800,8 @@ function bindShell(user) {
   });
   app.querySelectorAll("[data-goto]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      state.view = btn.dataset.goto;
+      const dest = btn.dataset.goto === "practice" ? "home" : btn.dataset.goto;
+      state.view = dest;
       if (state.view === "scroll") state.scrollStage = null;
       render();
     });
@@ -816,7 +811,6 @@ function bindShell(user) {
   if (state.view === "wheel") bindWheel(user, { toast, render, state });
   if (state.view === "teacher") bindTeacher({ render, toast, state });
 
-  if (state.view === "practice") bindPractice();
   if (state.view === "wordwall") bindWordwall();
   if (state.view === "timeline") bindTimeline();
   if (state.view === "dialogue") bindDialogue();
@@ -860,311 +854,12 @@ function renderProfile(user, char, snap) {
   </section>`;
 }
 
-/* ========== Practice ========== */
-function filteredList(mode) {
-  const user = getCurrentUser();
-  const year = user?.formYear;
-  const scoped = filterByFormYear(QUESTIONS[mode] || [], year);
-  if (state.practice.grade === "全部") return scoped;
-  const allowed = allowedGradeKeys(year);
-  if (!allowed.includes(state.practice.grade)) return scoped;
-  return scoped.filter(
-    (q) => q.grade === state.practice.grade || (q.grade || "").includes(state.practice.grade)
-  );
-}
-
-function renderPractice() {
-  const user = getCurrentUser();
-  const year = user?.formYear;
-  const chips = ["全部", ...allowedGradeKeys(year)];
-  if (state.practice.grade !== "全部" && !allowedGradeKeys(year).includes(state.practice.grade)) {
-    state.practice.grade = "全部";
-    state.practice.index = 0;
-  }
-  const mode = state.practice.mode;
-  const list = filteredList(mode);
-  if (!list.length) {
-    return `<section class="panel"><h2>題目練習</h2><p class="lead">此篩選暫無題目。</p></section>`;
-  }
-  if (state.practice.index >= list.length) state.practice.index = 0;
-  const q = list[state.practice.index];
-
-  let body = "";
-  if (mode === "mc") {
-    body = `
-      <div class="question-box" id="qbox">
-        <div class="q-meta">${q.grade} · ${q.topic} · ${state.practice.index + 1}/${list.length}</div>
-        <div class="q-text">${q.q}</div>
-        <div class="options">
-          ${q.options.map((o, i) => `<button type="button" class="option" data-mc="${i}">${String.fromCharCode(65 + i)}. ${o}</button>`).join("")}
-        </div>
-        <div class="feedback hidden" id="feedback"></div>
-      </div>`;
-  } else if (mode === "fill") {
-    body = `
-      <div class="question-box">
-        <div class="q-meta">${q.grade} · ${q.topic} · ${state.practice.index + 1}/${list.length}</div>
-        <div class="q-text">${q.q}</div>
-        <p style="font-size:.85rem;opacity:.7">提示：${q.hint || "——"}</p>
-        <div class="fill-row">
-          <input id="fill-input" placeholder="輸入答案" autocomplete="off" />
-          <button class="btn" type="button" id="fill-submit">提交</button>
-        </div>
-        <div class="feedback hidden" id="feedback"></div>
-      </div>`;
-  } else {
-    const matchKey = `${q.id}-${state.practice.index}-${state.practice.grade}`;
-    if (state.match.key !== matchKey) {
-      state.match = {
-        key: matchKey,
-        selectedLeft: null,
-        selectedRight: null,
-        solved: new Set(),
-        pairs: q.pairs,
-        rights: shuffle(q.pairs.map((p) => p.right)),
-      };
-    }
-    const { rights, solved, pairs } = state.match;
-    body = `
-      <div class="question-box">
-        <div class="q-meta">${q.grade} · ${q.topic} · 配對全部正確可獲經驗</div>
-        <div class="q-text">將左欄與右欄正確配對</div>
-        <div class="match-board">
-          <div class="match-col" id="match-left">
-            ${pairs
-              .map(
-                (p, i) =>
-                  `<button type="button" class="match-item ${solved.has(i) ? "done" : ""}" data-left="${i}">${p.left}</button>`
-              )
-              .join("")}
-          </div>
-          <div class="match-col" id="match-right">
-            ${rights
-              .map((r, i) => {
-                const leftIdx = pairs.findIndex((p) => p.right === r);
-                const done = solved.has(leftIdx);
-                return `<button type="button" class="match-item ${done ? "done" : ""}" data-right="${i}" data-val="${r}">${r}</button>`;
-              })
-              .join("")}
-          </div>
-        </div>
-        <div class="feedback" id="feedback">已配對 ${solved.size}／${pairs.length}</div>
-      </div>`;
-  }
-
-  return `
-  <section class="panel">
-    <h2>題目練習</h2>
-    <p class="lead">${year || "年級"}：${formYearHint(year)}。選擇、填充、配對均可練；答對可獲經驗。</p>
-    <div class="toolbar">
-      ${["mc|選擇題", "fill|填充題", "match|配對題"]
-        .map((s) => {
-          const [id, label] = s.split("|");
-          return `<button type="button" class="chip ${mode === id ? "active" : ""}" data-mode="${id}">${label}</button>`;
-        })
-        .join("")}
-      <span style="opacity:.4">|</span>
-      ${chips
-        .map(
-          (g) =>
-            `<button type="button" class="chip ${state.practice.grade === g ? "active" : ""}" data-grade="${g}">${g === "全部" ? "本年範圍" : g}</button>`
-        )
-        .join("")}
-      <button class="btn ghost" type="button" id="next-q">下一題</button>
-    </div>
-    ${body}
-  </section>`;
-}
-
-function bindPractice() {
-  app.querySelectorAll("[data-mode]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      state.practice.mode = btn.dataset.mode;
-      state.practice.index = 0;
-      render();
-    });
-  });
-  app.querySelectorAll("[data-grade]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      state.practice.grade = btn.dataset.grade;
-      state.practice.index = 0;
-      render();
-    });
-  });
-  app.querySelector("#next-q")?.addEventListener("click", () => {
-    const list = filteredList(state.practice.mode);
-    state.practice.index = (state.practice.index + 1) % Math.max(list.length, 1);
-    render();
-  });
-
-  const list = filteredList(state.practice.mode);
-  const q = list[state.practice.index];
-  if (!q) return;
-
-  if (state.practice.mode === "mc") {
-    app.querySelectorAll("[data-mc]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const i = Number(btn.dataset.mc);
-        const options = app.querySelectorAll("[data-mc]");
-        options.forEach((b) => (b.disabled = true));
-        const fb = app.querySelector("#feedback");
-        if (i === q.answer) {
-          btn.classList.add("correct");
-          fb.classList.remove("hidden");
-          fb.textContent = `正確！${q.explain}`;
-          submitAnswer(XP_REWARDS.mcCorrect, {
-            recordId: makeAttemptId(),
-            correct: true,
-            qid: q.id,
-            qText: q.q,
-            topic: q.topic,
-            skill: q.skill,
-            grade: q.grade,
-            source: "練習",
-            keepView: true,
-          });
-        } else {
-          btn.classList.add("wrong");
-          options[q.answer]?.classList.add("correct");
-          fb.classList.remove("hidden");
-          fb.textContent = `未中。正解：${q.options[q.answer]}。${q.explain}`;
-          submitAnswer(0, {
-            recordId: makeAttemptId(),
-            wrong: true,
-            qid: q.id,
-            qText: q.q,
-            topic: q.topic,
-            skill: q.skill,
-            grade: q.grade,
-            source: "練習",
-            keepView: true,
-          });
-        }
-      });
-    });
-  }
-
-  if (state.practice.mode === "fill") {
-    const submit = () => {
-      const input = app.querySelector("#fill-input");
-      const fb = app.querySelector("#feedback");
-      if (input?.disabled) return;
-      const ok = checkFill(q, input.value);
-      fb.classList.remove("hidden");
-      if (ok) {
-        fb.textContent = "正確！";
-        input.disabled = true;
-        submitAnswer(XP_REWARDS.fillCorrect, {
-          recordId: makeAttemptId(),
-          correct: true,
-          qid: q.id,
-          qText: q.q,
-          topic: q.topic,
-          skill: q.skill,
-          grade: q.grade,
-          source: "練習",
-          keepView: true,
-        });
-      } else {
-        fb.textContent = `未中。參考答案：${q.answers[0]}`;
-        submitAnswer(0, {
-          recordId: makeAttemptId(),
-          wrong: true,
-          qid: q.id,
-          qText: q.q,
-          topic: q.topic,
-          skill: q.skill,
-          grade: q.grade,
-          source: "練習",
-          keepView: true,
-        });
-        toast("再試一次，或按下一題");
-      }
-    };
-    app.querySelector("#fill-submit")?.addEventListener("click", submit);
-    app.querySelector("#fill-input")?.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") submit();
-    });
-  }
-
-  if (state.practice.mode === "match") {
-    const tryMatch = () => {
-      const { selectedLeft, selectedRight, pairs, rights, solved } = state.match;
-      if (selectedLeft == null || selectedRight == null) return;
-      const leftText = pairs[selectedLeft].left;
-      const expected = pairs[selectedLeft].right;
-      const got = rights[selectedRight];
-      const leftBtn = app.querySelector(`[data-left="${selectedLeft}"]`);
-      const rightBtn = app.querySelector(`[data-right="${selectedRight}"]`);
-      if (got === expected) {
-        leftBtn?.classList.add("done");
-        rightBtn?.classList.add("done");
-        solved.add(selectedLeft);
-        submitAnswer(XP_REWARDS.matchPair, {
-          recordId: makeAttemptId(),
-          correct: true,
-          qid: `${q.id}-${selectedLeft}`,
-          qText: `${leftText} → ${expected}`,
-          topic: q.topic,
-          skill: q.skill,
-          grade: q.grade,
-          source: "練習",
-          keepView: true,
-        });
-        app.querySelector("#feedback").textContent = `已配對 ${solved.size}／${pairs.length}`;
-        if (solved.size === pairs.length) toast("本組配對全部完成！");
-      } else {
-        leftBtn?.classList.add("wrong");
-        rightBtn?.classList.add("wrong");
-        submitAnswer(0, {
-          recordId: makeAttemptId(),
-          wrong: true,
-          qid: `${q.id}-${selectedLeft}`,
-          qText: `${leftText} → ${got}`,
-          topic: q.topic,
-          skill: q.skill,
-          grade: q.grade,
-          source: "練習",
-          keepView: true,
-        });
-        setTimeout(() => {
-          leftBtn?.classList.remove("wrong", "selected");
-          rightBtn?.classList.remove("wrong", "selected");
-        }, 450);
-        toast("配對錯誤");
-      }
-      state.match.selectedLeft = null;
-      state.match.selectedRight = null;
-      app.querySelectorAll(".match-item.selected").forEach((el) => el.classList.remove("selected"));
-    };
-
-    app.querySelectorAll("[data-left]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        if (btn.classList.contains("done")) return;
-        app.querySelectorAll("[data-left]").forEach((b) => b.classList.remove("selected"));
-        btn.classList.add("selected");
-        state.match.selectedLeft = Number(btn.dataset.left);
-        tryMatch();
-      });
-    });
-    app.querySelectorAll("[data-right]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        if (btn.classList.contains("done")) return;
-        app.querySelectorAll("[data-right]").forEach((b) => b.classList.remove("selected"));
-        btn.classList.add("selected");
-        state.match.selectedRight = Number(btn.dataset.right);
-        tryMatch();
-      });
-    });
-  }
-}
-
 /* ========== Games ========== */
 function renderGamesHub() {
   return `
   <section class="panel panel-paper">
     <h2>趣味關卡</h2>
-    <p class="lead">挑一關挑戰吧！破關經驗比普通練習更高。</p>
+    <p class="lead">挑一關挑戰吧！破關可獲經驗。</p>
     <div class="quest-grid games-quest">
       <article class="quest-card tone-cinnabar" data-goto="cuoshi" style="--i:0">
         <div class="quest-icon"><span class="ico ico-battle" style="width:1.4em;height:1.4em"></span></div>
@@ -1190,11 +885,6 @@ function renderGamesHub() {
         <div class="quest-icon"><span class="ico ico-note" style="width:1.4em;height:1.4em"></span></div>
         <div class="quest-body"><h3>古人問答</h3><p>與名君對話，考你史識</p></div>
         <span class="quest-xp">+${XP_REWARDS.dialogueGood}</span>
-      </article>
-      <article class="quest-card tone-gold" data-goto="practice" style="--i:5">
-        <div class="quest-icon"><span class="ico ico-practice" style="width:1.4em;height:1.4em"></span></div>
-        <div class="quest-body"><h3>題目練習</h3><p>選擇／填充／配對，題庫已擴充</p></div>
-        <span class="quest-xp">常練</span>
       </article>
     </div>
   </section>`;
@@ -1580,7 +1270,7 @@ function renderTimeline() {
       ${
         state.stageInteract?.game === "timeline" || state.timelineFromStage
           ? `<button class="btn ghost" type="button" id="tl-back-stage">返回本關</button>`
-          : `<button class="btn ghost" type="button" data-goto="practice">去做練習題</button>`
+          : `<button class="btn ghost" type="button" data-goto="games">返回大廳</button>`
       }
     </div>
     <div class="feedback hidden" id="feedback"></div>
@@ -1609,10 +1299,6 @@ function bindTimeline() {
       state.scrollChapter = from.cid;
       state.scrollStage = from.sid;
     }
-    render();
-  });
-  app.querySelector("[data-goto=practice]")?.addEventListener("click", () => {
-    state.view = "practice";
     render();
   });
   app.querySelector("#tl-check")?.addEventListener("click", () => {

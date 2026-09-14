@@ -1,5 +1,5 @@
 /**
- * 用戶資料：練習／小遊戲累積經驗升等級；身份需試煉解鎖。
+ * 用戶資料：長卷／小遊戲累積經驗升等級；身份需試煉解鎖。
  */
 import { migrateIdentityId, STARTING_IDENTITY_ID } from "./data/identities.js";
 import { normalizeHeroName } from "./data/characters.js";

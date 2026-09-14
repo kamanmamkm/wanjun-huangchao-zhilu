@@ -13,7 +13,7 @@ import {
   STARTING_IDENTITY_ID,
   IDENTITIES,
 } from "./data/identities.js?v=rad50";
-import { CHAPTERS, REMEDIALS } from "./data/chapters.js?v=rad50";
+import { CHAPTERS, REMEDIALS } from "./data/chapters.js?v=rad56";
 import { relicFor, isoDay } from "./data/flavor.js?v=rad50";
 import { WHEEL_SLICES } from "./data/wheel.js?v=rad53";
 import { getTrial } from "./data/trials.js";

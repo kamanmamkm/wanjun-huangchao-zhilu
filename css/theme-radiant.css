@@ -665,6 +665,9 @@ h1, h2, h3,
 .question-box .q-text,
 .trial-q .q-text,
 .cuoshi-view .q-text,
+.cuoshi-line,
+.cuoshi-page-title,
+.cuoshi-wrong-quote,
 .study-mode .lead,
 .stage-play .lead,
 .study-mode .story-box {
@@ -681,7 +684,8 @@ h1, h2, h3,
 .stage-play .option,
 .question-box .option,
 .trial-q .option,
-.cuoshi-view .option {
+.cuoshi-view .option,
+.cuoshi-line {
   background: #fffef8 !important;
   color: #1a1612 !important;
   border: 1px solid rgba(42, 36, 28, 0.28) !important;

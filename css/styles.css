@@ -1987,6 +1987,71 @@ select {
 .next-shadow { color: #a67c3a; font-family: var(--font-display); font-size: 1.2rem; }
 .disclaimer { font-size: 0.85rem; opacity: 0.85; }
 .trial-q, .trial-result { margin-top: 1rem; padding: 1rem; border: 1px solid rgba(166,124,58,0.35); border-radius: 8px; }
+.cuoshi-folio { margin-top: 0.75rem; }
+.cuoshi-page {
+  margin-top: 0.45rem;
+  padding: 1.15rem 1.2rem 1.25rem;
+  background:
+    linear-gradient(180deg, rgba(255, 248, 230, 0.35), transparent 28%),
+    #f3e6c4;
+  border: 1px solid rgba(138, 115, 64, 0.5);
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px rgba(255, 248, 230, 0.35);
+  color: #2a241c;
+}
+.cuoshi-page-mark {
+  margin: 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.28em;
+  color: #8a7340;
+}
+.cuoshi-page-title {
+  margin: 0.2rem 0 0.55rem;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+}
+.cuoshi-lines { margin-top: 0.35rem; }
+.cuoshi-line {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 1px dashed transparent;
+  border-radius: 4px;
+  padding: 0.5rem 0.6rem;
+  margin: 0.12rem 0;
+  font: inherit;
+  font-size: 1.05rem;
+  line-height: 1.65;
+  color: #2a241c;
+  cursor: pointer;
+}
+.cuoshi-line:hover {
+  background: rgba(163, 49, 43, 0.08);
+  border-color: rgba(163, 49, 43, 0.28);
+}
+.cuoshi-line.is-miss {
+  background: rgba(37, 40, 32, 0.05);
+  opacity: 0.72;
+}
+.cuoshi-line.is-hit {
+  background: rgba(163, 49, 43, 0.14);
+  border-color: var(--cinnabar, #9a3424);
+  font-weight: 700;
+}
+.cuoshi-wrong-quote {
+  margin: 0.35rem 0 0.75rem;
+  padding: 0.55rem 0.7rem;
+  background: rgba(163, 49, 43, 0.1);
+  border-left: 3px solid #9a3424;
+  line-height: 1.55;
+}
+.cuoshi-repaired {
+  padding: 0.65rem 0.75rem;
+  background: rgba(45, 107, 82, 0.1);
+  border-left: 3px solid #2d6b52;
+  line-height: 1.55;
+}
 .boss-progress { height: 10px; background: rgba(0,0,0,0.08); border-radius: 4px; overflow: hidden; margin: 0.75rem 0; }
 .boss-progress > i { display: block; height: 100%; background: linear-gradient(90deg, #9a3424, #d4b06a); width: 0; transition: width .3s; }
 .book { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; }

@@ -37,7 +37,7 @@ import {
   IDENTITY_DISCLAIMER,
   identityDisplayName,
   getIdentity,
-} from "./progress.js?v=rad53";
+} from "./progress.js?v=rad56";
 import { renderWheelPage, bindWheel } from "./wheel.js?v=rad55";
 import {
   renderJourneyHome,
@@ -49,7 +49,7 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad50";
+} from "./journey.js?v=rad56";
 import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad50";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad50";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";
@@ -87,6 +87,7 @@ let state = {
   scrollStage: null,
   stageQuiz: null,
   bossStep: 0,
+  bossPlay: null,
   trial: null,
   cuoshi: null,
   promoteReveal: null,
@@ -863,7 +864,7 @@ function renderGamesHub() {
     <div class="quest-grid games-quest">
       <article class="quest-card tone-cinnabar" data-goto="cuoshi" style="--i:0">
         <div class="quest-icon"><span class="ico ico-battle" style="width:1.4em;height:1.4em"></span></div>
-        <div class="quest-body"><h3>錯史之戰</h3><p>辨錯 → 修正 → 舉證，修復被改亂的史頁</p></div>
+        <div class="quest-body"><h3>錯史之戰</h3><p>讀殘卷，撳出錯句，再改返正確</p></div>
         <span class="quest-xp">多關</span>
       </article>
       <article class="quest-card tone-gold" data-goto="shizhan" style="--i:1">

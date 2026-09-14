@@ -1,9 +1,9 @@
 /**
  * 《任平生》主介面：行旅首頁、歷史長卷、晉升殿、待考札記、史冊
  */
-import { CHAPTERS, chapterList } from "./data/chapters.js?v=rad50";
+import { CHAPTERS, chapterList } from "./data/chapters.js?v=rad56";
 import { XP_REWARDS } from "./data/levels.js?v=rad50";
-import { CUOSHI_BATTLES, getCuoshi } from "./data/cuoshi.js";
+import { CUOSHI_BATTLES, CHAPTER_BOSS_PAGES, getCuoshi, wrongLineOf } from "./data/cuoshi.js?v=rad56";
 import { IDENTITIES } from "./data/identities.js?v=rad50";
 import { getStageVisual, SKILL_BARS, skillFill, STAGE_RELIC, realmLabel } from "./data/stageVisuals.js";
 import { heroDisplayName, normalizeHeroName } from "./data/characters.js";
@@ -39,7 +39,7 @@ import {
   markCuoshiWon,
   levelBandLines,
   stageIdForUser,
-} from "./progress.js?v=rad53";
+} from "./progress.js?v=rad56";
 import { updateUser, addXp, pushRecent } from "./storage.js";
 import { getTrial } from "./data/trials.js";
 
@@ -487,7 +487,7 @@ function renderStagePlay(user, ch, stage) {
     <section class="panel-paper stage-play study-mode" id="boss-stage" data-chapter="${ch.id}" data-stage="${stage.id}">
       ${companionSlot}
       <div class="q-top"><span>${stage.title}</span></div>
-      <p class="lead">Boss 是一本被改亂的史書——辨錯、修正、舉證。</p>
+      <p class="lead">Boss 是一本被改亂的史書——撳出錯句，再揀修正。</p>
       <div class="boss-progress"><i style="width:0%" id="boss-bar"></i></div>
       <div id="boss-body"></div>
     </section>`;
@@ -601,7 +601,7 @@ export function renderCuoshi(user) {
   <section class="panel-paper cuoshi-view">
     <p class="eyebrow ink-red">錯史之戰</p>
     <h2>修復被改亂的史頁</h2>
-    <p class="lead">Boss 是錯史本身：辨錯 → 修正 → 舉證。平時用書卷風；開戰時進入考場節奏。</p>
+      <p class="lead">Boss 是錯史本身：讀殘卷，撳出錯句，再揀修正。一關大約三分鐘。</p>
     <div class="cuoshi-grid">${cards}</div>
     <div id="cuoshi-panel" class="hidden"></div>
   </section>`;
@@ -740,6 +740,7 @@ export function bindJourney(user, ctx) {
     state.view = "chapter";
     state.stageQuiz = blankStageQuiz();
     state.bossStep = 0;
+    state.bossPlay = null;
     render();
     // after render, bind quiz/boss
     setTimeout(() => {
@@ -765,6 +766,7 @@ export function bindJourney(user, ctx) {
       state.scrollStage = nxt.stageId;
       state.stageQuiz = blankStageQuiz();
       state.bossStep = 0;
+      state.bossPlay = null;
       state.view = "chapter";
     } else {
       state.scrollStage = null;
@@ -790,9 +792,9 @@ export function bindJourney(user, ctx) {
 }
 
 function bindCuoshi(user, ctx) {
-  const { state, toast, render } = ctx;
+  const { state } = ctx;
   appClick("[data-cuoshi]", (btn) => {
-    state.cuoshi = { id: btn.dataset.cuoshi, index: 0 };
+    state.cuoshi = { id: btn.dataset.cuoshi, phase: "spot", miss: [] };
     paintCuoshi(ctx);
   });
   if (state.cuoshi?.id && document.getElementById("cuoshi-panel")) {
@@ -801,55 +803,141 @@ function bindCuoshi(user, ctx) {
 }
 
 function paintCuoshi(ctx) {
-  const { state, toast, render } = ctx;
+  const { state, toast } = ctx;
   const battle = getCuoshi(state.cuoshi.id);
   const panel = document.getElementById("cuoshi-panel");
   if (!panel || !battle) return;
   panel.classList.remove("hidden");
-  const i = state.cuoshi.index;
-  const steps = battle.steps || [];
-  if (i >= steps.length) {
+  document.querySelector(".cuoshi-grid")?.classList.add("hidden");
+  if (state.cuoshi.phase === "done") {
     updateUser((u) => markCuoshiWon(u, battle.id));
     pushRecent(`戰勝錯史：${battle.title}`);
     addXp(XP_REWARDS.chapterBonus || 20, { correct: true });
+    const repaired = battle.fix?.repaired || "";
     panel.innerHTML = `
       <div class="trial-result">
         <h3>史頁已修復</h3>
-        <p>你完成了「${battle.title}」——辨錯、修正、舉證皆過。</p>
+        <p>你完成了「${battle.title}」。</p>
+        ${repaired ? `<p class="cuoshi-repaired">改寫：${repaired}</p>` : ""}
         <button type="button" class="btn" data-goto="cuoshi">返回關卡列表</button>
       </div>`;
     toast("錯史之戰勝利！");
     state.cuoshi = null;
     return;
   }
-  const step = steps[i];
-  panel.innerHTML = `
-    <div class="trial-q stage-play">
-      <p class="eyebrow">${battle.title} · ${step.title}（${i + 1}/${steps.length}）</p>
-      <div class="q-text">${step.q}</div>
-      <div class="options">
-        ${step.options.map((o, idx) => `<button type="button" class="option" data-cs="${idx}">${o}</button>`).join("")}
+  paintPageGame(panel, battle, state.cuoshi, ctx, {
+    qidBase: `cuoshi-${battle.id}`,
+    source: "錯史",
+    onWin: () => {
+      state.cuoshi.phase = "done";
+      paintCuoshi(ctx);
+    },
+  });
+}
+
+function paintPageGame(host, pack, play, ctx, opts) {
+  const phase = play.phase || "spot";
+  if (phase === "fix") paintPageFix(host, pack, play, ctx, opts);
+  else paintPageSpot(host, pack, play, ctx, opts);
+}
+
+function paintPageSpot(host, pack, play, ctx, opts) {
+  const { toast } = ctx;
+  const lines = pack.lines || [];
+  const wrong = wrongLineOf(pack);
+  const bar = document.getElementById("boss-bar");
+  if (bar) bar.style.width = "45%";
+  host.innerHTML = `
+    <div class="cuoshi-folio">
+      <p class="eyebrow">${pack.title || "殘卷"} · 辨錯</p>
+      <div class="cuoshi-page">
+        <p class="cuoshi-page-mark">殘卷</p>
+        <h3 class="cuoshi-page-title">${pack.pageTitle || ""}</h3>
+        <p class="muted">撳一撳，找出寫錯嘅一句。</p>
+        <div class="cuoshi-lines">
+          ${lines
+            .map((ln) => {
+              const miss = (play.miss || []).includes(ln.id);
+              return `<button type="button" class="cuoshi-line${miss ? " is-miss" : ""}" data-line="${ln.id}">${ln.text}</button>`;
+            })
+            .join("")}
+        </div>
       </div>
     </div>`;
-  panel.querySelectorAll("[data-cs]").forEach((btn) => {
+  host.querySelectorAll("[data-line]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const ok = Number(btn.dataset.cs) === step.answer;
+      if (play.locked) return;
+      const id = btn.dataset.line;
+      const ok = !!(wrong && id === wrong.id);
+      const line = lines.find((l) => l.id === id);
       const recorded = ctx.submitAnswer?.(ok ? XP_REWARDS.mcCorrect || 8 : 0, {
         correct: ok,
         wrong: !ok,
-        skill: step.skill,
-        qid: `cuoshi-${battle.id}-${step.id}`,
-        qText: step.q,
-        source: "錯史",
+        skill: pack.fix?.skill || "timeline",
+        qid: `${opts.qidBase}-line-${id}`,
+        qText: line?.text || "",
+        source: opts.source || "錯史",
+        chapterId: opts.chapterId || "",
         keepView: true,
       });
       if (recorded?.duplicate) return;
       if (!ok) {
-        toast("未中——再讀一次選項（可重試）");
+        play.miss = [...new Set([...(play.miss || []), id])];
+        btn.classList.add("is-miss");
+        toast("呢句無問題——再搵寫錯嗰句");
         return;
       }
-      state.cuoshi.index++;
-      paintCuoshi(ctx);
+      play.locked = true;
+      btn.classList.add("is-hit");
+      play.phase = "fix";
+      toast("搵到錯句！而家改返正確");
+      paintPageFix(host, pack, play, ctx, opts);
+    });
+  });
+}
+
+function paintPageFix(host, pack, play, ctx, opts) {
+  const { toast } = ctx;
+  play.locked = false;
+  const wrong = wrongLineOf(pack);
+  const fix = pack.fix || { prompt: "", options: [], answer: 0 };
+  const bar = document.getElementById("boss-bar");
+  if (bar) bar.style.width = "75%";
+  host.innerHTML = `
+    <div class="cuoshi-folio">
+      <p class="eyebrow">${pack.title || "殘卷"} · 修正</p>
+      <div class="cuoshi-page">
+        <p class="cuoshi-page-mark">殘卷</p>
+        <h3 class="cuoshi-page-title">${pack.pageTitle || ""}</h3>
+        <p class="cuoshi-wrong-quote">錯句：「${wrong?.text || ""}」</p>
+        <div class="q-text">${fix.prompt || "呢句應該點改？"}</div>
+        <div class="options">
+          ${(fix.options || []).map((o, idx) => `<button type="button" class="option" data-fix="${idx}">${o}</button>`).join("")}
+        </div>
+      </div>
+    </div>`;
+  host.querySelectorAll("[data-fix]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (play.locked) return;
+      const ok = Number(btn.dataset.fix) === Number(fix.answer);
+      const recorded = ctx.submitAnswer?.(ok ? XP_REWARDS.mcCorrect || 8 : 0, {
+        correct: ok,
+        wrong: !ok,
+        skill: fix.skill || "recall",
+        qid: `${opts.qidBase}-fix`,
+        qText: fix.prompt || "",
+        source: opts.source || "錯史",
+        chapterId: opts.chapterId || "",
+        keepView: true,
+      });
+      if (recorded?.duplicate) return;
+      if (!ok) {
+        toast("未中——再揀一次（可重試）");
+        return;
+      }
+      play.locked = true;
+      toast(fix.explain || "史頁已改妥");
+      opts.onWin?.();
     });
   });
 }
@@ -963,6 +1051,7 @@ function paintQuizSettle(qs, state, ch, stage, ctx) {
     state.scrollStage = sid;
     state.stageQuiz = blankStageQuiz();
     state.bossStep = 0;
+    state.bossPlay = null;
     state.view = "chapter";
     render();
   });
@@ -1120,56 +1209,36 @@ function paintBoss(root, ctx) {
   const { state, toast, render } = ctx;
   const ch = CHAPTERS[root.dataset.chapter];
   const stage = ch.stages.find((s) => s.id === root.dataset.stage);
-  const steps = stage.boss.steps;
-  state.bossStep = state.bossStep || 0;
-  const i = state.bossStep;
-  const step = steps[i];
-  const bar = document.getElementById("boss-bar");
-  if (bar) bar.style.width = `${(i / steps.length) * 100}%`;
+  const pack = stage.boss?.cuoshiId
+    ? getCuoshi(stage.boss.cuoshiId)
+    : stage.boss?.pageId
+      ? CHAPTER_BOSS_PAGES[stage.boss.pageId]
+      : stage.boss;
   const body = document.getElementById("boss-body");
-  if (!step || !body) return;
-  body.innerHTML = `
-    <p class="eyebrow">步驟 ${i + 1}/${steps.length} · ${step.title}</p>
-    <div class="q-text">${step.q}</div>
-    <div class="options">
-      ${step.options.map((o, idx) => `<button type="button" class="option" data-boss="${idx}">${o}</button>`).join("")}
-    </div>`;
-  body.querySelectorAll("[data-boss]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const ok = Number(btn.dataset.boss) === step.answer;
-      const recorded = ctx.submitAnswer?.(ok ? XP_REWARDS.mcCorrect : 0, {
-        correct: ok,
-        wrong: !ok,
-        skill: step.skill,
-        qid: `boss-${step.id}`,
-        qText: step.q,
-        chapterId: ch.id,
-        source: "關卡",
-        keepView: true,
+  if (!pack?.lines || !body) return;
+  if (!state.bossPlay || state.bossPlay.stageKey !== `${ch.id}:${stage.id}`) {
+    state.bossPlay = { stageKey: `${ch.id}:${stage.id}`, phase: "spot", miss: [] };
+  }
+  paintPageGame(body, { ...pack, title: stage.boss?.title || pack.title }, state.bossPlay, ctx, {
+    qidBase: `boss-${ch.id}-${stage.id}`,
+    source: "關卡",
+    chapterId: ch.id,
+    onWin: () => {
+      const bar = document.getElementById("boss-bar");
+      if (bar) bar.style.width = "100%";
+      let dropped = null;
+      updateUser((u) => {
+        dropped = completeStage(u, ch.id, stage.id, { mastered: true, correct: 2, total: 2 });
       });
-      if (recorded?.duplicate) return;
-      if (!ok) {
-        toast("未中——再想一次");
-        return;
-      }
-      state.bossStep++;
-      if (state.bossStep >= steps.length) {
-        if (bar) bar.style.width = "100%";
-        let dropped = null;
-        updateUser((u) => {
-          dropped = completeStage(u, ch.id, stage.id, { mastered: true, correct: steps.length, total: steps.length });
-        });
-        ctx.queueRelic?.(dropped);
-        pushRecent("擊敗錯史·章節試煉");
-        addXp(XP_REWARDS.chapterBonus, { correct: true });
-        toast(dropped ? `史頁修復！偶得「${dropped.name}」` : "史頁修復完成！");
-        state.scrollStage = null;
-        state.view = "chapter";
-        render();
-      } else {
-        paintBoss(root, ctx);
-      }
-    });
+      ctx.queueRelic?.(dropped);
+      pushRecent("擊敗錯史·章節試煉");
+      addXp(XP_REWARDS.chapterBonus, { correct: true });
+      toast(dropped ? `史頁修復！偶得「${dropped.name}」` : "史頁修復完成！");
+      state.bossPlay = null;
+      state.scrollStage = null;
+      state.view = "chapter";
+      render();
+    },
   });
 }
 

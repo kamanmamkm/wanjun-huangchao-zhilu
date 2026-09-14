@@ -2,7 +2,7 @@
  * 天機輪分頁：每答對一題可轉一次，次數可累積。
  */
 import { WHEEL_SLICES, wheelGradient, wheelStopAngle, pickWheelIndex } from "./data/wheel.js?v=rad53";
-import { wheelStatus, applyWheelPrize } from "./progress.js?v=rad53";
+import { wheelStatus, applyWheelPrize } from "./progress.js?v=rad56";
 import { updateUser, addXp } from "./storage.js?v=rad50";
 
 function discCaption(slice) {

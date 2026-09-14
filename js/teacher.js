@@ -2,7 +2,7 @@
  * 老師頁（本機）：指派課題、睇學生進度、常見錯誤、短答覆核
  * 無後端——同一瀏覽器內的帳號可視為班內學生。
  */
-import { chapterList, CHAPTERS } from "./data/chapters.js?v=rad49";
+import { chapterList, CHAPTERS } from "./data/chapters.js?v=rad50";
 import { identityDisplayName, getIdentity } from "./data/identities.js";
 import { getCharacter, heroDisplayName } from "./data/characters.js";
 import { levelFromXp } from "./data/levels.js";

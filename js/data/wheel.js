@@ -1,5 +1,5 @@
 /**
- * 天機輪：答對累積史績；每日答對至少一題可轉一次。
+ * 天機輪：答對累積史績；每答對一題可轉一次。
  */
 export const WHEEL_SLICES = [
   { id: "xp8", label: "修業＋8 經驗", weight: 3, xp: 8, score: 0 },

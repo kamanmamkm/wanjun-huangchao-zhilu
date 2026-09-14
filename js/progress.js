@@ -1,7 +1,7 @@
 /**
  * 晉升條件評估、掌握度、錯題札記、章節進度
  */
-import { levelFromXp } from "./data/levels.js?v=rad49";
+import { levelFromXp } from "./data/levels.js?v=rad50";
 import {
   getIdentity,
   identityDisplayName,
@@ -12,10 +12,10 @@ import {
   migrateIdentityId,
   STARTING_IDENTITY_ID,
   IDENTITIES,
-} from "./data/identities.js?v=rad49";
-import { CHAPTERS, REMEDIALS } from "./data/chapters.js?v=rad49";
-import { relicFor, isoDay } from "./data/flavor.js?v=rad49";
-import { WHEEL_SLICES } from "./data/wheel.js?v=rad49";
+} from "./data/identities.js?v=rad50";
+import { CHAPTERS, REMEDIALS } from "./data/chapters.js?v=rad50";
+import { relicFor, isoDay } from "./data/flavor.js?v=rad50";
+import { WHEEL_SLICES } from "./data/wheel.js?v=rad50";
 import { getTrial } from "./data/trials.js";
 import { stageIdFromLevel, stageIdForUser, syncIdentityToLevel, levelBandLines, nextStageMinLevel, LEVEL_STAGE_BANDS } from "./data/levelStage.js";
 
@@ -56,7 +56,16 @@ export function ensureProgress(user) {
   user.progress.relics = user.progress.relics || [];
   user.progress.flavor = user.progress.flavor || {};
   user.progress.score = Number(user.progress.score) || 0;
-  user.progress.wheel = user.progress.wheel || { lastSpin: "", dayCorrect: "", todayCorrect: 0 };
+  user.progress.wheel = user.progress.wheel || {};
+  const w = user.progress.wheel;
+  w.lastSpin = w.lastSpin || "";
+  w.dayCorrect = w.dayCorrect || "";
+  w.todayCorrect = Number(w.todayCorrect) || 0;
+  if (typeof w.charges !== "number") {
+    const day = isoDay();
+    w.charges = w.lastSpin !== day && w.dayCorrect === day && w.todayCorrect >= 1 ? 1 : 0;
+  }
+  w.charges = Math.max(0, Number(w.charges) || 0);
   return user.progress;
 }
 
@@ -145,6 +154,7 @@ export function recordAttempt(user, payload = {}) {
       p.wheel.todayCorrect = 0;
     }
     p.wheel.todayCorrect = (p.wheel.todayCorrect || 0) + 1;
+    p.wheel.charges = (Number(p.wheel.charges) || 0) + 1;
   }
   const bump = (obj, key, ok) => {
     if (!key) return;
@@ -332,13 +342,13 @@ export function wheelStatus(user, day = isoDay()) {
   const p = ensureProgress(user);
   const w = p.wheel || {};
   const todayCorrect = w.dayCorrect === day ? w.todayCorrect || 0 : 0;
-  const spun = w.lastSpin === day;
+  const charges = Math.max(0, Number(w.charges) || 0);
   return {
     score: p.score || 0,
     todayCorrect,
-    spun,
+    charges,
     lastPrize: w.lastPrize || null,
-    canSpin: !spun && todayCorrect >= 1,
+    canSpin: charges >= 1,
   };
 }
 
@@ -346,10 +356,9 @@ export function applyWheelPrize(user, sliceIndex, day = isoDay()) {
   const slice = WHEEL_SLICES[sliceIndex];
   if (!slice) return { ok: false, reason: "bad-slice" };
   const st = wheelStatus(user, day);
-  if (st.spun) return { ok: false, reason: "already" };
-  if (st.todayCorrect < 1) return { ok: false, reason: "need-correct" };
+  if (st.charges < 1) return { ok: false, reason: "need-correct" };
   const p = ensureProgress(user);
-  p.wheel = p.wheel || { lastSpin: "", dayCorrect: "", todayCorrect: 0 };
+  p.wheel.charges = Math.max(0, (Number(p.wheel.charges) || 0) - 1);
   p.score = (p.score || 0) + (Number(slice.score) || 0);
   p.wheel.lastSpin = day;
   p.wheel.lastPrize = { id: slice.id, label: slice.label, xp: slice.xp || 0, score: slice.score || 0, at: Date.now() };

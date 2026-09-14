@@ -15,7 +15,7 @@ import {
 } from "./data/identities.js?v=rad50";
 import { CHAPTERS, REMEDIALS } from "./data/chapters.js?v=rad56";
 import { relicFor, isoDay } from "./data/flavor.js?v=rad50";
-import { WHEEL_SLICES } from "./data/wheel.js?v=rad53";
+import { WHEEL_SLICES } from "./data/wheel.js?v=rad67";
 import { getTrial } from "./data/trials.js";
 import { stageIdFromLevel, stageIdForUser, syncIdentityToLevel, levelBandLines, nextStageMinLevel, LEVEL_STAGE_BANDS } from "./data/levelStage.js";
 
@@ -56,6 +56,7 @@ export function ensureProgress(user) {
   user.progress.relics = user.progress.relics || [];
   user.progress.flavor = user.progress.flavor || {};
   user.progress.score = Number(user.progress.score) || 0;
+  user.progress.charms = user.progress.charms || {};
   user.progress.wheel = user.progress.wheel || {};
   const w = user.progress.wheel;
   w.lastSpin = w.lastSpin || "";
@@ -338,6 +339,30 @@ export function grantRelic(user, chapterId, stageId) {
   return spec;
 }
 
+export function charmBag(user) {
+  const p = ensureProgress(user);
+  p.charms = p.charms || {};
+  return p.charms;
+}
+
+export function charmCount(user, id) {
+  return Math.max(0, Number(charmBag(user)[id]) || 0);
+}
+
+export function grantCharm(user, id, n = 1) {
+  if (!id) return;
+  const bag = charmBag(user);
+  bag[id] = (Number(bag[id]) || 0) + n;
+}
+
+export function consumeCharm(user, id) {
+  const bag = charmBag(user);
+  const n = Number(bag[id]) || 0;
+  if (n < 1) return false;
+  bag[id] = n - 1;
+  return true;
+}
+
 export function wheelStatus(user, day = isoDay()) {
   const p = ensureProgress(user);
   const w = p.wheel || {};
@@ -349,6 +374,7 @@ export function wheelStatus(user, day = isoDay()) {
     charges,
     lastPrize: w.lastPrize || null,
     canSpin: charges >= 1,
+    charms: { ...charmBag(user) },
   };
 }
 
@@ -360,10 +386,10 @@ export function applyWheelPrize(user, sliceIndex, day = isoDay()) {
   const p = ensureProgress(user);
   p.wheel.charges = Math.max(0, (Number(p.wheel.charges) || 0) - 1);
   const xp = Number(slice.xp) || 0;
-  const score = xp ? 0 : Number(slice.score) || 0;
-  p.score = (p.score || 0) + score;
+  const charm = slice.charm || "";
+  if (charm) grantCharm(user, charm);
   p.wheel.lastSpin = day;
-  p.wheel.lastPrize = { id: slice.id, label: slice.label, xp, score, at: Date.now() };
+  p.wheel.lastPrize = { id: slice.id, label: slice.label, xp, charm, at: Date.now() };
   p.wheel.log = [{ ...p.wheel.lastPrize }, ...(p.wheel.log || [])].slice(0, 20);
   return { ok: true, slice };
 }

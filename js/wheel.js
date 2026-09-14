@@ -1,13 +1,14 @@
 /**
- * 天機輪分頁：每答對一題可轉一次，次數可累積。
+ * 天機輪分頁：每答對一題可轉一次，次數可累積。部分格派錦囊。
  */
-import { WHEEL_SLICES, wheelGradient, wheelStopAngle, pickWheelIndex } from "./data/wheel.js?v=rad53";
-import { wheelStatus, applyWheelPrize } from "./progress.js?v=rad56";
+import { WHEEL_SLICES, CHARMS, wheelGradient, wheelStopAngle, pickWheelIndex } from "./data/wheel.js?v=rad67";
+import { wheelStatus, applyWheelPrize, charmCount } from "./progress.js?v=rad67";
 import { updateUser, addXp } from "./storage.js?v=rad50";
 
 function discCaption(slice) {
-  const name = slice.caption || (slice.xp ? slice.label.split("＋")[0] : "史績");
-  const amount = slice.xp || slice.score || 0;
+  if (slice.charm) return `錦囊<br>${slice.caption}`;
+  const name = slice.caption || slice.label.split("＋")[0];
+  const amount = slice.xp || 0;
   return `${name}<br>＋${amount}`;
 }
 
@@ -18,6 +19,19 @@ function nextWheelAngle(prev, index, extraSpins) {
   let delta = landing - prevMod;
   if (delta <= 0) delta += 360;
   return prev + extraSpins * 360 + delta;
+}
+
+function charmBagHtml(user) {
+  const parts = Object.values(CHARMS)
+    .map((c) => {
+      const n = charmCount(user, c.id);
+      return `<span class="charm-chip${n ? "" : " is-empty"}"><strong>${c.name}</strong> ${n}</span>`;
+    })
+    .join("");
+  return `<div class="charm-bag"><p class="eyebrow">隨身錦囊</p><div class="charm-bag-row">${parts}</div>
+    <p class="muted">${Object.values(CHARMS)
+      .map((c) => `${c.name}：${c.use}`)
+      .join("　")}</p></div>`;
 }
 
 export function renderWheelPage(user) {
@@ -32,8 +46,9 @@ export function renderWheelPage(user) {
   return `
   <section class="panel-paper wheel-view">
     <h2>天機輪</h2>
-    <p class="lead">答對題目會累積<strong>史績</strong>。每答對一題可轉輪一次領賞（經驗或史績），次數可累積。</p>
+    <p class="lead">答對題目會累積<strong>史績</strong>。轉輪可領<strong>經驗</strong>或<strong>錦囊</strong>——錦囊用嚟幫遊戲，唔會直接加史績。</p>
     <p class="wheel-score">現有史績 <strong>${st.score}</strong>　可轉 <strong>${st.charges}</strong> 次　今日答對 <strong>${st.todayCorrect}</strong> 題</p>
+    ${charmBagHtml(user)}
     <p class="muted">${hint}</p>
     <div class="wheel-stage">
       <div class="wheel-pointer" aria-hidden="true"></div>
@@ -46,6 +61,7 @@ export function renderWheelPage(user) {
         st.canSpin ? `轉動天機輪（${st.charges}）` : "先去答對一題"
       }</button>
       <button type="button" class="btn ghost" data-goto="scroll">去長卷答題</button>
+      <button type="button" class="btn ghost" data-goto="games">去用錦囊</button>
     </div>
     ${
       st.lastPrize

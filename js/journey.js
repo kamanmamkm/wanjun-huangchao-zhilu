@@ -1546,12 +1546,12 @@ export function renderNotes(user) {
 
   return `
   <section class="panel-paper">
-    <p class="eyebrow ink-red">趣味關卡 · 待考札記</p>
+    <p class="eyebrow ink-red">晉升殿 · 待考札記</p>
     <h2>待考札記</h2>
-    <p class="lead">錯題變成修練——指出弱項，補強後再戰。長卷可重答；考核另用新題。</p>
+    <p class="lead">長卷關卡結算可重答錯題；呢度只記尚未掌握嘅弱項，蓋章後再戰。</p>
     <div class="note-grid">${cards || "<p>暫無未掌握錯題。繼續長卷或趣味關卡吧。</p>"}</div>
     <div class="row-actions">
-      <button type="button" class="btn ghost" data-goto="games">返回大廳</button>
+      <button type="button" class="btn ghost" data-goto="promote">返回晉升殿</button>
       <button type="button" class="btn" data-goto="scroll">去長卷</button>
     </div>
   </section>`;

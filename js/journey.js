@@ -820,9 +820,10 @@ function paintCuoshi(ctx) {
         <h3>史頁已修復</h3>
         <p>你完成了「${battle.title}」。</p>
         ${repaired ? `<p class="cuoshi-repaired">改寫：${repaired}</p>` : ""}
-        <button type="button" class="btn" data-goto="cuoshi">返回關卡列表</button>
+        <button type="button" class="btn" data-cuoshi-back>返回關卡列表</button>
       </div>`;
     toast("錯史之戰勝利！");
+    bindCuoshiListBack(panel, ctx);
     state.cuoshi = null;
     return;
   }
@@ -833,6 +834,15 @@ function paintCuoshi(ctx) {
       state.cuoshi.phase = "done";
       paintCuoshi(ctx);
     },
+  });
+}
+
+function bindCuoshiListBack(host, ctx) {
+  host.querySelectorAll("[data-cuoshi-back]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      ctx.state.cuoshi = null;
+      ctx.render();
+    });
   });
 }
 
@@ -853,8 +863,9 @@ function paintPageSpot(host, pack, play, ctx, opts) {
       <div class="trial-result">
         <h3>此關未載入</h3>
         <p>請強制刷新頁面後再試。</p>
-        <button type="button" class="btn" data-goto="cuoshi">返回關卡列表</button>
+        <button type="button" class="btn" data-cuoshi-back>返回關卡列表</button>
       </div>`;
+    bindCuoshiListBack(host, ctx);
     return;
   }
   const missCount = (play.miss || []).length;

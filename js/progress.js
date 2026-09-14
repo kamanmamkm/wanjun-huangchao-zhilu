@@ -15,7 +15,7 @@ import {
 } from "./data/identities.js";
 import { CHAPTERS, REMEDIALS } from "./data/chapters.js?v=rad41";
 import { relicFor, isoDay } from "./data/flavor.js";
-import { WHEEL_SLICES } from "./data/wheel.js?v=rad46";
+import { WHEEL_SLICES } from "./data/wheel.js?v=rad47";
 import { getTrial } from "./data/trials.js";
 import { stageIdFromLevel, stageIdForUser, syncIdentityToLevel, levelBandLines, nextStageMinLevel, LEVEL_STAGE_BANDS } from "./data/levelStage.js";
 

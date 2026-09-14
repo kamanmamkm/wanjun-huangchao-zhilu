@@ -39,7 +39,7 @@ import {
   markCuoshiWon,
   levelBandLines,
   stageIdForUser,
-} from "./progress.js?v=rad46";
+} from "./progress.js?v=rad47";
 import { updateUser, addXp, pushRecent } from "./storage.js";
 import { getTrial } from "./data/trials.js";
 

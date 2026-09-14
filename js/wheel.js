@@ -1,9 +1,9 @@
 /**
  * 天機輪分頁：每日答對後可轉一次。
  */
-import { WHEEL_SLICES, wheelGradient, wheelStopAngle, pickWheelIndex } from "./data/wheel.js?v=rad46";
-import { wheelStatus, applyWheelPrize } from "./progress.js?v=rad46";
-import { updateUser, addXp } from "./storage.js?v=rad46";
+import { WHEEL_SLICES, wheelGradient, wheelStopAngle, pickWheelIndex } from "./data/wheel.js?v=rad47";
+import { wheelStatus, applyWheelPrize } from "./progress.js?v=rad47";
+import { updateUser, addXp } from "./storage.js?v=rad47";
 
 function discCaption(slice) {
   if (slice.xp && slice.score) return `兼得<br>＋${slice.xp}／${slice.score}`;

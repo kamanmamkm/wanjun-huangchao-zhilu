@@ -10,7 +10,7 @@ import { heroDisplayName, normalizeHeroName } from "./data/characters.js";
 import { pickRandomHeroName, HERO_NAME_COUNT } from "./data/heroNames.js";
 import { renderAvatar } from "./avatar.js";
 import { renderHeroStage, renderStudyCompanion, renderPromoteReveal } from "./heroStage.js";
-import { nextHook, nextStageAfter, todayEncounter } from "./data/flavor.js?v=rad50";
+import { nextHook, nextStageAfter, todayEncounter } from "./data/flavor.js?v=rad68";
 import {
   userSnapshot,
   wheelStatus,
@@ -37,9 +37,12 @@ import {
   getFinaleState,
   saveFinaleSegment,
   markCuoshiWon,
+  visitStreak,
+  getHomeRun,
   levelBandLines,
   stageIdForUser,
-} from "./progress.js?v=rad67";
+} from "./progress.js?v=rad68";
+import { getUnit } from "./data/units.js?v=rad67";
 import { updateUser, addXp, pushRecent } from "./storage.js";
 import { getTrial } from "./data/trials.js";
 
@@ -134,26 +137,54 @@ function renderFlavorCard(user, ui) {
   const done = user.progress?.flavor?.day === enc.day;
   if (done) {
     return `<div class="flavor-card done">
-      <p class="eyebrow">今日機緣</p>
-      <p>${user.progress.flavor.reply || "今日已遇。"}</p>
+      <p class="eyebrow">今日機緣已遇</p>
+      <p>${user.progress.flavor.reply || "今日已遇。聽日再來。"}</p>
     </div>`;
   }
-  if (ui.flavorOpen) {
-    return `<div class="flavor-card open">
-      <p class="eyebrow">今日機緣</p>
-      <p>${enc.setup}</p>
-      <div class="options">
-        ${enc.options
-          .map((o, i) => `<button type="button" class="option" data-flavor-pick="${i}">${o.text}</button>`)
-          .join("")}
-      </div>
-    </div>`;
-  }
-  return `<div class="flavor-card">
-    <p class="eyebrow">今日機緣</p>
+  return `<div class="flavor-card open">
+    <p class="eyebrow">今日機緣 · 廿秒就完</p>
     <p>${enc.setup}</p>
-    <button type="button" class="btn ghost" data-open-flavor>應對</button>
+    <div class="options">
+      ${enc.options
+        .map((o, i) => `<button type="button" class="option" data-flavor-pick="${i}">${o.text}</button>`)
+        .join("")}
+    </div>
   </div>`;
+}
+
+function tonightHook(user) {
+  const enc = todayEncounter();
+  const flavorDone = user.progress?.flavor?.day === enc.day;
+  const wheel = wheelStatus(user);
+  const saved = getHomeRun(user);
+  if (!flavorDone) {
+    return {
+      kind: "flavor",
+      label: "今日機緣",
+      detail: "返屋企先應呢一條，一日一次。",
+      hideQuestButton: true,
+    };
+  }
+  if (wheel.canSpin) {
+    return {
+      kind: "wheel",
+      label: `天機輪 · ${wheel.charges} 次未轉`,
+      detail: "堂上答對攞到嘅賞，今晚轉完先走。",
+      goto: "wheel",
+      primary: "去轉輪",
+    };
+  }
+  if (saved) {
+    const unit = getUnit(saved.unitId);
+    return {
+      kind: "run",
+      label: `闖關未完 · ${unit?.era || "本單元"}`,
+      detail: `仲有 ${saved.lives} 盞燈火，第 ${saved.step + 1}／${saved.steps.length} 關。`,
+      resumeRun: true,
+      primary: "繼續闖關",
+    };
+  }
+  return null;
 }
 
 function renderRelicTray(user) {
@@ -170,7 +201,7 @@ export function renderJourneyHome(user, char, ui = {}) {
   const snap = userSnapshot(user);
   const stageId = snap.stageId ?? user.identityId ?? 0;
   const order = buildPromotionOrder(user);
-  const task = nextJourneyTask(user, ui);
+  const task = tonightHook(user) || nextJourneyTask(user, ui);
   const taskCh = task.chapterId ? CHAPTERS[task.chapterId] : null;
   const skills = user.progress?.skills || {};
   const vis = getStageVisual(stageId);
@@ -225,9 +256,14 @@ export function renderJourneyHome(user, char, ui = {}) {
     .filter(Boolean)
     .join("");
 
-  const questAction = task.enterStage
-    ? `data-enter-stage="${task.enterStage}"`
-    : `data-goto="${task.goto || "scroll"}"`;
+  const questAction = task.resumeRun
+    ? `data-resume-run="1"`
+    : task.enterStage
+      ? `data-enter-stage="${task.enterStage}"`
+      : `data-goto="${task.goto || "scroll"}"`;
+  const streak = visitStreak(user);
+  const wheel = wheelStatus(user);
+  const flavorFirst = task.kind === "flavor";
 
   let promoteBlock = "";
   if (order.next) {
@@ -283,26 +319,28 @@ export function renderJourneyHome(user, char, ui = {}) {
           : ""
       }
       <div class="home-quest">
-        <p class="eyebrow">當前任務</p>
+        <p class="eyebrow">${task.kind === "flavor" || task.kind === "wheel" || task.kind === "run" ? "今晚未了" : "當前任務"}</p>
         <h3>${task.label}</h3>
         <p>${task.detail || ""}</p>
-        ${lastHookLine(user) ? `<p class="next-hook">${lastHookLine(user)}</p>` : ""}
+        ${streak ? `<p class="visit-streak">連歸 ${streak} 日${streak % 3 === 2 ? " · 聽日再開就有錦囊" : ""}</p>` : `<p class="visit-streak">今日已記一筆歸程</p>`}
+        ${lastHookLine(user) && task.kind !== "flavor" ? `<p class="next-hook">${lastHookLine(user)}</p>` : ""}
         <div class="poster-actions">
-          <button type="button" class="btn" ${questAction}>${task.label}</button>
-          <button type="button" class="btn ghost" data-goto="scroll">歷史長卷</button>
+          ${task.hideQuestButton ? "" : `<button type="button" class="btn" ${questAction}>${task.primary || task.label}</button>`}
           <button type="button" class="btn ghost" data-goto="games">趣味關卡</button>
+          <button type="button" class="btn ghost" data-goto="scroll">歷史長卷</button>
         </div>
       </div>
+      ${flavorFirst ? renderFlavorCard(user, ui) : ""}
       ${
-        wheelStatus(user).canSpin
+        !flavorFirst && wheel.canSpin && task.kind !== "wheel"
           ? `<div class="wheel-teaser edict">
         <p class="eyebrow">天機輪</p>
-        <p>尚有 ${wheelStatus(user).charges} 次可轉天機輪</p>
+        <p>尚有 ${wheel.charges} 次可轉——堂上攞到嘅賞。</p>
         <button type="button" class="btn" data-goto="wheel">前往天機輪</button>
       </div>`
           : ""
       }
-      ${renderFlavorCard(user, ui)}
+      ${flavorFirst ? "" : renderFlavorCard(user, ui)}
       ${promoteBlock}
       <div class="poster-skills">${skillBars}</div>
     </div>

@@ -118,6 +118,60 @@ export const ENCOUNTERS = [
       { text: "三朝同時", good: false, reply: "傳統說法有先後，唔好混成一鍋。" },
     ],
   },
+  {
+    id: "enc_keju_qin",
+    setup: "有人話：「秦始皇用科舉揀官。」你點辨？",
+    options: [
+      { text: "科舉係隋唐以後先成熟，秦行郡縣任官", good: true, reply: "對。制度要對時代，唔好後世套前朝。" },
+      { text: "始皇開科取士，所以秦好強", good: false, reply: "張冠李戴。科舉唔喺秦代。" },
+      { text: "科舉同郡縣其實一樣", good: false, reply: "一個係選官辦法，一個係地方制度。" },
+    ],
+  },
+  {
+    id: "enc_song_changan",
+    setup: "同學寫「北宋都城係長安」。你點改？",
+    options: [
+      { text: "北宋都開封（東京）", good: true, reply: "記穩。長安多指漢唐帝都。" },
+      { text: "北宋都城係南京", good: false, reply: "南宋後來以臨安為行在，唔好混。" },
+      { text: "都城唔重要，背年號就得", good: false, reply: "都城一亂，戰爭同漕運都會記錯。" },
+    ],
+  },
+  {
+    id: "enc_opium_cause",
+    setup: "有人話鴉片戰爭「只因為中國唔肯開放」。你點應？",
+    options: [
+      { text: "要因包括貿易、禁煙同武力侵權，唔好單一歸因", good: true, reply: "善。大事往往多因交織。" },
+      { text: "完全係林則徐一個人引起", good: false, reply: "把複雜事件推給一人，史觀太窄。" },
+      { text: "同清朝無關，係明朝嘅事", good: false, reply: "時代錯置。鴉片戰爭在清道光年間。" },
+    ],
+  },
+  {
+    id: "enc_sun_three",
+    setup: "有人問三民主義係邊三民。你點答？",
+    options: [
+      { text: "民族、民權、民生", good: true, reply: "記穩這三綱，後面民國史先接得上。" },
+      { text: "民主、民有、民享就等於三民", good: false, reply: "那是另一套表述，課堂先記孫文三民。" },
+      { text: "同孔子仁義禮一樣", good: false, reply: "時代同問題都不同，唔好硬套。" },
+    ],
+  },
+  {
+    id: "enc_reform",
+    setup: "有人把改革開放講成「1949 年開始」。你點糾正？",
+    options: [
+      { text: "改革開放以 1978 年十一屆三中全會前後為標誌", good: true, reply: "開國同改革係兩段，年分要分開記。" },
+      { text: "改革開放就係鴉片戰爭", good: false, reply: "差太遠。一個近代，一個當代。" },
+      { text: "年分唔使記", good: false, reply: "當代史最易混，年分係骨架。" },
+    ],
+  },
+  {
+    id: "enc_ming_prime",
+    setup: "有人話「明朝宰相權最大」。你點辨？",
+    options: [
+      { text: "明太祖廢丞相，六部直隸皇帝", good: true, reply: "對。明朝君權加強，唔好當成漢唐宰相。" },
+      { text: "明朝同漢朝一樣設丞相", good: false, reply: "洪武廢相，後來有內閣，但唔係舊相權。" },
+      { text: "宰相係清朝先有", good: false, reply: "相權源遠流長，明朝係廢相集權。" },
+    ],
+  },
 ];
 
 export function isoDay(d = new Date()) {

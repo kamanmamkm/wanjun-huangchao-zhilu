@@ -117,8 +117,13 @@ select {
   transform: translateY(-1px);
 }
 
-.btn:active {
+.btn:active:not(:disabled) {
   transform: translateY(1px);
+  filter: brightness(1.16);
+  box-shadow:
+    0 0 0 2px rgba(255, 236, 150, 0.95),
+    0 0 16px 4px rgba(240, 208, 120, 0.75),
+    0 0 36px 10px rgba(224, 184, 78, 0.4);
 }
 
 .btn.ghost {
@@ -1947,4 +1952,47 @@ select {
   }
   .dash-nav { flex-direction: row; flex-wrap: wrap; }
   .promote-layout { grid-template-columns: 1fr; }
+}
+
+/* 滑鼠㩒落按鈕：金黃閃光 */
+@keyframes goldPressFlash {
+  0% {
+    box-shadow:
+      0 0 0 3px rgba(255, 244, 170, 1),
+      0 0 22px 8px rgba(255, 214, 70, 0.95),
+      0 0 48px 16px rgba(255, 196, 50, 0.55);
+    filter: brightness(1.28) saturate(1.2);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 236, 150, 0);
+    filter: brightness(1);
+  }
+}
+
+button:active:not(:disabled):not(.locked),
+.btn:active:not(:disabled),
+.option:active,
+.chip:active,
+.stage-card:active:not(:disabled):not(.locked),
+.chapter-card:active:not(.locked),
+.growth-av:active:not(:disabled) {
+  box-shadow:
+    0 0 0 3px rgba(255, 244, 170, 1),
+    0 0 22px 8px rgba(255, 214, 70, 0.9),
+    0 0 48px 16px rgba(255, 196, 50, 0.5);
+  filter: brightness(1.22);
+}
+
+.is-gold-flash {
+  animation: goldPressFlash 0.55s ease-out;
+}
+
+.reduce-motion .is-gold-flash {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .is-gold-flash {
+    animation: none;
+  }
 }

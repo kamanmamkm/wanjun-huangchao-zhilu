@@ -1,11 +1,11 @@
-import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad42";
-import { QUESTIONS, checkFill } from "./data/questions.js?v=rad42";
-import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad42";
-import { levelFromXp } from "./data/levels.js?v=rad42";
-import { DIALOGUES } from "./data/dialogues.js?v=rad42";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad42";
-import { VIDEOS } from "./data/videos.js?v=rad42";
-import { renderAvatar } from "./avatar.js?v=rad42";
+import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad43";
+import { QUESTIONS, checkFill } from "./data/questions.js?v=rad43";
+import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad43";
+import { levelFromXp } from "./data/levels.js?v=rad43";
+import { DIALOGUES } from "./data/dialogues.js?v=rad43";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad43";
+import { VIDEOS } from "./data/videos.js?v=rad43";
+import { renderAvatar } from "./avatar.js?v=rad43";
 import {
   CARD_TYPES,
   createBattle,
@@ -15,7 +15,7 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=rad42";
+} from "./data/shizhan.js?v=rad43";
 import {
   getCurrentUser,
   registerUser,
@@ -24,7 +24,7 @@ import {
   addXp,
   updateUser,
   pushRecent,
-} from "./storage.js?v=rad42";
+} from "./storage.js?v=rad43";
 import {
   userSnapshot,
   buildPromotionOrder,
@@ -37,7 +37,7 @@ import {
   IDENTITY_DISCLAIMER,
   identityDisplayName,
   getIdentity,
-} from "./progress.js?v=rad42";
+} from "./progress.js?v=rad43";
 import {
   renderJourneyHome,
   renderScroll,
@@ -48,10 +48,10 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad42";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad42";
-import { renderPromoteReveal, renderLevelUpReveal } from "./heroStage.js?v=rad42";
-import { getStageVisual } from "./data/stageVisuals.js?v=rad42";
+} from "./journey.js?v=rad43";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad43";
+import { renderPromoteReveal, renderLevelUpReveal } from "./heroStage.js?v=rad43";
+import { getStageVisual } from "./data/stageVisuals.js?v=rad43";
 import {
   FORM_YEARS,
   normalizeFormYear,
@@ -61,8 +61,8 @@ import {
   normalizeClassId,
   formYearFromClassId,
   classIdHint,
-} from "./data/formYear.js?v=rad42";
-import { pickRandomHeroName, isPooledHeroName, HERO_NAME_COUNT } from "./data/heroNames.js?v=rad42";
+} from "./data/formYear.js?v=rad43";
+import { pickRandomHeroName, isPooledHeroName, HERO_NAME_COUNT } from "./data/heroNames.js?v=rad43";
 
 const app = document.getElementById("app");
 let toastTimer = null;
@@ -1751,5 +1751,18 @@ function renderVideos() {
     </div>
   </section>`;
 }
+
+const GOLD_PRESS_SEL = "button, .btn, .option, .chip, .stage-card, .chapter-card, .growth-av";
+document.addEventListener("pointerdown", (e) => {
+  if (e.button != null && e.button !== 0) return;
+  const el = e.target.closest?.(GOLD_PRESS_SEL);
+  if (!el || el.disabled || el.classList.contains("locked") || el.getAttribute("aria-disabled") === "true") {
+    return;
+  }
+  el.classList.remove("is-gold-flash");
+  void el.offsetWidth;
+  el.classList.add("is-gold-flash");
+  window.setTimeout(() => el.classList.remove("is-gold-flash"), 560);
+});
 
 render();

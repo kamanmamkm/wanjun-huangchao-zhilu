@@ -3,7 +3,7 @@
  */
 import { CHAPTERS, chapterList } from "./data/chapters.js?v=rad56";
 import { XP_REWARDS } from "./data/levels.js?v=rad50";
-import { CUOSHI_BATTLES, CHAPTER_BOSS_PAGES, getCuoshi, wrongLineOf } from "./data/cuoshi.js?v=rad56";
+import { CUOSHI_BATTLES, CHAPTER_BOSS_PAGES, getCuoshi, wrongLineOf } from "./data/cuoshi.js?v=rad57";
 import { IDENTITIES } from "./data/identities.js?v=rad50";
 import { getStageVisual, SKILL_BARS, skillFill, STAGE_RELIC, realmLabel } from "./data/stageVisuals.js";
 import { heroDisplayName, normalizeHeroName } from "./data/characters.js";
@@ -809,6 +809,7 @@ function paintCuoshi(ctx) {
   if (!panel || !battle) return;
   panel.classList.remove("hidden");
   document.querySelector(".cuoshi-grid")?.classList.add("hidden");
+  panel.scrollIntoView({ block: "nearest" });
   if (state.cuoshi.phase === "done") {
     updateUser((u) => markCuoshiWon(u, battle.id));
     pushRecent(`戰勝錯史：${battle.title}`);
@@ -847,18 +848,30 @@ function paintPageSpot(host, pack, play, ctx, opts) {
   const wrong = wrongLineOf(pack);
   const bar = document.getElementById("boss-bar");
   if (bar) bar.style.width = "45%";
+  if (!lines.length || !wrong) {
+    host.innerHTML = `
+      <div class="trial-result">
+        <h3>此關未載入</h3>
+        <p>請強制刷新頁面後再試。</p>
+        <button type="button" class="btn" data-goto="cuoshi">返回關卡列表</button>
+      </div>`;
+    return;
+  }
+  const missCount = (play.miss || []).length;
+  const hint = missCount >= 2 && pack.spotHint ? `<p class="cuoshi-hint">${pack.spotHint}</p>` : "";
   host.innerHTML = `
     <div class="cuoshi-folio">
       <p class="eyebrow">${pack.title || "殘卷"} · 辨錯</p>
       <div class="cuoshi-page">
         <p class="cuoshi-page-mark">殘卷</p>
         <h3 class="cuoshi-page-title">${pack.pageTitle || ""}</h3>
-        <p class="muted">撳一撳，找出寫錯嘅一句。</p>
+        <p class="muted">${pack.spotLead || "撳一撳，找出寫錯嘅一句。"}</p>
+        ${hint}
         <div class="cuoshi-lines">
           ${lines
             .map((ln) => {
               const miss = (play.miss || []).includes(ln.id);
-              return `<button type="button" class="cuoshi-line${miss ? " is-miss" : ""}" data-line="${ln.id}">${ln.text}</button>`;
+              return `<button type="button" class="cuoshi-line${miss ? " is-miss" : ""}" data-line="${ln.id}">${ln.text}${miss ? "<small>非此句，可再撳其他</small>" : ""}</button>`;
             })
             .join("")}
         </div>
@@ -868,9 +881,9 @@ function paintPageSpot(host, pack, play, ctx, opts) {
     btn.addEventListener("click", () => {
       if (play.locked) return;
       const id = btn.dataset.line;
-      const ok = !!(wrong && id === wrong.id);
+      const ok = id === wrong.id;
       const line = lines.find((l) => l.id === id);
-      const recorded = ctx.submitAnswer?.(ok ? XP_REWARDS.mcCorrect || 8 : 0, {
+      ctx.submitAnswer?.(ok ? XP_REWARDS.mcCorrect || 8 : 0, {
         correct: ok,
         wrong: !ok,
         skill: pack.fix?.skill || "timeline",
@@ -880,15 +893,13 @@ function paintPageSpot(host, pack, play, ctx, opts) {
         chapterId: opts.chapterId || "",
         keepView: true,
       });
-      if (recorded?.duplicate) return;
       if (!ok) {
         play.miss = [...new Set([...(play.miss || []), id])];
-        btn.classList.add("is-miss");
         toast("呢句無問題——再搵寫錯嗰句");
+        paintPageSpot(host, pack, play, ctx, opts);
         return;
       }
       play.locked = true;
-      btn.classList.add("is-hit");
       play.phase = "fix";
       toast("搵到錯句！而家改返正確");
       paintPageFix(host, pack, play, ctx, opts);
@@ -920,7 +931,7 @@ function paintPageFix(host, pack, play, ctx, opts) {
     btn.addEventListener("click", () => {
       if (play.locked) return;
       const ok = Number(btn.dataset.fix) === Number(fix.answer);
-      const recorded = ctx.submitAnswer?.(ok ? XP_REWARDS.mcCorrect || 8 : 0, {
+      ctx.submitAnswer?.(ok ? XP_REWARDS.mcCorrect || 8 : 0, {
         correct: ok,
         wrong: !ok,
         skill: fix.skill || "recall",
@@ -930,7 +941,6 @@ function paintPageFix(host, pack, play, ctx, opts) {
         chapterId: opts.chapterId || "",
         keepView: true,
       });
-      if (recorded?.duplicate) return;
       if (!ok) {
         toast("未中——再揀一次（可重試）");
         return;
@@ -1547,29 +1557,80 @@ function bindNotes(user, ctx) {
 }
 
 export function renderChronicle(user, char) {
-  const c = user.progress?.chronicle || { promotions: [], restored: [], quotes: [] };
-  const snap = userSnapshot(user);
+  const entries = chronicleEntries(user);
+  const relics = user.progress?.relics || [];
+  const name = heroDisplayName(user, char);
+  const rows = entries.length
+    ? entries
+        .map(
+          (e) => `<li class="ledger-${e.kind}">
+      <time>${e.when}</time>
+      <span class="ledger-mark">${e.kind === "promote" ? "晉升" : "入冊"}</span>
+      <span class="ledger-title">${e.title}</span>
+    </li>`
+        )
+        .join("")
+    : `<li class="ledger-empty">尚未入冊。去長卷過關或打錯史，史頁就會寫入呢度。</li>`;
+  const stamps = relics.length
+    ? `<div class="chronicle-seals">
+        <h3>信物印記</h3>
+        <div class="relic-tray">${relics
+          .map((r) => `<span class="relic-stamp" title="${String(r.hint || "").replace(/"/g, "&quot;")}">${r.name}</span>`)
+          .join("")}</div>
+      </div>`
+    : "";
   return `
   <section class="panel-paper chronicle">
+    <p class="eyebrow ink-red">私人藏本</p>
     <h2>我的史冊</h2>
-    <p class="lead">展示你學識咗乜——最終收藏是一部自己完成的史冊，而不只是裝備。</p>
-    <div class="book">
-      <div class="book-page">
-        <h3>行者檔案</h3>
-        ${renderAvatar(char, snap.stageId, "md")}
-        <p>${heroDisplayName(user, char)} · ${snap.identityName} · Lv.${snap.level.level}</p>
-        <p>衣裝：${snap.outfit}</p>
-      </div>
-      <div class="book-page">
-        <h3>晉升紀錄</h3>
-        <ul>${(c.promotions || []).map((p) => `<li>${new Date(p.at).toLocaleDateString()} → ${identityDisplayName(getIdentity(p.to), user.gender)}</li>`).join("") || "<li>尚未晉升——先完成啟程之路</li>"}</ul>
-      </div>
-      <div class="book-page">
-        <h3>修復篇章</h3>
-        <ul>${(c.restored || []).slice(-12).map((r) => `<li>${r.chapterId} · ${r.stageId}</li>`).join("") || "<li>尚未修復史頁</li>"}</ul>
-      </div>
-    </div>
+    <p class="lead">呢度係你自己寫成嘅書：過關、錯史、晉升都會按時間入冊。</p>
+    <ol class="chronicle-ledger">${rows}</ol>
+    ${stamps}
+    <p class="chronicle-colophon">${name} 記</p>
   </section>`;
+}
+
+function restoredLabel(r) {
+  if (r.chapterId === "cuoshi") {
+    return getCuoshi(r.stageId)?.title || "錯史之戰";
+  }
+  const ch = CHAPTERS[r.chapterId];
+  if (!ch) return r.stageId || r.chapterId;
+  const st = (ch.stages || []).find((s) => s.id === r.stageId);
+  return `${chapterShortTitle(ch)} · ${st?.title || r.stageId}`;
+}
+
+function chronicleWhen(at) {
+  if (!at) return "";
+  try {
+    return new Date(at).toLocaleDateString("zh-HK");
+  } catch {
+    return "";
+  }
+}
+
+function chronicleEntries(user) {
+  const c = user.progress?.chronicle || {};
+  const seen = new Set();
+  const restored = [];
+  for (const r of c.restored || []) {
+    const key = `${r.chapterId}:${r.stageId}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    restored.push({
+      at: r.at || 0,
+      kind: "restore",
+      title: restoredLabel(r),
+      when: chronicleWhen(r.at),
+    });
+  }
+  const promos = (c.promotions || []).map((p) => ({
+    at: p.at || 0,
+    kind: "promote",
+    title: `晉升為「${identityDisplayName(getIdentity(p.to), user.gender)}」`,
+    when: chronicleWhen(p.at),
+  }));
+  return [...restored, ...promos].sort((a, b) => (a.at || 0) - (b.at || 0));
 }
 
 function appClick(sel, fn) {

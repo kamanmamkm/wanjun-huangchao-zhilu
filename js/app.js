@@ -4,6 +4,7 @@ import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad66";
 import { levelFromXp } from "./data/levels.js?v=rad66";
 import { DIALOGUES } from "./data/dialogues.js?v=rad62";
 import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad64";
+import { CHARMS } from "./data/wheel.js?v=rad67";
 import {
   getUnit,
   unitsOfGrade,
@@ -11,7 +12,7 @@ import {
   UNIT_TIMELINES,
   unitTimeline,
   unitFlip,
-} from "./data/units.js?v=rad66";
+} from "./data/units.js?v=rad67";
 import { VIDEOS } from "./data/videos.js?v=rad50";
 import { renderAvatar } from "./avatar.js?v=rad50";
 import {
@@ -45,8 +46,10 @@ import {
   IDENTITY_DISCLAIMER,
   identityDisplayName,
   getIdentity,
-} from "./progress.js?v=rad56";
-import { renderWheelPage, bindWheel } from "./wheel.js?v=rad55";
+  charmCount,
+  consumeCharm,
+} from "./progress.js?v=rad67";
+import { renderWheelPage, bindWheel } from "./wheel.js?v=rad67";
 import {
   renderJourneyHome,
   renderScroll,
@@ -57,7 +60,7 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad66";
+} from "./journey.js?v=rad67";
 import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad50";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad50";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";
@@ -840,6 +843,11 @@ function bindShellNav() {
       advanceUnitRun();
       return;
     }
+    const charmBtn = e.target.closest("[data-use-charm]");
+    if (charmBtn) {
+      useGameCharm(charmBtn.dataset.useCharm);
+      return;
+    }
     const unitBtn = e.target.closest("[data-games-unit]");
     if (unitBtn) {
       state.view = "games";
@@ -896,6 +904,7 @@ function runHudHtml() {
     <span>第 ${r.step + 1}／${r.steps.length} 關 · ${stepName}</span>
     <span class="run-lamps" title="燈火">${lamps}</span>
     <span>連擊 ${r.combo || 0}</span>
+    ${charmUseButtons(["lamp"])}
   </div>`;
 }
 
@@ -971,10 +980,144 @@ function unitBackButton() {
   return `<button class="btn ghost" type="button" data-games-unit="${state.gamesUnit}">返回本單元</button>`;
 }
 
+function charmUseButtons(ids) {
+  const user = getCurrentUser();
+  if (!user) return "";
+  const btns = ids
+    .map((id) => {
+      const n = charmCount(user, id);
+      const meta = CHARMS[id];
+      if (!n || !meta) return "";
+      return `<button type="button" class="btn ghost charm-use" data-use-charm="${id}">${meta.name}（${n}）</button>`;
+    })
+    .filter(Boolean)
+    .join("");
+  return btns ? `<div class="charm-use-row">${btns}</div>` : "";
+}
+
+function useGameCharm(id) {
+  const user = getCurrentUser();
+  if (!user) return;
+  if (charmCount(user, id) < 1) {
+    toast("未有呢張錦囊");
+    return;
+  }
+  if (id === "lamp") {
+    if (inUnitRun()) {
+      if (state.unitRun.lives >= 3) {
+        toast("燈火已滿，留待熄燈後再用");
+        return;
+      }
+      let ok = false;
+      updateUser((u) => {
+        ok = consumeCharm(u, "lamp");
+      });
+      if (!ok) return;
+      state.unitRun.lives += 1;
+      toast("續燈：燈火＋1");
+      render();
+      return;
+    }
+    if (state.view === "shizhan" && state.shizhan && state.shizhan.phase !== "end") {
+      const b = state.shizhan;
+      if ((b.playerHp || 0) >= 4) {
+        toast("體力已滿");
+        return;
+      }
+      let ok = false;
+      updateUser((u) => {
+        ok = consumeCharm(u, "lamp");
+      });
+      if (!ok) return;
+      b.playerHp = Math.min(4, (b.playerHp || 0) + 1);
+      b.log = [...(b.log || []), "續燈錦囊：體力＋1"];
+      toast("續燈：體力＋1");
+      render();
+      return;
+    }
+    toast("闖關熄燈或史戰受傷時再用");
+    return;
+  }
+  if (id === "peek") {
+    if (state.view === "timeline") {
+      if (state.timeline.cleared) {
+        toast("已經開船");
+        return;
+      }
+      const order = state.timeline.order || [];
+      const peeks = { ...(state.timeline.peeks || {}) };
+      const item = order.find((it) => it && !peeks[it.id]);
+      if (!item) {
+        toast("本局已無未揭示之事");
+        return;
+      }
+      let ok = false;
+      updateUser((u) => {
+        ok = consumeCharm(u, "peek");
+      });
+      if (!ok) return;
+      peeks[item.id] = true;
+      state.timeline.peeks = peeks;
+      toast(`窺卷：${item.hint || formatEraYear(item.year)}`);
+      render();
+      return;
+    }
+    if (state.view === "cuoshi" && state.cuoshi?.id) {
+      if (state.cuoshi.forceHint) {
+        toast("本關已用過窺卷");
+        return;
+      }
+      let ok = false;
+      updateUser((u) => {
+        ok = consumeCharm(u, "peek");
+      });
+      if (!ok) return;
+      state.cuoshi.forceHint = true;
+      toast("窺卷：睇埋辨錯方向");
+      render();
+      return;
+    }
+    toast("時光長河或錯史之戰先用得");
+    return;
+  }
+  if (id === "silk") {
+    if (state.view !== "wordwall") {
+      toast("機緣連線先用得");
+      return;
+    }
+    const f = state.flip;
+    if (!f || f.won) {
+      toast("本局已完");
+      return;
+    }
+    let pair = -1;
+    for (let i = 0; i < (f.pairCount || 0); i++) {
+      if (!f.matched.has(i) && f.silkPair !== i) {
+        pair = i;
+        break;
+      }
+    }
+    if (pair < 0) {
+      toast("已無未配之對");
+      return;
+    }
+    let ok = false;
+    updateUser((u) => {
+      ok = consumeCharm(u, "silk");
+    });
+    if (!ok) return;
+    f.silkPair = pair;
+    toast("絲引：金邊嗰對係一組");
+    render();
+    return;
+  }
+  toast("此錦囊未識用");
+}
+
 function cuoshiHubOpts() {
-  if (!state.gameFromUnit) return { hud: runHudHtml(), inRun: inUnitRun() };
+  if (!state.gameFromUnit) return { hud: runHudHtml(), inRun: inUnitRun(), charms: charmUseButtons(["peek"]) };
   const unit = getUnit(state.gamesUnit);
-  return { ids: unit?.cuoshi || [], backUnit: state.gamesUnit, hud: runHudHtml(), inRun: inUnitRun() };
+  return { ids: unit?.cuoshi || [], backUnit: state.gamesUnit, hud: runHudHtml(), inRun: inUnitRun(), charms: charmUseButtons(["peek"]) };
 }
 
 function flipRoundPool() {
@@ -1325,6 +1468,7 @@ function renderShizhan(user, char, rank) {
       </div>
     </div>
     ${center}
+    ${b.phase !== "end" ? charmUseButtons(["lamp"]) : ""}
     <div class="shizhan-log">
       ${b.log
         .slice(-6)
@@ -1408,6 +1552,7 @@ function dealFlipRound(round, roundIndex) {
     won: false,
     missL: [],
     missR: [],
+    silkPair: null,
   };
 }
 
@@ -1435,7 +1580,8 @@ function renderWordwall() {
         const ok = f.matched.has(c.pair);
         const picked = pick === i;
         const bad = (miss || []).includes(i);
-        return `<button type="button" class="match-item side-${side}${picked ? " selected" : ""}${ok ? " done" : ""}${bad ? " is-miss" : ""}" data-match-${side}="${i}" ${ok ? "disabled" : ""}>${c.text}</button>`;
+        const silk = f.silkPair === c.pair;
+        return `<button type="button" class="match-item side-${side}${picked ? " selected" : ""}${ok ? " done" : ""}${bad ? " is-miss" : ""}${silk ? " is-silk" : ""}" data-match-${side}="${i}" ${ok ? "disabled" : ""}>${c.text}</button>`;
       })
       .join("");
   return `
@@ -1447,6 +1593,7 @@ function renderWordwall() {
       <div class="toolbar">
         ${chips}
         ${inUnitRun() ? "" : `<button class="btn ghost" type="button" id="ww-reshuffle">再抽一局</button>`}
+        ${charmUseButtons(["silk"])}
       </div>
       <div class="match-board" id="flip-grid">
         <div class="match-col">${col("l", f.left, f.pickL, f.missL)}</div>
@@ -1596,6 +1743,7 @@ function resetTimelineDeal(set) {
   state.timeline.revealed = false;
   state.timeline.feedback = "";
   state.timeline.cleared = false;
+  state.timeline.peeks = {};
 }
 
 function moveTimelineCard(from, to) {
@@ -1637,6 +1785,7 @@ function renderTimeline() {
   const revealed = !!state.timeline.revealed;
   const marks = state.timeline.marks || [];
   const pick = state.timeline.pick;
+  const peeks = state.timeline.peeks || {};
   return `
   <section class="panel">
     ${runHudHtml()}
@@ -1655,6 +1804,7 @@ function renderTimeline() {
           : ""
       }
       ${inUnitRun() ? "" : `<button class="btn ghost" type="button" id="tl-reshuffle">再抽一局</button>`}
+      ${charmUseButtons(["peek"])}
     </div>
     <div class="timeline-river" id="tl-list" role="list">
       ${order
@@ -1667,7 +1817,7 @@ function renderTimeline() {
           }>
             <span class="tl-ord" aria-hidden="true">${i + 1}</span>
             <span class="tl-label">${item.label}</span>
-            ${revealed ? `<span class="tl-year">${formatEraYear(item.year)}</span>` : ""}
+            ${revealed ? `<span class="tl-year">${formatEraYear(item.year)}</span>` : peeks[item.id] ? `<span class="tl-year tl-hint">${item.hint || formatEraYear(item.year)}</span>` : ""}
           </div>`;
         })
         .join("")}

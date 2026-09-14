@@ -39,7 +39,7 @@ import {
   markCuoshiWon,
   levelBandLines,
   stageIdForUser,
-} from "./progress.js?v=rad56";
+} from "./progress.js?v=rad67";
 import { updateUser, addXp, pushRecent } from "./storage.js";
 import { getTrial } from "./data/trials.js";
 
@@ -610,6 +610,7 @@ export function renderCuoshi(user, opts = {}) {
     <p class="eyebrow ink-red">趣味關卡 · 錯史之戰</p>
     <h2>修復被改亂的史頁</h2>
     <p class="lead">Boss 是錯史本身：讀殘卷，撳出錯句，再揀修正。</p>
+    ${opts.charms || ""}
     <div class="cuoshi-grid${opts.inRun ? " hidden" : ""}">${cards}</div>
     <div id="cuoshi-panel" class="hidden"></div>
     ${back}
@@ -882,7 +883,8 @@ function paintPageSpot(host, pack, play, ctx, opts) {
     return;
   }
   const missCount = (play.miss || []).length;
-  const hint = missCount >= 2 && pack.spotHint ? `<p class="cuoshi-hint">${pack.spotHint}</p>` : "";
+  const hint =
+    (play.forceHint || missCount >= 2) && pack.spotHint ? `<p class="cuoshi-hint">${pack.spotHint}</p>` : "";
   host.innerHTML = `
     <div class="cuoshi-folio">
       <p class="eyebrow">${pack.title || "殘卷"} · 辨錯</p>

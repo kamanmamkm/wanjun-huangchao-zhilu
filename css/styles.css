@@ -2456,6 +2456,56 @@ button:active:not(:disabled):not(.locked),
   color: var(--cinnabar-deep);
   font-family: var(--font-display);
 }
+
+.charm-bag {
+  margin: 0.65rem 0 0.35rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: 8px;
+  border: 1px solid rgba(198, 163, 90, 0.35);
+  background: rgba(255, 250, 240, 0.7);
+}
+
+.charm-bag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0.35rem 0 0.4rem;
+}
+
+.charm-chip {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: baseline;
+  padding: 0.28rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(154, 34, 38, 0.08);
+  border: 1px solid rgba(154, 34, 38, 0.22);
+  font-size: 0.92rem;
+}
+
+.charm-chip.is-empty {
+  opacity: 0.45;
+}
+
+.charm-use-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.charm-use {
+  font-size: 0.9rem;
+}
+
+.match-item.is-silk {
+  box-shadow: 0 0 0 2px var(--gold, #d7aa50), 0 6px 14px rgba(180, 130, 40, 0.28);
+}
+
+.tl-hint {
+  font-size: 0.82rem;
+  color: var(--cinnabar-deep, #9a2226);
+  font-weight: 600;
+}
 .wheel-stage {
   position: relative;
   width: min(320px, 86vw);

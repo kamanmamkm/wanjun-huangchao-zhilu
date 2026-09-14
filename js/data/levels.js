@@ -19,12 +19,14 @@ export const XP_REWARDS = {
   trialPassBonus: 40,
 };
 
-/** Lv.1–20 維持舊門檻，免打亂現有進度；其後延伸至 Lv.100 */
+/** Lv.1–20 維持舊門檻，免打亂現有進度；其後延伸至 Lv.60 */
+export const MAX_LEVEL = 60;
+
 const LEVEL_THRESHOLDS_V1 = [
   0, 40, 90, 150, 220, 300, 400, 520, 660, 820, 1000, 1220, 1480, 1780, 2120, 2500, 2950, 3450, 4000, 4600,
 ];
 
-function buildLevelThresholds(maxLevel = 100) {
+function buildLevelThresholds(maxLevel = MAX_LEVEL) {
   const t = [...LEVEL_THRESHOLDS_V1];
   let total = t[t.length - 1];
   for (let lv = t.length; lv < maxLevel; lv++) {
@@ -37,7 +39,7 @@ function buildLevelThresholds(maxLevel = 100) {
 }
 
 /** 累計 XP 門檻：THRESHOLDS[i] = 達到 Lv.(i+1) 所需 */
-export const LEVEL_THRESHOLDS = buildLevelThresholds(100);
+export const LEVEL_THRESHOLDS = buildLevelThresholds(MAX_LEVEL);
 
 export function levelFromXp(xp) {
   const x = Math.max(0, xp || 0);

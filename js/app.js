@@ -1,11 +1,11 @@
-import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad46";
-import { QUESTIONS, checkFill } from "./data/questions.js?v=rad46";
-import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad46";
-import { levelFromXp } from "./data/levels.js?v=rad46";
-import { DIALOGUES } from "./data/dialogues.js?v=rad46";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad46";
-import { VIDEOS } from "./data/videos.js?v=rad46";
-import { renderAvatar } from "./avatar.js?v=rad46";
+import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad47";
+import { QUESTIONS, checkFill } from "./data/questions.js?v=rad47";
+import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad47";
+import { levelFromXp } from "./data/levels.js?v=rad47";
+import { DIALOGUES } from "./data/dialogues.js?v=rad47";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad47";
+import { VIDEOS } from "./data/videos.js?v=rad47";
+import { renderAvatar } from "./avatar.js?v=rad47";
 import {
   CARD_TYPES,
   createBattle,
@@ -15,7 +15,7 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=rad46";
+} from "./data/shizhan.js?v=rad47";
 import {
   getCurrentUser,
   registerUser,
@@ -24,7 +24,7 @@ import {
   addXp,
   updateUser,
   pushRecent,
-} from "./storage.js?v=rad46";
+} from "./storage.js?v=rad47";
 import {
   userSnapshot,
   buildPromotionOrder,
@@ -37,8 +37,8 @@ import {
   IDENTITY_DISCLAIMER,
   identityDisplayName,
   getIdentity,
-} from "./progress.js?v=rad46";
-import { renderWheelPage, bindWheel } from "./wheel.js?v=rad46";
+} from "./progress.js?v=rad47";
+import { renderWheelPage, bindWheel } from "./wheel.js?v=rad47";
 import {
   renderJourneyHome,
   renderScroll,
@@ -49,11 +49,11 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad46";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad46";
-import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad46";
-import { getStageVisual } from "./data/stageVisuals.js?v=rad46";
-import { flavorLine } from "./data/flavor.js?v=rad46";
+} from "./journey.js?v=rad47";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad47";
+import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad47";
+import { getStageVisual } from "./data/stageVisuals.js?v=rad47";
+import { flavorLine } from "./data/flavor.js?v=rad47";
 import {
   FORM_YEARS,
   normalizeFormYear,
@@ -63,8 +63,8 @@ import {
   normalizeClassId,
   formYearFromClassId,
   classIdHint,
-} from "./data/formYear.js?v=rad46";
-import { pickRandomHeroName, isPooledHeroName, HERO_NAME_COUNT } from "./data/heroNames.js?v=rad46";
+} from "./data/formYear.js?v=rad47";
+import { pickRandomHeroName, isPooledHeroName, HERO_NAME_COUNT } from "./data/heroNames.js?v=rad47";
 
 const app = document.getElementById("app");
 let toastTimer = null;
@@ -213,8 +213,11 @@ function previewLevelRequested() {
 function applyLevelUpPreview() {
   if (!previewLevelRequested() || state.promoteReveal) return;
   const user = getCurrentUser();
-  const fromLv = user ? levelFromXp(user.xp).level : 3;
-  state.levelUpReveal = { fromLv, toLv: fromLv + 1 };
+  const lv = user ? levelFromXp(user.xp) : { level: 3, maxLevel: 60 };
+  const cap = lv.maxLevel || 60;
+  const toLv = Math.min((lv.level || 1) + 1, cap);
+  const fromLv = Math.max(1, toLv - 1);
+  state.levelUpReveal = { fromLv, toLv };
 }
 
 function dismissLevelUpReveal() {

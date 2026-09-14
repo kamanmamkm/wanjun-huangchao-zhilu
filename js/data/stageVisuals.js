@@ -129,19 +129,19 @@ export function getStageVisual(identityId) {
 }
 
 /**
- * 海報標籤等級帶 → 階段 id（與實際角色 Lv 對齊）
- * ①1–4 庶民｜②5–10 學子｜③11–25 士人｜④26–40 初仕
- * ⑤41–55 主政｜⑥56–70 重臣｜⑦71–85 諸侯｜⑧86–100 帝王
+ * 海報標籤等級帶 → 階段 id（與實際角色 Lv 對齊；上限 Lv.60）
+ * ①1–4 庶民｜②5–10 學子｜③11–20 士人｜④21–30 初仕
+ * ⑤31–40 主政｜⑥41–50 重臣｜⑦51–55 諸侯｜⑧56–60 帝王
  */
 export const LEVEL_STAGE_BANDS = [
   { id: 0, minLevel: 1, maxLevel: 4, label: "庶民" },
   { id: 1, minLevel: 5, maxLevel: 10, label: "學子" },
-  { id: 2, minLevel: 11, maxLevel: 25, label: "士人" },
-  { id: 3, minLevel: 26, maxLevel: 40, label: "初仕" },
-  { id: 4, minLevel: 41, maxLevel: 55, label: "主政" },
-  { id: 5, minLevel: 56, maxLevel: 70, label: "重臣" },
-  { id: 6, minLevel: 71, maxLevel: 85, label: "諸侯" },
-  { id: 7, minLevel: 86, maxLevel: 100, label: "帝王" },
+  { id: 2, minLevel: 11, maxLevel: 20, label: "士人" },
+  { id: 3, minLevel: 21, maxLevel: 30, label: "初仕" },
+  { id: 4, minLevel: 31, maxLevel: 40, label: "主政" },
+  { id: 5, minLevel: 41, maxLevel: 50, label: "重臣" },
+  { id: 6, minLevel: 51, maxLevel: 55, label: "諸侯" },
+  { id: 7, minLevel: 56, maxLevel: 60, label: "帝王" },
 ];
 
 export function stageIdFromLevel(level) {
@@ -184,37 +184,37 @@ export const STAGE_ART = {
   2: {
     male: "assets/stages/shiren-male.jpg",
     female: "assets/stages/shiren-female.jpg",
-    badge: "③ 士人｜Lv.11–25",
+    badge: "③ 士人｜Lv.11–20",
     label: "士人登場",
   },
   3: {
     male: "assets/stages/chushi-male.jpg",
     female: "assets/stages/chushi-female.jpg",
-    badge: "④ 初仕｜Lv.26–40",
+    badge: "④ 初仕｜Lv.21–30",
     label: "初仕登場",
   },
   4: {
     male: "assets/stages/zhuzheng-male.jpg",
     female: "assets/stages/zhuzheng-female.jpg",
-    badge: "⑤ 主政｜Lv.41–55",
+    badge: "⑤ 主政｜Lv.31–40",
     label: "主政登場",
   },
   5: {
     male: "assets/stages/zhongchen-male.jpg",
     female: "assets/stages/zhongchen-female.jpg",
-    badge: "⑥ 重臣｜Lv.56–70",
+    badge: "⑥ 重臣｜Lv.41–50",
     label: "重臣登場",
   },
   6: {
     male: "assets/stages/zhuhou-male.jpg",
     female: "assets/stages/zhuhou-female.jpg",
-    badge: "⑦ 諸侯｜Lv.71–85",
+    badge: "⑦ 諸侯｜Lv.51–55",
     label: "諸侯登場",
   },
   7: {
     male: "assets/stages/diwang-male.jpg",
     female: "assets/stages/diwang-female.jpg",
-    badge: "⑧ 帝王｜Lv.86–100",
+    badge: "⑧ 帝王｜Lv.56–60",
     label: "帝王登場 · 終章試煉",
   },
 };

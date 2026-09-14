@@ -10,6 +10,7 @@ import { heroDisplayName, normalizeHeroName } from "./data/characters.js";
 import { pickRandomHeroName, HERO_NAME_COUNT } from "./data/heroNames.js";
 import { renderAvatar } from "./avatar.js";
 import { renderHeroStage, renderStudyCompanion, renderPromoteReveal } from "./heroStage.js";
+import { nextHook, nextStageAfter, todayEncounter } from "./data/flavor.js";
 import {
   userSnapshot,
   buildPromotionOrder,
@@ -118,6 +119,50 @@ export function nextJourneyTask(user, ui = {}) {
     detail: nextDraft ? `${nextDraft.title} 製作中` : "已完成現有關卡",
     goto: "scroll",
   };
+}
+
+function lastHookLine(user) {
+  const restored = user.progress?.chronicle?.restored || [];
+  const last = restored[restored.length - 1];
+  if (!last) return "";
+  return nextHook(last.chapterId, last.stageId);
+}
+
+function renderFlavorCard(user, ui) {
+  const enc = todayEncounter();
+  const done = user.progress?.flavor?.day === enc.day;
+  if (done) {
+    return `<div class="flavor-card done">
+      <p class="eyebrow">今日機緣</p>
+      <p>${user.progress.flavor.reply || "今日已遇。"}</p>
+    </div>`;
+  }
+  if (ui.flavorOpen) {
+    return `<div class="flavor-card open">
+      <p class="eyebrow">今日機緣</p>
+      <p>${enc.setup}</p>
+      <div class="options">
+        ${enc.options
+          .map((o, i) => `<button type="button" class="option" data-flavor-pick="${i}">${o.text}</button>`)
+          .join("")}
+      </div>
+    </div>`;
+  }
+  return `<div class="flavor-card">
+    <p class="eyebrow">今日機緣</p>
+    <p>${enc.setup}</p>
+    <button type="button" class="btn ghost" data-open-flavor>應對</button>
+  </div>`;
+}
+
+function renderRelicTray(user) {
+  const relics = user.progress?.relics || [];
+  if (!relics.length) {
+    return `<p class="relic-tray muted">過關可偶得信物</p>`;
+  }
+  return `<div class="relic-tray" aria-label="信物">${relics
+    .map((r) => `<span class="relic-stamp" title="${String(r.hint || "").replace(/"/g, "&quot;")}">${r.name}</span>`)
+    .join("")}</div>`;
 }
 
 export function renderJourneyHome(user, char, ui = {}) {
@@ -240,11 +285,14 @@ export function renderJourneyHome(user, char, ui = {}) {
         <p class="eyebrow">當前任務</p>
         <h3>${task.label}</h3>
         <p>${task.detail || ""}</p>
+        ${lastHookLine(user) ? `<p class="next-hook">${lastHookLine(user)}</p>` : ""}
         <div class="poster-actions">
           <button type="button" class="btn" ${questAction}>${task.label}</button>
           <button type="button" class="btn ghost" data-goto="scroll">歷史長卷</button>
+          <button type="button" class="btn ghost" data-goto="cuoshi">錯史之戰</button>
         </div>
       </div>
+      ${renderFlavorCard(user, ui)}
       ${promoteBlock}
       <div class="poster-skills">${skillBars}</div>
     </div>
@@ -258,6 +306,7 @@ export function renderJourneyHome(user, char, ui = {}) {
     <footer class="poster-rail">
       <div class="growth-avatars" aria-label="已解鎖造型">${avatars}</div>
       <div class="growth-ladder">${ladder}</div>
+      ${renderRelicTray(user)}
       <button type="button" class="btn ghost" data-nav="growth">成長長卷</button>
     </footer>
   </section>`;
@@ -595,6 +644,43 @@ function bindHeroNameEdit(ctx) {
   });
 }
 
+function bindFlavor(user, ctx) {
+  const { state, render, toast } = ctx;
+  appClick("[data-open-flavor]", () => {
+    state.flavorOpen = true;
+    render();
+  });
+  appClick("[data-flavor-pick]", (btn) => {
+    const enc = todayEncounter();
+    const fresh = ctx.getUser?.() || user;
+    if (fresh.progress?.flavor?.day === enc.day) {
+      toast("今日機緣已遇");
+      state.flavorOpen = false;
+      render();
+      return;
+    }
+    const opt = enc.options[Number(btn.dataset.flavorPick)];
+    if (!opt) return;
+    updateUser((u) => {
+      const p = u.progress || {};
+      p.flavor = { day: enc.day, id: enc.id, good: !!opt.good, reply: opt.reply };
+      u.progress = p;
+    });
+    ctx.submitAnswer?.(opt.good ? XP_REWARDS.flavorGood || 3 : 0, {
+      correct: !!opt.good,
+      wrong: !opt.good,
+      qid: `flavor-${enc.day}`,
+      qText: enc.setup,
+      source: "機緣",
+      keepView: true,
+      nudge: false,
+    });
+    toast(opt.reply);
+    state.flavorOpen = false;
+    render();
+  });
+}
+
 export function bindJourney(user, ctx) {
   const { render, toast, state, reward } = ctx;
 
@@ -653,14 +739,27 @@ export function bindJourney(user, ctx) {
 
   appClick("[data-finish-stage]", (btn) => {
     const [cid, sid] = btn.dataset.finishStage.split(":");
+    let dropped = null;
     updateUser((u) => {
-      completeStage(u, cid, sid);
+      dropped = completeStage(u, cid, sid);
     });
     pushRecent(`完成 ${CHAPTERS[cid]?.title || ""} · ${sid}`);
     addXp(XP_REWARDS.chapterBonus || 20, { correct: true });
-    toast("本關已記入長卷");
-    state.scrollStage = null;
-    state.view = "chapter";
+    ctx.queueRelic?.(dropped);
+    const hook = nextHook(cid, sid);
+    toast(dropped ? `偶得「${dropped.name}」。${hook}` : hook);
+    const nxt = nextStageAfter(cid, sid);
+    const fresh = ctx.getUser?.() || user;
+    if (nxt && isChapterEnterable(fresh, nxt.chapterId)) {
+      state.scrollChapter = nxt.chapterId;
+      state.scrollStage = nxt.stageId;
+      state.stageQuiz = blankStageQuiz();
+      state.bossStep = 0;
+      state.view = "chapter";
+    } else {
+      state.scrollStage = null;
+      state.view = "chapter";
+    }
     render();
   });
 
@@ -670,12 +769,13 @@ export function bindJourney(user, ctx) {
   bindCuoshi(user, ctx);
   bindHeroNameEdit(ctx);
   bindGrowth(user, ctx);
+  bindFlavor(user, ctx);
 
   const slot = document.getElementById("study-companion-slot");
   if (slot && ctx.getCharacter) {
     const char = ctx.getCharacter();
     const id = Number(slot.dataset.identity || 0);
-    slot.outerHTML = renderStudyCompanion(char, id);
+    slot.outerHTML = renderStudyCompanion(char, id, "行囊已備。答題時我會在旁點一句。");
   }
 }
 
@@ -794,6 +894,7 @@ function paintQuizSettle(qs, state, ch, stage, ctx) {
   const retryC = quiz.retryCorrect || 0;
   const status = quiz.mastered ? "已掌握" : quiz.corrected || quiz.retried ? "已完成修正" : "已完成";
   const need = Math.ceil(qs.length * STAGE_MASTERY_RATE);
+  const nxt = nextStageAfter(ch.id, stage.id);
   const retryLine =
     quiz.corrected || quiz.retried
       ? `<p class="settle-line ok"><strong>錯題修正</strong>：${retryC}／${retryT}</p>`
@@ -810,11 +911,17 @@ function paintQuizSettle(qs, state, ch, stage, ctx) {
           : retryLine
       }
       <p class="settle-line ok"><strong>關卡狀態</strong>：${status}</p>
+      <p class="next-hook">${nextHook(ch.id, stage.id)}</p>
       <p class="muted">做過同識咗係兩件事。錯題重答唔會覆蓋首次成績。</p>
       <div class="row-actions">
         ${
           !quiz.mastered && !quiz.corrected && !quiz.retried && (quiz.wrong || []).length
             ? `<button type="button" class="btn" id="sq-retry">開始錯題重答</button>`
+            : ""
+        }
+        ${
+          nxt
+            ? `<button type="button" class="btn" data-enter-stage="${nxt.chapterId}:${nxt.stageId}">繼續前路</button>`
             : ""
         }
         <button type="button" class="btn ${quiz.mastered || quiz.corrected ? "" : "ghost"}" id="sq-back">返回關卡</button>
@@ -832,6 +939,20 @@ function paintQuizSettle(qs, state, ch, stage, ctx) {
   document.getElementById("sq-back")?.addEventListener("click", () => {
     toast(status === "已掌握" ? "本關已掌握" : status === "已完成修正" ? "本關已完成修正" : "本關已完成（尚未掌握）");
     state.scrollStage = null;
+    state.view = "chapter";
+    render();
+  });
+  body.querySelector("[data-enter-stage]")?.addEventListener("click", (e) => {
+    const btn = e.currentTarget;
+    const [cid, sid] = btn.dataset.enterStage.split(":");
+    if (!isChapterEnterable(ctx.getUser?.() || {}, cid)) {
+      toast("先完成上一章，再入本章。");
+      return;
+    }
+    state.scrollChapter = cid;
+    state.scrollStage = sid;
+    state.stageQuiz = blankStageQuiz();
+    state.bossStep = 0;
     state.view = "chapter";
     render();
   });
@@ -867,16 +988,18 @@ function advanceAfterNext(qs, state, ch, stage, ctx) {
   quiz.mastered = masteryFromScore(quiz.correct, qs.length);
   quiz.firstCorrect = quiz.correct;
   quiz.firstTotal = qs.length;
-  updateUser((u) =>
-    settleStage(u, ch.id, stage.id, {
+  let dropped = null;
+  updateUser((u) => {
+    dropped = settleStage(u, ch.id, stage.id, {
       completed: true,
       mastered: quiz.mastered,
       firstCorrect: quiz.correct,
       firstTotal: qs.length,
       correct: quiz.correct,
       total: qs.length,
-    })
-  );
+    });
+  });
+  ctx.queueRelic?.(dropped);
   pushRecent(`完成關卡：${stage.title}${quiz.mastered ? "（已掌握）" : ""}`);
   addXp(XP_REWARDS.chapterBonus);
   quiz.phase = "settle";
@@ -1022,10 +1145,14 @@ function paintBoss(root, ctx) {
       state.bossStep++;
       if (state.bossStep >= steps.length) {
         if (bar) bar.style.width = "100%";
-        updateUser((u) => completeStage(u, ch.id, stage.id, { mastered: true, correct: steps.length, total: steps.length }));
-        pushRecent("擊敗錯史·第一章試煉");
+        let dropped = null;
+        updateUser((u) => {
+          dropped = completeStage(u, ch.id, stage.id, { mastered: true, correct: steps.length, total: steps.length });
+        });
+        ctx.queueRelic?.(dropped);
+        pushRecent("擊敗錯史·章節試煉");
         addXp(XP_REWARDS.chapterBonus, { correct: true });
-        toast("史頁修復完成！");
+        toast(dropped ? `史頁修復！偶得「${dropped.name}」` : "史頁修復完成！");
         state.scrollStage = null;
         state.view = "chapter";
         render();

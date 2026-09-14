@@ -14,6 +14,7 @@ import {
   IDENTITIES,
 } from "./data/identities.js";
 import { CHAPTERS, REMEDIALS } from "./data/chapters.js?v=rad41";
+import { relicFor } from "./data/flavor.js";
 import { getTrial } from "./data/trials.js";
 import { stageIdFromLevel, stageIdForUser, syncIdentityToLevel, levelBandLines, nextStageMinLevel, LEVEL_STAGE_BANDS } from "./data/levelStage.js";
 
@@ -51,6 +52,8 @@ export function ensureProgress(user) {
     };
   }
   if (typeof user.identityId !== "number") user.identityId = STARTING_IDENTITY_ID;
+  user.progress.relics = user.progress.relics || [];
+  user.progress.flavor = user.progress.flavor || {};
   return user.progress;
 }
 
@@ -292,14 +295,28 @@ export function settleStage(user, chapterId, stageId, info = {}) {
   if (meta?.stages?.every((s) => isStageCompleted(ch.stages[s.id]))) ch.done = true;
   p.chapters[chapterId] = ch;
   p.chronicle = p.chronicle || { promotions: [], restored: [], quotes: [] };
+  let dropped = null;
   if (!prev.completed && rec.completed) {
     p.chronicle.restored.push({ chapterId, stageId, at: Date.now() });
+    dropped = grantRelic(user, chapterId, stageId);
   }
+  return dropped;
+}
+
+/** 首次過關偶得信物；重玩唔再發。 */
+export function grantRelic(user, chapterId, stageId) {
+  const spec = relicFor(chapterId, stageId);
+  if (!spec) return null;
+  const p = ensureProgress(user);
+  p.relics = p.relics || [];
+  if (p.relics.some((r) => r.id === spec.id)) return null;
+  p.relics.push({ id: spec.id, name: spec.name, hint: spec.hint, at: Date.now() });
+  return spec;
 }
 
 /** 標記本關已完成（未必然掌握）。故事／互動關用。 */
 export function completeStage(user, chapterId, stageId, extra = {}) {
-  settleStage(user, chapterId, stageId, {
+  return settleStage(user, chapterId, stageId, {
     completed: true,
     mastered: !!extra.mastered,
     corrected: extra.corrected,

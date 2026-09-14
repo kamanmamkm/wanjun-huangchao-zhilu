@@ -1,11 +1,11 @@
-import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad44";
-import { QUESTIONS, checkFill } from "./data/questions.js?v=rad44";
-import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad44";
-import { levelFromXp } from "./data/levels.js?v=rad44";
-import { DIALOGUES } from "./data/dialogues.js?v=rad44";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad44";
-import { VIDEOS } from "./data/videos.js?v=rad44";
-import { renderAvatar } from "./avatar.js?v=rad44";
+import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad45";
+import { QUESTIONS, checkFill } from "./data/questions.js?v=rad45";
+import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad45";
+import { levelFromXp } from "./data/levels.js?v=rad45";
+import { DIALOGUES } from "./data/dialogues.js?v=rad45";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad45";
+import { VIDEOS } from "./data/videos.js?v=rad45";
+import { renderAvatar } from "./avatar.js?v=rad45";
 import {
   CARD_TYPES,
   createBattle,
@@ -15,7 +15,7 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=rad44";
+} from "./data/shizhan.js?v=rad45";
 import {
   getCurrentUser,
   registerUser,
@@ -24,7 +24,7 @@ import {
   addXp,
   updateUser,
   pushRecent,
-} from "./storage.js?v=rad44";
+} from "./storage.js?v=rad45";
 import {
   userSnapshot,
   buildPromotionOrder,
@@ -37,7 +37,7 @@ import {
   IDENTITY_DISCLAIMER,
   identityDisplayName,
   getIdentity,
-} from "./progress.js?v=rad44";
+} from "./progress.js?v=rad45";
 import {
   renderJourneyHome,
   renderScroll,
@@ -48,10 +48,11 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad44";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad44";
-import { renderPromoteReveal, renderLevelUpReveal } from "./heroStage.js?v=rad44";
-import { getStageVisual } from "./data/stageVisuals.js?v=rad44";
+} from "./journey.js?v=rad45";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad45";
+import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad45";
+import { getStageVisual } from "./data/stageVisuals.js?v=rad45";
+import { flavorLine } from "./data/flavor.js?v=rad45";
 import {
   FORM_YEARS,
   normalizeFormYear,
@@ -61,8 +62,8 @@ import {
   normalizeClassId,
   formYearFromClassId,
   classIdHint,
-} from "./data/formYear.js?v=rad44";
-import { pickRandomHeroName, isPooledHeroName, HERO_NAME_COUNT } from "./data/heroNames.js?v=rad44";
+} from "./data/formYear.js?v=rad45";
+import { pickRandomHeroName, isPooledHeroName, HERO_NAME_COUNT } from "./data/heroNames.js?v=rad45";
 
 const app = document.getElementById("app");
 let toastTimer = null;
@@ -91,6 +92,8 @@ let state = {
   cuoshi: null,
   promoteReveal: null,
   levelUpReveal: null,
+  relicReveal: null,
+  flavorOpen: false,
   heroNameEdit: false,
   teacherUser: null,
   teacherFilter: "全部",
@@ -164,6 +167,7 @@ function submitAnswer(amount, meta = {}) {
   });
   if (!recorded.ok) return recorded;
   reward(amount, { keepView: meta.keepView, repeat, streakBonus });
+  if (meta.nudge !== false) nudgeCompanion(correct);
   return recorded;
 }
 
@@ -178,17 +182,19 @@ function finishInteractStage(from, { mastered, correct, total }) {
   if (!from) return { already: true };
   const already = isStageCompleted(getCurrentUser()?.progress?.chapters?.[from.cid]?.stages?.[from.sid]);
   if (!already) {
-    updateUser((u) =>
-      completeStage(u, from.cid, from.sid, {
+    let dropped = null;
+    updateUser((u) => {
+      dropped = completeStage(u, from.cid, from.sid, {
         mastered: !!mastered,
         firstCorrect: correct,
         firstTotal: total,
         correct,
         total,
-      })
-    );
+      });
+    });
     pushRecent(`完成互動關：${from.title || from.sid}`);
     addXp(XP_REWARDS.chapterBonus);
+    queueRelic(dropped);
   }
   return { already };
 }
@@ -213,6 +219,7 @@ function dismissLevelUpReveal() {
   levelUpTimer = null;
   state.levelUpReveal = null;
   document.getElementById("levelup-reveal")?.remove();
+  mountRelicReveal();
 }
 
 function mountLevelUpReveal() {
@@ -223,6 +230,49 @@ function mountLevelUpReveal() {
   const overlay = document.getElementById("levelup-reveal");
   if (!overlay) return;
   overlay.addEventListener("click", dismissLevelUpReveal);
+}
+
+function nudgeCompanion(ok) {
+  const u = getCurrentUser();
+  const streak = u?.streak || 0;
+  const line = flavorLine({ ok, streak });
+  const wrap = document.querySelector(".study-companion");
+  const bubble = wrap?.querySelector(".study-bubble p");
+  if (bubble) bubble.textContent = line;
+  if (!wrap) return;
+  wrap.classList.toggle("is-speaking", true);
+  let pill = wrap.querySelector(".combo-pill");
+  if (ok && streak >= 3) {
+    if (!pill) {
+      pill = document.createElement("span");
+      pill.className = "combo-pill";
+      wrap.appendChild(pill);
+    }
+    pill.textContent = `連捷 ${streak}`;
+  } else if (pill) {
+    pill.remove();
+  }
+}
+
+function queueRelic(relic) {
+  if (!relic) return;
+  state.relicReveal = relic;
+  if (!state.promoteReveal && !state.levelUpReveal) mountRelicReveal();
+}
+
+function dismissRelicReveal() {
+  state.relicReveal = null;
+  document.getElementById("relic-reveal")?.remove();
+}
+
+function mountRelicReveal() {
+  if (!state.relicReveal || state.promoteReveal || state.levelUpReveal) return;
+  if (document.getElementById("relic-reveal")) return;
+  app.insertAdjacentHTML("beforeend", renderRelicReveal(state.relicReveal));
+  document.getElementById("relic-continue")?.addEventListener("click", dismissRelicReveal);
+  document.getElementById("relic-reveal")?.addEventListener("click", (e) => {
+    if (e.target.id === "relic-reveal") dismissRelicReveal();
+  });
 }
 
 function refreshTopbarOnly() {
@@ -248,6 +298,8 @@ function journeyCtx() {
     toast,
     reward,
     submitAnswer,
+    nudgeCompanion,
+    queueRelic,
     getUser: getCurrentUser,
     getCharacter: () => {
       const u = getCurrentUser();
@@ -307,6 +359,8 @@ function render() {
     });
   } else if (state.levelUpReveal) {
     mountLevelUpReveal();
+  } else if (state.relicReveal) {
+    mountRelicReveal();
   }
 }
 

@@ -116,3 +116,23 @@ export function renderPromoteReveal({ char, fromId, toId, gender, quote }) {
     </div>
   </div>`;
 }
+
+/** 角色經驗升級（唔係身份晉升） */
+export function renderLevelUpReveal({ fromLv, toLv }) {
+  const from = Math.max(1, Number(fromLv) || 1);
+  const to = Math.max(from + 1, Number(toLv) || from + 1);
+  return `
+  <div class="levelup-reveal" id="levelup-reveal" role="dialog" aria-modal="true" aria-label="角色升級">
+    <div class="levelup-flash" aria-hidden="true"></div>
+    <div class="levelup-inner">
+      <p class="eyebrow ink-gold">修業有成</p>
+      <div class="levelup-tick">
+        <span class="levelup-from">Lv.${from}</span>
+        <span class="levelup-arrow" aria-hidden="true">→</span>
+        <span class="levelup-to">Lv.${to}</span>
+      </div>
+      <p class="levelup-copy">修業有成 · 升至 Lv.${to}</p>
+      <button type="button" class="btn" id="levelup-continue">繼續</button>
+    </div>
+  </div>`;
+}

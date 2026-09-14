@@ -349,6 +349,102 @@
   to { opacity: 1; transform: none; }
 }
 
+/* 角色經驗升級（短促金光，唔擋成段旅程） */
+.levelup-reveal {
+  position: fixed;
+  inset: 0;
+  z-index: 75;
+  display: grid;
+  place-items: center;
+  background: rgba(24, 35, 33, 0.55);
+  padding: 1rem;
+  cursor: pointer;
+  animation: revealFade 0.35s ease both;
+}
+.levelup-flash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 55% 40% at 50% 42%, rgba(224, 184, 78, 0.42), transparent 62%),
+    radial-gradient(ellipse 30% 24% at 50% 40%, rgba(184, 58, 47, 0.18), transparent 70%);
+  animation: levelupFlash 1.6s ease-out both;
+}
+.levelup-inner {
+  position: relative;
+  max-width: 420px;
+  width: 100%;
+  background: linear-gradient(180deg, #24302c, #182321);
+  border: 1px solid rgba(178, 148, 85, 0.55);
+  border-radius: 10px;
+  padding: 1.35rem 1.4rem 1.2rem;
+  color: #fffcf5;
+  text-align: center;
+  box-shadow: 0 16px 40px rgba(12, 14, 12, 0.35);
+  animation: revealPop 0.55s 0.08s ease both;
+}
+.levelup-tick {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.7rem;
+  margin: 0.35rem 0 0.55rem;
+  font-family: var(--font-display);
+}
+.levelup-from {
+  font-size: 1.35rem;
+  opacity: 0.5;
+  animation: levelupFrom 0.7s ease both;
+}
+.levelup-arrow {
+  font-size: 1.35rem;
+  color: var(--gold);
+}
+.levelup-to {
+  font-size: 2.15rem;
+  font-weight: 700;
+  color: var(--gold);
+  text-shadow: 0 0 18px rgba(224, 184, 78, 0.45);
+  animation: levelupTo 0.75s 0.18s ease both;
+}
+.levelup-copy {
+  margin: 0 0 0.95rem;
+  letter-spacing: 0.12em;
+  color: #f3e8d4;
+}
+.levelup-inner .btn {
+  pointer-events: auto;
+}
+.reduce-motion .levelup-reveal,
+.reduce-motion .levelup-flash,
+.reduce-motion .levelup-inner,
+.reduce-motion .levelup-from,
+.reduce-motion .levelup-to {
+  animation: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .levelup-reveal,
+  .levelup-flash,
+  .levelup-inner,
+  .levelup-from,
+  .levelup-to {
+    animation: none !important;
+  }
+}
+@keyframes levelupFlash {
+  0% { opacity: 0; }
+  18% { opacity: 1; }
+  100% { opacity: 0.35; }
+}
+@keyframes levelupFrom {
+  from { opacity: 0.85; transform: translateX(8px); }
+  to { opacity: 0.5; transform: none; }
+}
+@keyframes levelupTo {
+  from { opacity: 0; transform: translateY(10px) scale(0.86); filter: brightness(1.4); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+
 /* 答題模式：人物退到角落 */
 .study-mode {
   position: relative;

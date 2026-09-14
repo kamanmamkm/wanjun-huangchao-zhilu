@@ -946,6 +946,26 @@ h1, h2, h3,
 }
 .reveal-arrow { color: var(--gold) !important; }
 
+.levelup-reveal {
+  background: rgba(42, 36, 28, 0.58);
+}
+.levelup-inner {
+  background:
+    var(--pattern-grain),
+    linear-gradient(180deg, #fffaf0, #f3e8d4);
+  color: var(--ink);
+  border: var(--border-gold);
+}
+.levelup-from { color: var(--ink-soft); }
+.levelup-arrow { color: var(--cinnabar) !important; }
+.levelup-to {
+  color: var(--gold-deep) !important;
+  text-shadow: 0 0 16px rgba(224, 184, 78, 0.35);
+}
+.levelup-copy {
+  color: var(--ink);
+}
+
 @media (max-width: 960px) {
   .poster-home {
     grid-template-columns: 1fr;

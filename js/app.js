@@ -1,11 +1,11 @@
-import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad48";
-import { QUESTIONS } from "./data/questions.js?v=rad48";
-import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad48";
-import { levelFromXp } from "./data/levels.js?v=rad48";
-import { DIALOGUES } from "./data/dialogues.js?v=rad48";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad48";
-import { VIDEOS } from "./data/videos.js?v=rad48";
-import { renderAvatar } from "./avatar.js?v=rad48";
+import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad49";
+import { QUESTIONS } from "./data/questions.js?v=rad49";
+import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad49";
+import { levelFromXp } from "./data/levels.js?v=rad49";
+import { DIALOGUES } from "./data/dialogues.js?v=rad49";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad49";
+import { VIDEOS } from "./data/videos.js?v=rad49";
+import { renderAvatar } from "./avatar.js?v=rad49";
 import {
   CARD_TYPES,
   createBattle,
@@ -15,7 +15,7 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=rad48";
+} from "./data/shizhan.js?v=rad49";
 import {
   getCurrentUser,
   registerUser,
@@ -24,7 +24,7 @@ import {
   addXp,
   updateUser,
   pushRecent,
-} from "./storage.js?v=rad48";
+} from "./storage.js?v=rad49";
 import {
   userSnapshot,
   buildPromotionOrder,
@@ -37,8 +37,8 @@ import {
   IDENTITY_DISCLAIMER,
   identityDisplayName,
   getIdentity,
-} from "./progress.js?v=rad48";
-import { renderWheelPage, bindWheel } from "./wheel.js?v=rad48";
+} from "./progress.js?v=rad49";
+import { renderWheelPage, bindWheel } from "./wheel.js?v=rad49";
 import {
   renderJourneyHome,
   renderScroll,
@@ -49,11 +49,11 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad48";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad48";
-import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad48";
-import { getStageVisual } from "./data/stageVisuals.js?v=rad48";
-import { flavorLine } from "./data/flavor.js?v=rad48";
+} from "./journey.js?v=rad49";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad49";
+import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad49";
+import { getStageVisual } from "./data/stageVisuals.js?v=rad49";
+import { flavorLine } from "./data/flavor.js?v=rad49";
 import {
   FORM_YEARS,
   normalizeFormYear,
@@ -62,8 +62,8 @@ import {
   normalizeClassId,
   formYearFromClassId,
   classIdHint,
-} from "./data/formYear.js?v=rad48";
-import { pickRandomHeroName, isPooledHeroName, HERO_NAME_COUNT } from "./data/heroNames.js?v=rad48";
+} from "./data/formYear.js?v=rad49";
+import { pickRandomHeroName, isPooledHeroName, HERO_NAME_COUNT } from "./data/heroNames.js?v=rad49";
 
 const app = document.getElementById("app");
 let toastTimer = null;
@@ -878,7 +878,7 @@ function renderGamesHub() {
       </article>
       <article class="quest-card tone-indigo" data-goto="timeline" style="--i:3">
         <div class="quest-icon"><span class="ico ico-scroll" style="width:1.4em;height:1.4em"></span></div>
-        <div class="quest-body"><h3>時光長河</h3><p>把事件放回正確年代（可再抽一局）</p></div>
+        <div class="quest-body"><h3>時光長河</h3><p>由早到晚排好事件（可再抽一局）</p></div>
         <span class="quest-xp">+${XP_REWARDS.timelineComplete}</span>
       </article>
       <article class="quest-card tone-cinnabar" data-goto="dialogue" style="--i:4">
@@ -1208,14 +1208,65 @@ function bindWordwall() {
   }
 }
 
+function formatEraYear(y) {
+  const n = Number(y);
+  return n < 0 ? `前${Math.abs(n)}` : String(n);
+}
+
+function preferReduceMotion() {
+  return (
+    document.body.classList.contains("reduce-motion") ||
+    window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches
+  );
+}
+
+function timelineOrderSorted(order) {
+  if (!order?.length) return false;
+  return order.every((it, i) => i === 0 || Number(it.year) > Number(order[i - 1].year));
+}
+
 function dealTimelineRound(set) {
   const n = Math.min(set.pick || 5, set.items.length);
   const picked = shuffle([...set.items]).slice(0, n);
-  picked.sort((a, b) => a.year - b.year);
-  return {
-    items: picked,
-    labels: shuffle(picked.map((i) => i.label)),
-  };
+  let order = shuffle([...picked]);
+  if (timelineOrderSorted(order) && order.length > 1) {
+    const tmp = order[0];
+    order[0] = order[1];
+    order[1] = tmp;
+  }
+  return { items: picked, order };
+}
+
+function resetTimelineDeal(set) {
+  const deal = dealTimelineRound(set);
+  state.timeline.shuffleId = set.id;
+  state.timeline.roundItems = deal.items;
+  state.timeline.order = deal.order;
+  state.timeline.pick = null;
+  state.timeline.marks = [];
+  state.timeline.revealed = false;
+  state.timeline.feedback = "";
+}
+
+function moveTimelineCard(from, to) {
+  const order = [...(state.timeline.order || [])];
+  if (from === to || from < 0 || to < 0 || from >= order.length || to >= order.length) return;
+  const [moved] = order.splice(from, 1);
+  order.splice(to, 0, moved);
+  state.timeline.order = order;
+  state.timeline.pick = null;
+  state.timeline.marks = [];
+}
+
+function swapTimelineCards(a, b) {
+  const order = [...(state.timeline.order || [])];
+  if (a === b || a < 0 || b < 0 || a >= order.length || b >= order.length) return;
+  const tmp = order[a];
+  order[a] = order[b];
+  order[b] = tmp;
+  state.timeline.order = order;
+  state.timeline.pick = null;
+  state.timeline.marks = [];
 }
 
 function renderTimeline() {
@@ -1229,18 +1280,19 @@ function renderTimeline() {
     state.timeline.shuffleId = null;
     state.timeline.roundItems = null;
   }
-  // 每套題池較大：每次開局／重洗抽不同子集，減少重複感
-  if (state.timeline.shuffleId !== set.id || !state.timeline.roundItems?.length) {
-    const deal = dealTimelineRound(set);
-    state.timeline.shuffleId = set.id;
-    state.timeline.roundItems = deal.items;
-    state.timeline.labels = deal.labels;
+  if (state.timeline.shuffleId !== set.id || !state.timeline.order?.length) {
+    resetTimelineDeal(set);
   }
-  const round = state.timeline.roundItems;
+  const order = state.timeline.order;
+  const reduce = preferReduceMotion();
+  const revealed = !!state.timeline.revealed;
+  const marks = state.timeline.marks || [];
+  const pick = state.timeline.pick;
   return `
   <section class="panel">
-    <h2>人物／事件時間線</h2>
-    <p class="lead">${set.title}（${set.grade}）——本題抽 ${round.length}／${set.items.length} 件事件。全部配對正確即過關。${formYearHint(year)}</p>
+    <h2>時光長河</h2>
+    <p class="lead">${set.title}（${set.grade}）——本題抽 ${order.length}／${set.items.length} 件。由上至下排成<strong>由早到晚</strong>，核對後才顯示年份。${formYearHint(year)}</p>
+    <p class="muted">${reduce ? "撳兩張牌可交換位置。" : "拖曳排序，或撳兩張牌交換位置。"}</p>
     <div class="toolbar">
       ${pool
         .map(
@@ -1250,30 +1302,31 @@ function renderTimeline() {
         .join("")}
       <button class="btn ghost" type="button" id="tl-reshuffle">再抽一局</button>
     </div>
-    <div class="timeline-list" id="tl-list">
-      ${round
-        .map((item) => {
-          const y = item.year;
+    <div class="timeline-river" id="tl-list" role="list">
+      ${order
+        .map((item, i) => {
+          const mark = marks[i] || "";
+          const selected = pick === i ? " is-picked" : "";
           return `
-          <div class="timeline-slot">
-            <div class="year">${y < 0 ? `前${Math.abs(y)}` : y}</div>
-            <select data-year="${y}" data-expect="${item.label}">
-              <option value="">— 選擇事件 —</option>
-              ${state.timeline.labels.map((l) => `<option value="${l}">${l}</option>`).join("")}
-            </select>
+          <div class="tl-card${selected}${mark === "ok" ? " is-ok" : ""}${mark === "bad" ? " is-bad" : ""}" role="listitem" tabindex="0" data-tl-i="${i}" ${
+            reduce ? "" : 'draggable="true"'
+          }>
+            <span class="tl-ord" aria-hidden="true">${i + 1}</span>
+            <span class="tl-label">${item.label}</span>
+            ${revealed ? `<span class="tl-year">${formatEraYear(item.year)}</span>` : ""}
           </div>`;
         })
         .join("")}
     </div>
-    <div style="margin-top:1rem;display:flex;gap:.6rem;flex-wrap:wrap">
-      <button class="btn" type="button" id="tl-check">核對時間線</button>
+    <div class="row-actions">
+      <button class="btn" type="button" id="tl-check">核對時序</button>
       ${
         state.stageInteract?.game === "timeline" || state.timelineFromStage
           ? `<button class="btn ghost" type="button" id="tl-back-stage">返回本關</button>`
           : `<button class="btn ghost" type="button" data-goto="games">返回大廳</button>`
       }
     </div>
-    <div class="feedback hidden" id="feedback"></div>
+    <div class="feedback ${state.timeline.feedback ? "" : "hidden"}" id="feedback">${state.timeline.feedback || ""}</div>
   </section>`;
 }
 
@@ -1283,12 +1336,14 @@ function bindTimeline() {
       state.timeline.setId = btn.dataset.tl;
       state.timeline.shuffleId = null;
       state.timeline.roundItems = null;
+      state.timeline.order = null;
       render();
     });
   });
   app.querySelector("#tl-reshuffle")?.addEventListener("click", () => {
     state.timeline.shuffleId = null;
     state.timeline.roundItems = null;
+    state.timeline.order = null;
     toast("已換一組新事件");
     render();
   });
@@ -1301,21 +1356,77 @@ function bindTimeline() {
     }
     render();
   });
-  app.querySelector("#tl-check")?.addEventListener("click", () => {
-    const selects = [...app.querySelectorAll("select[data-expect]")];
-    let ok = 0;
-    selects.forEach((s) => {
-      if (s.value === s.dataset.expect) {
-        ok++;
-        s.style.borderColor = "var(--jade)";
-      } else {
-        s.style.borderColor = "var(--cinnabar)";
+
+  const list = app.querySelector("#tl-list");
+  const reduce = preferReduceMotion();
+  let dragFrom = null;
+  let didDrag = false;
+
+  const onPick = (i) => {
+    if (didDrag) {
+      didDrag = false;
+      return;
+    }
+    const cur = state.timeline.pick;
+    if (cur == null || cur === i) {
+      state.timeline.pick = cur === i ? null : i;
+      render();
+      return;
+    }
+    swapTimelineCards(cur, i);
+    render();
+  };
+
+  list?.querySelectorAll("[data-tl-i]").forEach((card) => {
+    const i = Number(card.dataset.tlI);
+    card.addEventListener("click", () => onPick(i));
+    card.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        onPick(i);
       }
     });
-    const fb = app.querySelector("#feedback");
-    fb.classList.remove("hidden");
-    fb.textContent = `正確 ${ok}/${selects.length}`;
-    if (ok === selects.length && selects.length) {
+    if (reduce) return;
+    card.addEventListener("dragstart", (e) => {
+      dragFrom = i;
+      didDrag = false;
+      card.classList.add("is-dragging");
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", String(i));
+    });
+    card.addEventListener("dragend", () => {
+      card.classList.remove("is-dragging");
+    });
+    card.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+    });
+    card.addEventListener("drop", (e) => {
+      e.preventDefault();
+      const from = dragFrom ?? Number(e.dataTransfer.getData("text/plain"));
+      const to = Number(card.dataset.tlI);
+      if (Number.isNaN(from) || from === to) return;
+      didDrag = true;
+      moveTimelineCard(from, to);
+      dragFrom = null;
+      render();
+    });
+  });
+
+  app.querySelector("#tl-check")?.addEventListener("click", () => {
+    const order = state.timeline.order || [];
+    if (!order.length) return;
+    const sorted = [...order].sort((a, b) => Number(a.year) - Number(b.year));
+    const marks = order.map((it, i) => (it.id === sorted[i].id ? "ok" : "bad"));
+    const ok = marks.filter((m) => m === "ok").length;
+    const all = timelineOrderSorted(order);
+    state.timeline.marks = all ? order.map(() => "ok") : marks;
+    state.timeline.revealed = true;
+    state.timeline.pick = null;
+    state.timeline.feedback = all
+      ? `時序全對 ${order.length}/${order.length}`
+      : `時序正確 ${ok}/${order.length}　可再排`;
+    if (all) {
       submitAnswer(XP_REWARDS.timelineComplete, {
         recordId: makeAttemptId(),
         correct: true,
@@ -1330,12 +1441,12 @@ function bindTimeline() {
       if (from) {
         const { already } = finishInteractStage(from, {
           mastered: true,
-          correct: selects.length,
-          total: selects.length,
+          correct: order.length,
+          total: order.length,
         });
         toast(already ? "全對！本關早已完成" : "全對！本關已記入長卷");
       } else {
-        toast("全對！可按「再抽一局」繼續練");
+        toast("全對！可按「再抽一局」繼續");
       }
     } else {
       submitAnswer(0, {
@@ -1348,8 +1459,9 @@ function bindTimeline() {
         source: "遊戲",
         keepView: true,
       });
-      toast("尚未全對，再檢查一下");
+      toast("尚未全對，再排一次");
     }
+    render();
   });
 }
 

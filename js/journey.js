@@ -1,16 +1,16 @@
 /**
  * 《任平生》主介面：行旅首頁、歷史長卷、晉升殿、待考札記、史冊
  */
-import { CHAPTERS, chapterList } from "./data/chapters.js?v=rad48";
-import { XP_REWARDS } from "./data/levels.js?v=rad48";
+import { CHAPTERS, chapterList } from "./data/chapters.js?v=rad49";
+import { XP_REWARDS } from "./data/levels.js?v=rad49";
 import { CUOSHI_BATTLES, getCuoshi } from "./data/cuoshi.js";
-import { IDENTITIES } from "./data/identities.js?v=rad48";
+import { IDENTITIES } from "./data/identities.js?v=rad49";
 import { getStageVisual, SKILL_BARS, skillFill, STAGE_RELIC, realmLabel } from "./data/stageVisuals.js";
 import { heroDisplayName, normalizeHeroName } from "./data/characters.js";
 import { pickRandomHeroName, HERO_NAME_COUNT } from "./data/heroNames.js";
 import { renderAvatar } from "./avatar.js";
 import { renderHeroStage, renderStudyCompanion, renderPromoteReveal } from "./heroStage.js";
-import { nextHook, nextStageAfter, todayEncounter } from "./data/flavor.js?v=rad48";
+import { nextHook, nextStageAfter, todayEncounter } from "./data/flavor.js?v=rad49";
 import {
   userSnapshot,
   wheelStatus,
@@ -39,7 +39,7 @@ import {
   markCuoshiWon,
   levelBandLines,
   stageIdForUser,
-} from "./progress.js?v=rad48";
+} from "./progress.js?v=rad49";
 import { updateUser, addXp, pushRecent } from "./storage.js";
 import { getTrial } from "./data/trials.js";
 
@@ -345,7 +345,7 @@ export function isChapterEnterable(user, chapterId) {
 
 const INTERACT_COPY = {
   timeline: {
-    how: "年份已排好，你要為每個年份揀返正確事件。<strong>本局全部配對正確（全對）</strong>即完成本關，會自動記入長卷。",
+    how: "把事件牌排成由早到晚。<strong>本局全部按時序排對（全對）</strong>即完成本關，會自動記入長卷。核對後才顯示年份。",
     start: "開始時序長廊",
     again: "再玩一局",
     done: "本關已完成——你已全對過一局。",

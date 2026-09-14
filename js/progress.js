@@ -1,7 +1,7 @@
 /**
  * 晉升條件評估、掌握度、錯題札記、章節進度
  */
-import { levelFromXp } from "./data/levels.js";
+import { levelFromXp } from "./data/levels.js?v=rad48";
 import {
   getIdentity,
   identityDisplayName,
@@ -12,10 +12,10 @@ import {
   migrateIdentityId,
   STARTING_IDENTITY_ID,
   IDENTITIES,
-} from "./data/identities.js";
-import { CHAPTERS, REMEDIALS } from "./data/chapters.js?v=rad41";
-import { relicFor, isoDay } from "./data/flavor.js";
-import { WHEEL_SLICES } from "./data/wheel.js?v=rad47";
+} from "./data/identities.js?v=rad48";
+import { CHAPTERS, REMEDIALS } from "./data/chapters.js?v=rad48";
+import { relicFor, isoDay } from "./data/flavor.js?v=rad48";
+import { WHEEL_SLICES } from "./data/wheel.js?v=rad48";
 import { getTrial } from "./data/trials.js";
 import { stageIdFromLevel, stageIdForUser, syncIdentityToLevel, levelBandLines, nextStageMinLevel, LEVEL_STAGE_BANDS } from "./data/levelStage.js";
 
@@ -117,7 +117,7 @@ export function recordAttempt(user, payload = {}) {
     grade: payload.grade || "",
     topic,
     skill,
-    source: payload.source || (payload.game ? "遊戲" : "練習"),
+    source: payload.source || (payload.game ? "遊戲" : "答題"),
     chapterId: payload.chapterId || "",
   });
   user.quizLog = user.quizLog.slice(0, 250);
@@ -443,7 +443,7 @@ export function buildPromotionOrder(user) {
       ok: levelOk,
       label: `達到 Lv.${needLv}`,
       hint: levelOk ? "" : `現 Lv.${lv.level}`,
-      goto: levelOk ? null : "practice",
+      goto: levelOk ? null : "home",
     },
     {
       key: "tasks",

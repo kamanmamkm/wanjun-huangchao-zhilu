@@ -1,9 +1,9 @@
 /**
  * 天機輪分頁：每日答對後可轉一次。
  */
-import { WHEEL_SLICES, wheelGradient, wheelStopAngle, pickWheelIndex } from "./data/wheel.js?v=rad47";
-import { wheelStatus, applyWheelPrize } from "./progress.js?v=rad47";
-import { updateUser, addXp } from "./storage.js?v=rad47";
+import { WHEEL_SLICES, wheelGradient, wheelStopAngle, pickWheelIndex } from "./data/wheel.js?v=rad48";
+import { wheelStatus, applyWheelPrize } from "./progress.js?v=rad48";
+import { updateUser, addXp } from "./storage.js?v=rad48";
 
 function discCaption(slice) {
   if (slice.xp && slice.score) return `兼得<br>＋${slice.xp}／${slice.score}`;
@@ -37,7 +37,7 @@ export function renderWheelPage(user) {
       <button type="button" class="btn" id="wheel-spin" ${st.canSpin ? "" : "disabled"}>${
         st.spun ? "今日已轉" : st.canSpin ? "轉動天機輪" : "先去答對一題"
       }</button>
-      <button type="button" class="btn ghost" data-goto="practice">去做練習</button>
+      <button type="button" class="btn ghost" data-goto="scroll">去長卷答題</button>
     </div>
     ${
       st.lastPrize

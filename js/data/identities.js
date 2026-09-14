@@ -5,7 +5,7 @@
  */
 
 export const IDENTITY_DISCLAIMER =
-  "角色等級靠練習與小遊戲累積經驗。身份晉升要達到指定等級、完成學習任務，再通過短試煉才解鎖稱謂與造型。";
+  "角色等級靠長卷關卡與小遊戲累積經驗。身份晉升要達到指定等級、完成學習任務，再通過短試煉才解鎖稱謂與造型。";
 
 export const STARTING_IDENTITY_ID = 0;
 

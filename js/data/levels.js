@@ -1,5 +1,5 @@
 /**
- * 角色等級（練習、小遊戲累積經驗）
+ * 角色等級（長卷關卡、小遊戲累積經驗）
  * 身份晉升：達指定等級後通過短試煉解鎖（見 identities.PROMOTION_GATES）
  */
 export const XP_REWARDS = {

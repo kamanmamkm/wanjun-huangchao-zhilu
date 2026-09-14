@@ -290,7 +290,7 @@ export function renderJourneyHome(user, char, ui = {}) {
         <div class="poster-actions">
           <button type="button" class="btn" ${questAction}>${task.label}</button>
           <button type="button" class="btn ghost" data-goto="scroll">歷史長卷</button>
-          <button type="button" class="btn ghost" data-goto="cuoshi">錯史之戰</button>
+          <button type="button" class="btn ghost" data-goto="games">趣味關卡</button>
         </div>
       </div>
       ${
@@ -599,11 +599,12 @@ export function renderCuoshi(user) {
   ).join("");
   return `
   <section class="panel-paper cuoshi-view">
-    <p class="eyebrow ink-red">錯史之戰</p>
+    <p class="eyebrow ink-red">趣味關卡 · 錯史之戰</p>
     <h2>修復被改亂的史頁</h2>
-      <p class="lead">Boss 是錯史本身：讀殘卷，撳出錯句，再揀修正。一關大約三分鐘。</p>
+    <p class="lead">Boss 是錯史本身：讀殘卷，撳出錯句，再揀修正。一關大約三分鐘。</p>
     <div class="cuoshi-grid">${cards}</div>
     <div id="cuoshi-panel" class="hidden"></div>
+    <button type="button" class="btn ghost" data-goto="games">返回大廳</button>
   </section>`;
 }
 
@@ -1545,13 +1546,13 @@ export function renderNotes(user) {
 
   return `
   <section class="panel-paper">
+    <p class="eyebrow ink-red">趣味關卡 · 待考札記</p>
     <h2>待考札記</h2>
     <p class="lead">錯題變成修練——指出弱項，補強後再戰。長卷可重答；考核另用新題。</p>
     <div class="note-grid">${cards || "<p>暫無未掌握錯題。繼續長卷或趣味關卡吧。</p>"}</div>
     <div class="row-actions">
+      <button type="button" class="btn ghost" data-goto="games">返回大廳</button>
       <button type="button" class="btn" data-goto="scroll">去長卷</button>
-      <button type="button" class="btn ghost" data-goto="timeline">時序長廊</button>
-      <button type="button" class="btn ghost" data-goto="dialogue">朝堂議事·對話</button>
     </div>
   </section>`;
 }

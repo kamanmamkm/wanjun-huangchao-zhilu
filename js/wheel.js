@@ -1,14 +1,14 @@
 /**
  * 天機輪分頁：每答對一題可轉一次，次數可累積。
  */
-import { WHEEL_SLICES, wheelGradient, wheelStopAngle, pickWheelIndex } from "./data/wheel.js?v=rad50";
-import { wheelStatus, applyWheelPrize } from "./progress.js?v=rad50";
+import { WHEEL_SLICES, wheelGradient, wheelStopAngle, pickWheelIndex } from "./data/wheel.js?v=rad53";
+import { wheelStatus, applyWheelPrize } from "./progress.js?v=rad53";
 import { updateUser, addXp } from "./storage.js?v=rad50";
 
 function discCaption(slice) {
-  if (slice.xp && slice.score) return `兼得<br>＋${slice.xp}／${slice.score}`;
-  if (slice.xp) return `${slice.label.split("＋")[0]}<br>＋${slice.xp}`;
-  return `史績<br>＋${slice.score}`;
+  const name = slice.caption || (slice.xp ? slice.label.split("＋")[0] : "史績");
+  const amount = slice.xp || slice.score || 0;
+  return `${name}<br>＋${amount}`;
 }
 
 function nextWheelAngle(prev, index, extraSpins) {
@@ -25,7 +25,7 @@ export function renderWheelPage(user) {
   const n = WHEEL_SLICES.length;
   const labels = WHEEL_SLICES.map((s, i) => {
     const rot = (i + 0.5) * (360 / n);
-    return `<span class="wheel-label" style="--rot:${rot}deg">${discCaption(s)}</span>`;
+    return `<span class="wheel-label" style="--rot:${rot}deg"><span class="wheel-label-inner">${discCaption(s)}</span></span>`;
   }).join("");
   let hint = "答對一題就加一次轉動。次數用完再去長卷答題。";
   if (st.canSpin) hint = `尚有 ${st.charges} 次可轉。`;

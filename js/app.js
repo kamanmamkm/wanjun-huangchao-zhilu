@@ -37,8 +37,8 @@ import {
   IDENTITY_DISCLAIMER,
   identityDisplayName,
   getIdentity,
-} from "./progress.js?v=rad50";
-import { renderWheelPage, bindWheel } from "./wheel.js?v=rad50";
+} from "./progress.js?v=rad53";
+import { renderWheelPage, bindWheel } from "./wheel.js?v=rad55";
 import {
   renderJourneyHome,
   renderScroll,

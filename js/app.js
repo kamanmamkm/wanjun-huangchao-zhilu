@@ -49,7 +49,7 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad58";
+} from "./journey.js?v=rad59";
 import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad50";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad50";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";
@@ -781,6 +781,28 @@ function renderShell(user) {
   </div>`;
 }
 
+function bindShellNav() {
+  if (app.dataset.shellNav === "1") return;
+  app.dataset.shellNav = "1";
+  app.addEventListener("click", (e) => {
+    const nav = e.target.closest("[data-nav]");
+    if (nav) {
+      state.view = nav.dataset.nav;
+      if (state.view === "scroll") state.scrollStage = null;
+      if (state.view === "cuoshi") state.cuoshi = null;
+      render();
+      return;
+    }
+    const go = e.target.closest("[data-goto]");
+    if (!go) return;
+    const dest = go.dataset.goto === "practice" ? "home" : go.dataset.goto;
+    state.view = dest;
+    if (state.view === "scroll") state.scrollStage = null;
+    if (dest === "cuoshi") state.cuoshi = null;
+    render();
+  });
+}
+
 function bindShell(user) {
   const char = getCharacter(user.gender, user.characterId);
   app.querySelector("#logout-btn")?.addEventListener("click", () => {
@@ -790,23 +812,7 @@ function bindShell(user) {
     clearSession();
     render();
   });
-  app.querySelectorAll("[data-nav]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      state.view = btn.dataset.nav;
-      if (state.view === "scroll") {
-        state.scrollStage = null;
-      }
-      render();
-    });
-  });
-  app.querySelectorAll("[data-goto]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const dest = btn.dataset.goto === "practice" ? "home" : btn.dataset.goto;
-      state.view = dest;
-      if (state.view === "scroll") state.scrollStage = null;
-      render();
-    });
-  });
+  bindShellNav();
 
   bindJourney(user, journeyCtx());
   if (state.view === "wheel") bindWheel(user, { toast, render, state });

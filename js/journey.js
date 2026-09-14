@@ -13,6 +13,7 @@ import { renderHeroStage, renderStudyCompanion, renderPromoteReveal } from "./he
 import { nextHook, nextStageAfter, todayEncounter } from "./data/flavor.js";
 import {
   userSnapshot,
+  wheelStatus,
   buildPromotionOrder,
   completeStage,
   settleStage,
@@ -38,7 +39,7 @@ import {
   markCuoshiWon,
   levelBandLines,
   stageIdForUser,
-} from "./progress.js";
+} from "./progress.js?v=rad46";
 import { updateUser, addXp, pushRecent } from "./storage.js";
 import { getTrial } from "./data/trials.js";
 
@@ -292,6 +293,15 @@ export function renderJourneyHome(user, char, ui = {}) {
           <button type="button" class="btn ghost" data-goto="cuoshi">錯史之戰</button>
         </div>
       </div>
+      ${
+        wheelStatus(user).canSpin
+          ? `<div class="wheel-teaser edict">
+        <p class="eyebrow">天機輪</p>
+        <p>今日可轉天機輪</p>
+        <button type="button" class="btn" data-goto="wheel">前往天機輪</button>
+      </div>`
+          : ""
+      }
       ${renderFlavorCard(user, ui)}
       ${promoteBlock}
       <div class="poster-skills">${skillBars}</div>

@@ -2068,3 +2068,106 @@ button:active:not(:disabled):not(.locked),
   color: var(--ink-soft);
   line-height: 1.5;
 }
+
+/* 天機輪 */
+.wheel-view .lead {
+  max-width: 42rem;
+}
+.wheel-score {
+  margin: 0.35rem 0 0.2rem;
+  font-size: 1.02rem;
+  letter-spacing: 0.04em;
+}
+.wheel-score strong {
+  color: var(--cinnabar-deep);
+  font-family: var(--font-display);
+}
+.wheel-stage {
+  position: relative;
+  width: min(320px, 86vw);
+  margin: 1.1rem auto 1.15rem;
+}
+.wheel-pointer {
+  position: absolute;
+  top: -7px;
+  left: 50%;
+  z-index: 3;
+  width: 0;
+  height: 0;
+  border-left: 11px solid transparent;
+  border-right: 11px solid transparent;
+  border-top: 18px solid var(--cinnabar);
+  transform: translateX(-50%);
+  filter: drop-shadow(0 1px 0 rgba(255, 248, 230, 0.55));
+}
+.wheel-disc {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  position: relative;
+  overflow: hidden;
+  border: 8px solid #8a7340;
+  box-shadow:
+    0 0 0 3px #f4e8c8,
+    0 10px 24px rgba(37, 40, 32, 0.18),
+    inset 0 0 0 2px rgba(255, 248, 230, 0.28);
+}
+.wheel-disc::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 18%;
+  height: 18%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f7efd6, #b29455 55%, #8a7340);
+  border: 2px solid #6e5430;
+  z-index: 2;
+  box-shadow: 0 2px 6px rgba(37, 40, 32, 0.2);
+}
+.wheel-label {
+  position: absolute;
+  inset: 9%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  transform: rotate(var(--rot));
+  pointer-events: none;
+  z-index: 1;
+  color: #fffaf3;
+  text-align: center;
+  font-size: clamp(0.62rem, 2.4vw, 0.78rem);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 2px rgba(20, 12, 8, 0.45);
+}
+.wheel-teaser {
+  margin: 0.45rem 0 0;
+  padding: 0.7rem 0.85rem;
+  max-width: 22rem;
+}
+.wheel-teaser .eyebrow {
+  margin: 0 0 0.2rem;
+  letter-spacing: 0.16em;
+  color: var(--gold-deep, #8a7340);
+}
+.wheel-teaser p {
+  margin: 0 0 0.5rem;
+}
+
+@media (max-width: 640px) {
+  .wheel-stage {
+    width: min(280px, 88vw);
+  }
+  .wheel-disc {
+    border-width: 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wheel-disc {
+    transition: none !important;
+  }
+}

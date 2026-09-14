@@ -1,11 +1,11 @@
-import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad45";
-import { QUESTIONS, checkFill } from "./data/questions.js?v=rad45";
-import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad45";
-import { levelFromXp } from "./data/levels.js?v=rad45";
-import { DIALOGUES } from "./data/dialogues.js?v=rad45";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad45";
-import { VIDEOS } from "./data/videos.js?v=rad45";
-import { renderAvatar } from "./avatar.js?v=rad45";
+import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad46";
+import { QUESTIONS, checkFill } from "./data/questions.js?v=rad46";
+import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad46";
+import { levelFromXp } from "./data/levels.js?v=rad46";
+import { DIALOGUES } from "./data/dialogues.js?v=rad46";
+import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad46";
+import { VIDEOS } from "./data/videos.js?v=rad46";
+import { renderAvatar } from "./avatar.js?v=rad46";
 import {
   CARD_TYPES,
   createBattle,
@@ -15,7 +15,7 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=rad45";
+} from "./data/shizhan.js?v=rad46";
 import {
   getCurrentUser,
   registerUser,
@@ -24,7 +24,7 @@ import {
   addXp,
   updateUser,
   pushRecent,
-} from "./storage.js?v=rad45";
+} from "./storage.js?v=rad46";
 import {
   userSnapshot,
   buildPromotionOrder,
@@ -37,7 +37,8 @@ import {
   IDENTITY_DISCLAIMER,
   identityDisplayName,
   getIdentity,
-} from "./progress.js?v=rad45";
+} from "./progress.js?v=rad46";
+import { renderWheelPage, bindWheel } from "./wheel.js?v=rad46";
 import {
   renderJourneyHome,
   renderScroll,
@@ -48,11 +49,11 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad45";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad45";
-import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad45";
-import { getStageVisual } from "./data/stageVisuals.js?v=rad45";
-import { flavorLine } from "./data/flavor.js?v=rad45";
+} from "./journey.js?v=rad46";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad46";
+import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad46";
+import { getStageVisual } from "./data/stageVisuals.js?v=rad46";
+import { flavorLine } from "./data/flavor.js?v=rad46";
 import {
   FORM_YEARS,
   normalizeFormYear,
@@ -62,8 +63,8 @@ import {
   normalizeClassId,
   formYearFromClassId,
   classIdHint,
-} from "./data/formYear.js?v=rad45";
-import { pickRandomHeroName, isPooledHeroName, HERO_NAME_COUNT } from "./data/heroNames.js?v=rad45";
+} from "./data/formYear.js?v=rad46";
+import { pickRandomHeroName, isPooledHeroName, HERO_NAME_COUNT } from "./data/heroNames.js?v=rad46";
 
 const app = document.getElementById("app");
 let toastTimer = null;
@@ -98,6 +99,8 @@ let state = {
   teacherUser: null,
   teacherFilter: "全部",
   guestPlay: { active: false, index: 0, done: false, locked: false, score: 0, pick: null, qs: [] },
+  wheelBusy: false,
+  wheelAngle: 0,
 };
 
 function toast(msg) {
@@ -286,7 +289,7 @@ function refreshTopbarOnly() {
     <div class="avatar-ring">${renderAvatar(char, snap.stageId ?? snap.identity.id, "sm", { gender: user.gender })}</div>
     <div class="player-meta">
       <strong>${heroDisplayName(user, char)} · ${snap.identityName}</strong>
-      <span>${user.username}　${user.formYear || ""}　Lv.${snap.level.level}　XP ${user.xp}</span>
+      <span>${user.username}　${user.formYear || ""}　Lv.${snap.level.level}　XP ${user.xp}　史績 ${snap.score}</span>
       <div class="xp-bar"><i style="width:${snap.level.progress}%"></i></div>
     </div>`;
 }
@@ -711,8 +714,10 @@ function renderShell(user) {
                   ? renderCuoshi(user)
                   : state.view === "growth"
                     ? renderGrowthScroll(user, char, state.growthFocus)
-                    : state.view === "teacher"
-                      ? renderTeacherPage(state)
+                    : state.view === "wheel"
+                      ? renderWheelPage(user)
+                      : state.view === "teacher"
+                        ? renderTeacherPage(state)
                       : state.view === "practice"
                         ? renderPractice()
                         : state.view === "games"
@@ -742,6 +747,7 @@ function renderShell(user) {
     ["notes", "札記", "ico-note"],
     ["chronicle", "史冊", "ico-book"],
     ["practice", "練習", "ico-practice"],
+    ["wheel", "天機輪", "ico-wheel"],
     ["games", "遊戲", "ico-game"],
     ["teacher", "老師", "ico-teacher"],
   ];
@@ -753,7 +759,7 @@ function renderShell(user) {
         <div class="avatar-ring">${renderAvatar(char, snap.stageId ?? idn.id, "sm", { gender: user.gender })}</div>
         <div class="player-meta">
           <strong>${heroDisplayName(user, char)} · ${snap.identityName}</strong>
-          <span>${user.username}　${user.formYear || ""}　Lv.${snap.level.level}　XP ${user.xp}</span>
+          <span>${user.username}　${user.formYear || ""}　Lv.${snap.level.level}　XP ${user.xp}　史績 ${snap.score}</span>
           <div class="xp-bar"><i style="width:${snap.level.progress}%"></i></div>
         </div>
       </div>
@@ -804,6 +810,7 @@ function bindShell(user) {
   });
 
   bindJourney(user, journeyCtx());
+  if (state.view === "wheel") bindWheel(user, { toast, render, state });
   if (state.view === "teacher") bindTeacher({ render, toast, state });
 
   if (state.view === "practice") bindPractice();

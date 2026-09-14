@@ -2071,6 +2071,84 @@ select {
 .boss-progress > i { display: block; height: 100%; background: linear-gradient(90deg, #9a3424, #d4b06a); width: 0; transition: width .3s; }
 .book { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; }
 .book-page { padding: 1rem; border: 1px solid rgba(110,84,48,0.25); border-radius: 8px; background: #fffaf0; min-height: 180px; }
+.chronicle {
+  margin-top: 0.15rem;
+}
+.chronicle-ledger {
+  list-style: none;
+  margin: 1.1rem 0 0;
+  padding: 0.15rem 0 0.15rem 0.15rem;
+  border-left: 2px solid rgba(154, 52, 36, 0.32);
+}
+.chronicle-ledger li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 6.2rem 3.2rem 1fr;
+  gap: 0.45rem 0.7rem;
+  align-items: baseline;
+  padding: 0.7rem 0.4rem 0.7rem 1.15rem;
+  line-height: 1.45;
+}
+.chronicle-ledger li::before {
+  content: "";
+  position: absolute;
+  left: -5px;
+  top: 1.05rem;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #8a7340;
+  box-shadow: 0 0 0 3px rgba(243, 230, 196, 0.95);
+}
+.chronicle-ledger .ledger-promote::before { background: #9a3424; }
+.chronicle-ledger .ledger-restore::before { background: #2d6b52; }
+.chronicle-ledger time {
+  font-size: 0.88rem;
+  color: #6a5d4e;
+}
+.chronicle-ledger .ledger-mark {
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  color: #7a3a22;
+}
+.ledger-restore .ledger-mark { color: #215c45; }
+.chronicle-ledger .ledger-title {
+  font-weight: 600;
+}
+.chronicle-ledger .ledger-empty {
+  display: block;
+  color: #6a5d4e;
+  padding-left: 1.15rem;
+}
+.chronicle-ledger .ledger-empty::before { display: none; }
+.chronicle-seals {
+  margin-top: 1.15rem;
+  padding-top: 0.85rem;
+  border-top: 1px dashed rgba(138, 115, 64, 0.35);
+}
+.chronicle-seals h3 {
+  margin: 0 0 0.45rem;
+  font-size: 1rem;
+}
+.chronicle-colophon {
+  margin: 1.2rem 0 0;
+  text-align: right;
+  font-family: var(--font-display);
+  letter-spacing: 0.12em;
+  color: #6a5d4e;
+}
+@media (max-width: 640px) {
+  .chronicle-ledger li {
+    grid-template-columns: 5.4rem 1fr;
+    grid-template-areas:
+      "time mark"
+      "title title";
+  }
+  .chronicle-ledger time { grid-area: time; }
+  .chronicle-ledger .ledger-mark { grid-area: mark; }
+  .chronicle-ledger .ledger-title { grid-area: title; }
+}
 .row-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
 .top-tools { display: flex; gap: 0.5rem; align-items: center; }
 .brand-top { font-family: var(--font-display); color: #c9a227; letter-spacing: 0.08em; }

@@ -1557,29 +1557,80 @@ function bindNotes(user, ctx) {
 }
 
 export function renderChronicle(user, char) {
-  const c = user.progress?.chronicle || { promotions: [], restored: [], quotes: [] };
-  const snap = userSnapshot(user);
+  const entries = chronicleEntries(user);
+  const relics = user.progress?.relics || [];
+  const name = heroDisplayName(user, char);
+  const rows = entries.length
+    ? entries
+        .map(
+          (e) => `<li class="ledger-${e.kind}">
+      <time>${e.when}</time>
+      <span class="ledger-mark">${e.kind === "promote" ? "晉升" : "入冊"}</span>
+      <span class="ledger-title">${e.title}</span>
+    </li>`
+        )
+        .join("")
+    : `<li class="ledger-empty">尚未入冊。去長卷過關或打錯史，史頁就會寫入呢度。</li>`;
+  const stamps = relics.length
+    ? `<div class="chronicle-seals">
+        <h3>信物印記</h3>
+        <div class="relic-tray">${relics
+          .map((r) => `<span class="relic-stamp" title="${String(r.hint || "").replace(/"/g, "&quot;")}">${r.name}</span>`)
+          .join("")}</div>
+      </div>`
+    : "";
   return `
   <section class="panel-paper chronicle">
+    <p class="eyebrow ink-red">私人藏本</p>
     <h2>我的史冊</h2>
-    <p class="lead">展示你學識咗乜——最終收藏是一部自己完成的史冊，而不只是裝備。</p>
-    <div class="book">
-      <div class="book-page">
-        <h3>行者檔案</h3>
-        ${renderAvatar(char, snap.stageId, "md")}
-        <p>${heroDisplayName(user, char)} · ${snap.identityName} · Lv.${snap.level.level}</p>
-        <p>衣裝：${snap.outfit}</p>
-      </div>
-      <div class="book-page">
-        <h3>晉升紀錄</h3>
-        <ul>${(c.promotions || []).map((p) => `<li>${new Date(p.at).toLocaleDateString()} → ${identityDisplayName(getIdentity(p.to), user.gender)}</li>`).join("") || "<li>尚未晉升——先完成啟程之路</li>"}</ul>
-      </div>
-      <div class="book-page">
-        <h3>修復篇章</h3>
-        <ul>${(c.restored || []).slice(-12).map((r) => `<li>${r.chapterId} · ${r.stageId}</li>`).join("") || "<li>尚未修復史頁</li>"}</ul>
-      </div>
-    </div>
+    <p class="lead">呢度係你自己寫成嘅書：過關、錯史、晉升都會按時間入冊。</p>
+    <ol class="chronicle-ledger">${rows}</ol>
+    ${stamps}
+    <p class="chronicle-colophon">${name} 記</p>
   </section>`;
+}
+
+function restoredLabel(r) {
+  if (r.chapterId === "cuoshi") {
+    return getCuoshi(r.stageId)?.title || "錯史之戰";
+  }
+  const ch = CHAPTERS[r.chapterId];
+  if (!ch) return r.stageId || r.chapterId;
+  const st = (ch.stages || []).find((s) => s.id === r.stageId);
+  return `${chapterShortTitle(ch)} · ${st?.title || r.stageId}`;
+}
+
+function chronicleWhen(at) {
+  if (!at) return "";
+  try {
+    return new Date(at).toLocaleDateString("zh-HK");
+  } catch {
+    return "";
+  }
+}
+
+function chronicleEntries(user) {
+  const c = user.progress?.chronicle || {};
+  const seen = new Set();
+  const restored = [];
+  for (const r of c.restored || []) {
+    const key = `${r.chapterId}:${r.stageId}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    restored.push({
+      at: r.at || 0,
+      kind: "restore",
+      title: restoredLabel(r),
+      when: chronicleWhen(r.at),
+    });
+  }
+  const promos = (c.promotions || []).map((p) => ({
+    at: p.at || 0,
+    kind: "promote",
+    title: `晉升為「${identityDisplayName(getIdentity(p.to), user.gender)}」`,
+    when: chronicleWhen(p.at),
+  }));
+  return [...restored, ...promos].sort((a, b) => (a.at || 0) - (b.at || 0));
 }
 
 function appClick(sel, fn) {

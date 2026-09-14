@@ -988,3 +988,19 @@ h1, h2, h3,
     max-width: min(72%, 300px);
   }
 }
+
+button:active:not(:disabled):not(.locked),
+.btn:active:not(:disabled),
+.option:active,
+.chip:active,
+.stage-card:active:not(:disabled):not(.locked) {
+  box-shadow:
+    0 0 0 3px rgba(255, 244, 170, 1),
+    0 0 22px 8px rgba(255, 214, 70, 0.9),
+    0 0 48px 16px rgba(255, 196, 50, 0.5) !important;
+  filter: brightness(1.22);
+}
+
+.is-gold-flash {
+  animation: goldPressFlash 0.55s ease-out;
+}

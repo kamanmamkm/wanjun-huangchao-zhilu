@@ -12,6 +12,16 @@ export function normalizeCloudUrl(raw) {
   return m ? m[0] : "";
 }
 
+export function cloudUrlHint(raw) {
+  const s = String(raw || "").trim();
+  if (!s) return "請貼部署之後嗰條網址，唔係試算表瀏覽器上面嗰條。";
+  if (/docs\.google\.com\/spreadsheets/i.test(s)) {
+    return "呢條係試算表本身嘅網址。要喺表入面「擴充功能」部署一次，改貼 /exec 結尾嗰條。";
+  }
+  if (normalizeCloudUrl(s)) return "";
+  return "網址唔啱。要係 script.google.com 開頭、/exec 結尾。";
+}
+
 export function saveCloudUrl(raw) {
   const url = normalizeCloudUrl(raw);
   if (!url) return "";

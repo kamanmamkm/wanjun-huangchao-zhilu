@@ -8,8 +8,8 @@ import { getCharacter, heroDisplayName } from "./data/characters.js";
 import { levelFromXp } from "./data/levels.js";
 import { QUESTIONS } from "./data/questions.js";
 import { FORM_YEARS } from "./data/formYear.js";
-import { getCloudUrl, saveCloudUrl, studentCloudLink } from "./data/cloud.js?v=rad73";
-import { pullCloudBoard } from "./cloud.js?v=rad73";
+import { getCloudUrl, saveCloudUrl, studentCloudLink, cloudUrlHint } from "./data/cloud.js?v=rad74";
+import { pullCloudBoard } from "./cloud.js?v=rad74";
 import { SHEETS_APPS_SCRIPT } from "./data/sheetsScript.js?v=rad73";
 
 const TEACHER_KEY = "rps_teacher_v1";
@@ -307,11 +307,11 @@ export function renderTeacherPage(state = {}) {
     </div>
     <p class="muted">同一瀏覽器內的註冊帳號會出現在下方。密碼預設 <code>wanjun</code>。史績榜可投影，鼓勵堂上較量。</p>
 
-    <h3 class="section-title"><span>全班史績榜（Google 試算表）</span></h3>
+    <h3 class="section-title"><span>全班史績榜（就用你張 Google 試算表）</span></h3>
     <ol class="cloud-setup">
-      <li class="is-done">開 Google 試算表（你已經完成）</li>
-      <li>試算表頂部「擴充功能」→「Apps Script」。刪晒預設那幾行，貼下面腳本，撳儲存（磁碟圖示）。</li>
-      <li>右上「部署」→「新增部署」→ 類型選「網頁應用程式」。執行身分選「我」，誰能存取選「任何人」。撳部署，複製那個以 <code>/exec</code> 結尾的網址。</li>
+      <li class="is-done">開 Google 試算表（你已經完成）。就係用呢張表，唔使另外開第二樣。</li>
+      <li>喺呢張表頂部撳「擴充功能」，再撳「Apps Script」（表入面嘅掣）。刪晒預設那幾行，貼下面腳本，撳儲存。</li>
+      <li>右上「部署」→「新增部署」→ 類型揀「網頁應用程式」。執行身分揀「我」，誰能存取揀「任何人」。複製 <code>/exec</code> 結尾嗰條——唔好複製瀏覽器試算表網址。</li>
       <li>貼入下面欄，撳「記住網址」再「試連線」。</li>
       <li>複製學生連結，貼去 Classroom／WhatsApp。學生要用呢條連結先睇到全班榜（唔係只得你部電腦）。</li>
     </ol>
@@ -319,7 +319,7 @@ export function renderTeacherPage(state = {}) {
       <button type="button" class="btn" id="cloud-copy-script">複製腳本</button>
       <button type="button" class="btn ghost" id="cloud-copy-link">複製學生連結</button>
     </div>
-    <label>Apps Script 網址
+    <label>部署後網址（/exec 結尾）
       <input id="cloud-url" type="url" placeholder="https://script.google.com/macros/s/…/exec" value="${esc(getCloudUrl())}" />
     </label>
     <div class="row-actions cloud-actions">
@@ -454,9 +454,10 @@ export function bindTeacher(ctx) {
     }
   });
   document.getElementById("cloud-save")?.addEventListener("click", () => {
-    const url = saveCloudUrl(document.getElementById("cloud-url")?.value);
+    const raw = document.getElementById("cloud-url")?.value;
+    const url = saveCloudUrl(raw);
     if (!url) {
-      toast("網址唔啱，要係 script.google.com … /exec");
+      toast(cloudUrlHint(raw));
       return;
     }
     if (state) state.cloudFetchedAt = 0;
@@ -464,9 +465,10 @@ export function bindTeacher(ctx) {
     render();
   });
   document.getElementById("cloud-test")?.addEventListener("click", async () => {
-    const url = saveCloudUrl(document.getElementById("cloud-url")?.value) || getCloudUrl();
+    const raw = document.getElementById("cloud-url")?.value;
+    const url = saveCloudUrl(raw) || getCloudUrl();
     if (!url) {
-      toast("請先貼 /exec 網址");
+      toast(cloudUrlHint(raw));
       return;
     }
     try {

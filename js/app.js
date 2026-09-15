@@ -63,8 +63,9 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad73";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad75";
+  renderLeaderboardPage,
+} from "./journey.js?v=rad76";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad76";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad50";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";
 import { flavorLine, isoDay } from "./data/flavor.js?v=rad70";
@@ -80,7 +81,7 @@ import {
 } from "./data/formYear.js?v=rad50";
 import { pickRandomHeroName, isPooledHeroName, HERO_NAME_COUNT } from "./data/heroNames.js?v=rad50";
 import { captureCloudFromLocation, getCloudUrl } from "./data/cloud.js?v=rad75";
-import { pullCloudBoard, scheduleCloudUpsert, cloudRankOf } from "./cloud.js?v=rad75";
+import { pullCloudBoard, scheduleCloudUpsert, cloudRankOf, upsertCloudUser } from "./cloud.js?v=rad76";
 
 captureCloudFromLocation();
 
@@ -128,6 +129,7 @@ let state = {
   cloudFetchedAt: 0,
   cloudFetching: false,
   cloudMyRank: 0,
+  cloudPushed: false,
 };
 
 function toast(msg) {
@@ -341,13 +343,16 @@ function ensureCloudBoard() {
   if (state.cloudFetchedAt && age < 15000) return;
   state.cloudFetching = true;
   const prevRank = state.cloudMyRank || 0;
-  pullCloudBoard()
+  const user = getCurrentUser();
+  const push = state.cloudPushed ? Promise.resolve() : upsertCloudUser(user).catch(() => null);
+  state.cloudPushed = true;
+  push
+    .then(() => pullCloudBoard())
     .then((rows) => {
       state.cloudBoard = rows;
       state.cloudError = "";
       state.cloudFetchedAt = Date.now();
-      const user = getCurrentUser();
-      const nextRank = cloudRankOf(rows, user);
+      const nextRank = cloudRankOf(rows, getCurrentUser());
       if (prevRank && nextRank && nextRank < prevRank) {
         toast(`超前！本班第 ${nextRank}`);
       }
@@ -360,7 +365,7 @@ function ensureCloudBoard() {
     })
     .finally(() => {
       state.cloudFetching = false;
-      if (getCurrentUser() && (state.view === "home" || state.view === "teacher")) render();
+      if (getCurrentUser() && (state.view === "home" || state.view === "teacher" || state.view === "board")) render();
     });
 }
 
@@ -733,6 +738,7 @@ function bindAuth() {
       state.view = "home";
       state.cloudFetchedAt = 0;
       state.cloudBoard = null;
+      state.cloudPushed = false;
       render();
       const year = getCurrentUser()?.formYear || "";
       toast(year ? `歡迎踏上任平生——${year}` : "歡迎踏上任平生");
@@ -783,7 +789,9 @@ function renderShell(user) {
   const main =
     state.view === "home"
       ? renderJourneyHome(user, char, state)
-      : state.view === "scroll"
+      : state.view === "board"
+        ? renderLeaderboardPage(user, state)
+        : state.view === "scroll"
         ? renderScroll(user)
         : state.view === "chapter"
           ? renderChapterDetail(user, state.scrollChapter, state.scrollStage)
@@ -819,6 +827,7 @@ function renderShell(user) {
 
   const navItems = [
     ["home", "行旅", "ico-home"],
+    ["board", "排行", "ico-board"],
     ["growth", "成長", "ico-growth"],
     ["scroll", "長卷", "ico-scroll"],
     ["chronicle", "史冊", "ico-book"],

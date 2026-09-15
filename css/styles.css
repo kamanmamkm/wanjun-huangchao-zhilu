@@ -2398,7 +2398,9 @@ button:active:not(:disabled):not(.locked),
 }
 .arena-pos { color: var(--gold-deep, #8a7340); font-weight: 700; }
 .arena-pts { font-variant-numeric: tabular-nums; }
-.teacher-podium { max-width: 36rem; margin-bottom: 1rem; }
+.board-view .arena-board {
+  margin-top: 0.4rem;
+}
 .cloud-setup {
   margin: 0.4rem 0 0.75rem;
   padding-left: 1.25rem;

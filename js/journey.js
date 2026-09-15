@@ -235,7 +235,7 @@ function renderArenaBoard(user, ui = {}) {
       ? `<li><span class="arena-name">載入中</span></li>`
       : rows.length
         ? rows
-            .slice(0, 12)
+            .slice(0, Number(ui.boardLimit) > 0 ? Number(ui.boardLimit) : 12)
             .map(
               (r, i) => `<li class="${String(r.username || "").toUpperCase() === me ? "is-you" : ""}">
         <span class="arena-pos">${i + 1}</span>
@@ -288,6 +288,20 @@ function renderArenaBoard(user, ui = {}) {
     <p class="muted" style="margin:.35rem 0 .5rem">虛擬同窗，每週一榜，唔係本班實名。</p>
     <ol class="arena-list">${rows}</ol>
   </div>`;
+}
+
+export function renderLeaderboardPage(user, ui = {}) {
+  const cloud = !!getCloudUrl();
+  return `
+  <section class="panel-paper board-view">
+    <h2>排行榜</h2>
+    <p class="lead">${
+      cloud
+        ? "本班史績，答對就上榜。屋企同課堂睇到同一張榜。"
+        : "老師喺「老師」頁接好 Google 試算表之後，呢度就係本班真榜。而家先同虛擬同窗較量。"
+    }</p>
+    ${renderArenaBoard(user, { ...ui, boardLimit: 40 })}
+  </section>`;
 }
 
 export function renderJourneyHome(user, char, ui = {}) {

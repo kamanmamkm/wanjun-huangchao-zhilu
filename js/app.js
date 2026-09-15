@@ -4,7 +4,7 @@ import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad66";
 import { levelFromXp } from "./data/levels.js?v=rad66";
 import { DIALOGUES } from "./data/dialogues.js?v=rad62";
 import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad64";
-import { CHARMS } from "./data/wheel.js?v=rad72";
+import { CHARMS } from "./data/wheel.js?v=rad67";
 import {
   getUnit,
   unitsOfGrade,
@@ -52,8 +52,8 @@ import {
   clearHomeRun,
   charmCount,
   consumeCharm,
-} from "./progress.js?v=rad72";
-import { renderWheelPage, bindWheel } from "./wheel.js?v=rad72";
+} from "./progress.js?v=rad73";
+import { renderWheelPage, bindWheel } from "./wheel.js?v=rad67";
 import {
   renderJourneyHome,
   renderScroll,
@@ -63,8 +63,8 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad72";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad50";
+} from "./journey.js?v=rad73";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad73";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad50";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";
 import { flavorLine, isoDay } from "./data/flavor.js?v=rad70";
@@ -79,6 +79,10 @@ import {
   classIdHint,
 } from "./data/formYear.js?v=rad50";
 import { pickRandomHeroName, isPooledHeroName, HERO_NAME_COUNT } from "./data/heroNames.js?v=rad50";
+import { captureCloudFromLocation, getCloudUrl } from "./data/cloud.js?v=rad73";
+import { pullCloudBoard, scheduleCloudUpsert, cloudRankOf } from "./cloud.js?v=rad73";
+
+captureCloudFromLocation();
 
 const app = document.getElementById("app");
 let toastTimer = null;
@@ -119,6 +123,11 @@ let state = {
   guestPlay: { active: false, index: 0, done: false, locked: false, score: 0, pick: null, qs: [] },
   wheelBusy: false,
   wheelAngle: 0,
+  cloudBoard: null,
+  cloudError: "",
+  cloudFetchedAt: 0,
+  cloudFetching: false,
+  cloudMyRank: 0,
 };
 
 function toast(msg) {
@@ -188,6 +197,16 @@ function submitAnswer(amount, meta = {}) {
   });
   if (!recorded.ok) return recorded;
   reward(amount, { keepView: meta.keepView, repeat, streakBonus });
+  if (recorded.overtook && !getCloudUrl()) {
+    toast(recorded.lead ? "本週擬榜暫居榜首！" : `超前！本週擬榜第 ${recorded.rank}`);
+  }
+  scheduleCloudUpsert(getCurrentUser());
+  if (getCloudUrl()) {
+    setTimeout(() => {
+      state.cloudFetchedAt = 0;
+      ensureCloudBoard();
+    }, 2200);
+  }
   if (meta.nudge !== false) nudgeCompanion(correct);
   return recorded;
 }
@@ -315,6 +334,36 @@ function refreshTopbarOnly() {
     </div>`;
 }
 
+function ensureCloudBoard() {
+  if (!getCloudUrl()) return;
+  if (state.cloudFetching) return;
+  const age = Date.now() - (state.cloudFetchedAt || 0);
+  if (state.cloudFetchedAt && age < 15000) return;
+  state.cloudFetching = true;
+  const prevRank = state.cloudMyRank || 0;
+  pullCloudBoard()
+    .then((rows) => {
+      state.cloudBoard = rows;
+      state.cloudError = "";
+      state.cloudFetchedAt = Date.now();
+      const user = getCurrentUser();
+      const nextRank = cloudRankOf(rows, user);
+      if (prevRank && nextRank && nextRank < prevRank) {
+        toast(`超前！本班第 ${nextRank}`);
+      }
+      state.cloudMyRank = nextRank;
+    })
+    .catch(() => {
+      state.cloudError = "fail";
+      state.cloudFetchedAt = Date.now();
+      if (!Array.isArray(state.cloudBoard)) state.cloudBoard = [];
+    })
+    .finally(() => {
+      state.cloudFetching = false;
+      if (getCurrentUser() && (state.view === "home" || state.view === "teacher")) render();
+    });
+}
+
 function journeyCtx() {
   return {
     state,
@@ -360,6 +409,7 @@ function render() {
       !!state.scrollStage &&
       /boss|試煉/i.test(String(state.scrollStage)));
   document.body.className = `stage-visual-${id}${isCourt ? " theme-court" : ""}`;
+  ensureCloudBoard();
   if (state.view === "home") {
     const day = isoDay();
     if (user.progress?.visit?.day !== day) {
@@ -681,6 +731,8 @@ function bindAuth() {
       }
       state.timeline = { setId: TIMELINE_SETS[0].id };
       state.view = "home";
+      state.cloudFetchedAt = 0;
+      state.cloudBoard = null;
       render();
       const year = getCurrentUser()?.formYear || "";
       toast(year ? `歡迎踏上任平生——${year}` : "歡迎踏上任平生");

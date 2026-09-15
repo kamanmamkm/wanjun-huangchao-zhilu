@@ -10,7 +10,7 @@ import { heroDisplayName, normalizeHeroName } from "./data/characters.js";
 import { pickRandomHeroName, HERO_NAME_COUNT } from "./data/heroNames.js";
 import { renderAvatar } from "./avatar.js";
 import { renderHeroStage, renderStudyCompanion, renderPromoteReveal } from "./heroStage.js";
-import { nextHook, nextStageAfter, todayEncounter } from "./data/flavor.js?v=rad72";
+import { nextHook, nextStageAfter, todayEncounter } from "./data/flavor.js?v=rad70";
 import {
   userSnapshot,
   wheelStatus,
@@ -38,9 +38,11 @@ import {
   markCuoshiWon,
   visitStreak,
   getHomeRun,
+  arenaStandings,
   levelBandLines,
   stageIdForUser,
-} from "./progress.js?v=rad72";
+} from "./progress.js?v=rad73";
+import { getCloudUrl } from "./data/cloud.js?v=rad73";
 import { getUnit } from "./data/units.js?v=rad67";
 import { updateUser, addXp, pushRecent } from "./storage.js";
 import { getTrial } from "./data/trials.js";
@@ -203,6 +205,91 @@ function renderRelicTray(user) {
     .join("")}</div>`;
 }
 
+function escArena(s) {
+  return String(s || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/"/g, "&quot;");
+}
+
+function renderArenaBoard(user, ui = {}) {
+  if (getCloudUrl()) {
+    const year = user.formYear || "";
+    const pending = !Array.isArray(ui.cloudBoard);
+    const all = Array.isArray(ui.cloudBoard) ? ui.cloudBoard : [];
+    const rows = year ? all.filter((r) => !r.formYear || r.formYear === year) : all;
+    const me = String(user.username || "").toUpperCase();
+    const rank = rows.findIndex((r) => String(r.username || "").toUpperCase() === me) + 1;
+    const mine = rows.find((r) => String(r.username || "").toUpperCase() === me);
+    const ahead = rank > 1 ? rows[rank - 2] : null;
+    const chase = pending
+      ? "史績榜載入中…"
+      : ui.cloudError && !rows.length
+        ? "暫時連唔上全班榜，稍後會再試。"
+        : ahead
+          ? `再 ${Math.max(1, (ahead.score || 0) - (mine?.score || 0) + 1)} 史績就超 ${ahead.heroName || ahead.username}`
+          : rows.length
+            ? "本班暫居前列，守住先！"
+            : "答對題目就會自動上榜。";
+    const list = pending
+      ? `<li><span class="arena-name">載入中</span></li>`
+      : rows.length
+        ? rows
+            .slice(0, 12)
+            .map(
+              (r, i) => `<li class="${String(r.username || "").toUpperCase() === me ? "is-you" : ""}">
+        <span class="arena-pos">${i + 1}</span>
+        <span class="arena-name">${escArena(r.heroName || r.username)} · ${escArena(r.identityName || "")}</span>
+        <span class="arena-pts">${Number(r.score) || 0}</span>
+      </li>`
+            )
+            .join("")
+        : `<li><span class="arena-name">尚未有同窗呈報</span></li>`;
+    return `
+  <div class="arena-board edict">
+    <p class="eyebrow">本班史績榜</p>
+    <h4>${pending ? "載入中" : rank ? `你排第 ${rank}／${rows.length}` : "尚未上榜"}</h4>
+    <p>${escArena(chase)}</p>
+    <p class="muted" style="margin:.35rem 0 .5rem">${escArena(year || "全級")} · 接 Google 試算表，屋企都睇到。</p>
+    <ol class="arena-list">${list}</ol>
+  </div>`;
+  }
+  const board = arenaStandings(user);
+  const vsYest =
+    board.yesterdayScore > 0
+      ? board.todayScore > board.yesterdayScore
+        ? `今日已壓過昨日 +${board.todayScore - board.yesterdayScore}`
+        : board.todayScore === board.yesterdayScore
+          ? "今日史績同昨日打平"
+          : `今日仲差昨日 ${board.yesterdayScore - board.todayScore}`
+      : board.todayScore
+        ? `今日已入 ${board.todayScore} 史績`
+        : "答對就上榜";
+  const chaseLine = board.lead
+    ? "本週暫居榜首，守住先！"
+    : `再 ${board.chase.need} 史績就超${board.chase.name}`;
+  const rows = board.rows
+    .map(
+      (r, i) => `<li class="${r.you ? "is-you" : ""}">
+        <span class="arena-pos">${i + 1}</span>
+        <span class="arena-name">${r.you ? "你" : r.name}</span>
+        <span class="arena-pts">${r.score}</span>
+      </li>`
+    )
+    .join("");
+  return `
+  <div class="arena-board edict">
+    <p class="eyebrow">科舉擬榜 · 本週</p>
+    <h4>你排第 ${board.rank}／${board.total}</h4>
+    <p>${chaseLine}</p>
+    <p class="visit-streak">${vsYest}${board.streak >= 3 ? ` · 連捷 ${board.streak}` : ""}${
+      board.bestStreak >= 3 ? ` · 最佳 ${board.bestStreak}` : ""
+    }</p>
+    <p class="muted" style="margin:.35rem 0 .5rem">虛擬同窗，每週一榜，唔係本班實名。</p>
+    <ol class="arena-list">${rows}</ol>
+  </div>`;
+}
+
 export function renderJourneyHome(user, char, ui = {}) {
   const snap = userSnapshot(user);
   const stageId = snap.stageId ?? user.identityId ?? 0;
@@ -353,6 +440,7 @@ export function renderJourneyHome(user, char, ui = {}) {
           : ""
       }
       ${flavorFirst ? "" : renderFlavorCard(user, ui)}
+      ${renderArenaBoard(user, ui)}
       ${promoteBlock}
       ${renderFinaleBoard(user, order)}
       <div id="trial-panel" class="hidden"></div>

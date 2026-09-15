@@ -10,7 +10,7 @@ import { heroDisplayName, normalizeHeroName } from "./data/characters.js";
 import { pickRandomHeroName, HERO_NAME_COUNT } from "./data/heroNames.js";
 import { renderAvatar } from "./avatar.js";
 import { renderHeroStage, renderStudyCompanion, renderPromoteReveal } from "./heroStage.js";
-import { nextHook, nextStageAfter, todayEncounter } from "./data/flavor.js?v=rad70";
+import { nextHook, nextStageAfter, todayEncounter } from "./data/flavor.js?v=rad72";
 import {
   userSnapshot,
   wheelStatus,
@@ -40,7 +40,7 @@ import {
   getHomeRun,
   levelBandLines,
   stageIdForUser,
-} from "./progress.js?v=rad71";
+} from "./progress.js?v=rad72";
 import { getUnit } from "./data/units.js?v=rad67";
 import { updateUser, addXp, pushRecent } from "./storage.js";
 import { getTrial } from "./data/trials.js";

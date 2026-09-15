@@ -145,10 +145,12 @@ function mangaEyes(uid, L, mood = "bright") {
 
   return `
     ${brow}
+    <g class="av-eyes">
     ${oneEye(42, "L")}
     ${oneEye(78, "R")}
     ${lashF}
     ${lowerLash}
+    </g>
   `;
 }
 
@@ -180,8 +182,8 @@ function mangaFace(uid, L, opts = {}) {
 
   const bangs = opts.noBangs
     ? ""
-    : `<path d="M34 42 Q42 28 52 40 Q60 26 68 40 Q78 28 86 42" fill="${L.hair}" stroke="#2a1810" stroke-width="0.8" opacity=".95"/>
-       <path d="M48 36 Q60 22 72 36" fill="${L.hair}" opacity=".85"/>`;
+    : `<g class="av-hair"><path d="M34 42 Q42 28 52 40 Q60 26 68 40 Q78 28 86 42" fill="${L.hair}" stroke="#2a1810" stroke-width="0.8" opacity=".95"/>
+       <path d="M48 36 Q60 22 72 36" fill="${L.hair}" opacity=".85"/></g>`;
 
   return `
     <!-- 日漫尖臉 -->
@@ -264,6 +266,39 @@ function bodyRobe(L) {
 
 function scalp(uid, L) {
   return `<path d="M26 50 C32 12 88 12 94 50" fill="url(#${uid}-hair)" stroke="#2a1810" stroke-width="1"/>`;
+}
+
+function drawTravelerMale(uid, L) {
+  return `
+    <path d="M28 136 Q36 94 52 86 L60 90 L68 86 Q84 94 92 136 Z" fill="${L.robe}" stroke="#2a1810" stroke-width="1.2"/>
+    <path class="av-sleeve" d="M20 116 Q8 126 16 136 L42 116 Z" fill="${L.robe}" stroke="#2a1810" stroke-width="1"/>
+    <path class="av-sleeve" d="M100 116 Q112 126 104 136 L78 116 Z" fill="${L.robe}" stroke="#2a1810" stroke-width="1"/>
+    <path d="M46 92 L60 112 L74 92" fill="${L.robe2}" opacity=".8"/>
+    <path d="M40 108 Q60 100 80 108" fill="none" stroke="${L.accent}" stroke-width="1.8"/>
+    ${scalp(uid, L)}
+    ${mangaFace(uid, L, { mood: "bright", mouth: "smile" })}
+    <ellipse cx="60" cy="18" rx="10" ry="12" fill="url(#${uid}-hair)" stroke="#2a1810" stroke-width="1"/>
+    <circle cx="60" cy="10" r="3.5" fill="${L.accent}" stroke="#2a1810" stroke-width="0.8"/>
+    <g class="av-prop">
+      <rect x="86" y="96" width="18" height="24" rx="3" fill="${L.robe2}" stroke="#2a1810" stroke-width="1"/>
+      <path d="M88 98 Q104 88 102 102" fill="none" stroke="${L.accent}" stroke-width="2"/>
+    </g>
+  `;
+}
+
+function drawTravelerFemale(uid, L) {
+  return `
+    <path d="M24 136 Q38 90 60 84 Q82 90 96 136 Z" fill="${L.robe}" stroke="#2a1810" stroke-width="1.2"/>
+    <path d="M34 102 Q60 124 86 102" fill="${L.robe2}" opacity=".75"/>
+    ${scalp(uid, L)}
+    <g class="av-hair">
+      <path d="M18 52 Q8 96 16 128" fill="url(#${uid}-hair)" stroke="#2a1810" stroke-width="1"/>
+      <path d="M102 52 Q112 96 104 128" fill="url(#${uid}-hair)" stroke="#2a1810" stroke-width="1"/>
+    </g>
+    ${mangaFace(uid, L, { mood: "bright", mouth: "rose" })}
+    <circle cx="28" cy="42" r="4" fill="${L.accent}" stroke="#2a1810" stroke-width="0.8"/>
+    <circle cx="92" cy="42" r="4" fill="${L.accent}" stroke="#2a1810" stroke-width="0.8"/>
+  `;
 }
 
 function drawHanxin(uid, L) {
@@ -482,6 +517,8 @@ function drawBanzhao(uid, L) {
 }
 
 const DRAW = {
+  hero_male: drawTravelerMale,
+  hero_female: drawTravelerFemale,
   hanxin: drawHanxin,
   zhuge: drawZhuge,
   yuefei: drawYuefei,
@@ -519,7 +556,7 @@ export function renderAvatar(character, rankId = 0, size = "md", opts = {}) {
   if (stageArt) {
     return `
     <div class="avatar-art avatar-${size} outfit-${rank} stage-face" style="--accent:${accent};--glow:${GLOW[Math.min(rank, GLOW.length - 1)]};width:${dims}px;height:${h}px" role="img" aria-label="${character.name}">
-      <img src="${stageArt.src}?v=rad27" alt="${character.name}" width="${dims}" height="${h}" loading="lazy" />
+      <img src="${stageArt.src}?v=rad79" alt="${character.name}" width="${dims}" height="${h}" loading="lazy" />
     </div>`;
   }
 

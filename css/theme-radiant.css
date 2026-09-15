@@ -478,6 +478,10 @@ h1, h2, h3,
   animation: none;
   transform: none;
 }
+.poster-art .has-stage-art .stage-alive-img,
+.poster-art .has-stage-art .stage-poster img {
+  object-position: center 18%;
+}
 .poster-art .hero-stage-frame.has-stage-art .stage-figure::before {
   display: none;
 }

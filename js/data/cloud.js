@@ -2,7 +2,8 @@
  * Google 試算表史績榜設定。
  * 老師部署 Apps Script 後，把 /exec 網址貼入老師頁，或用 ?cloud= 分享給學生。
  */
-export const SHEETS_WEBAPP_URL = "";
+export const SHEETS_WEBAPP_URL =
+  "https://script.google.com/macros/s/AKfycbwS_0f5PpnfH2ZAejHHyfXyR7iP6oBQTDT7Rz1uOZ2upbhe8qaVf1-uoUiKcLbz4HsBOA/exec";
 
 const LS_KEY = "rps_cloud_url_v1";
 

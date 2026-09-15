@@ -8,8 +8,8 @@ import { getCharacter, heroDisplayName } from "./data/characters.js";
 import { levelFromXp } from "./data/levels.js";
 import { QUESTIONS } from "./data/questions.js";
 import { FORM_YEARS } from "./data/formYear.js";
-import { getCloudUrl, saveCloudUrl, studentCloudLink, cloudUrlHint } from "./data/cloud.js?v=rad75";
-import { pullCloudBoard } from "./cloud.js?v=rad76";
+import { getCloudUrl, saveCloudUrl, studentCloudLink, cloudUrlHint } from "./data/cloud.js?v=rad77";
+import { pullCloudBoard } from "./cloud.js?v=rad77";
 import { SHEETS_APPS_SCRIPT } from "./data/sheetsScript.js?v=rad73";
 
 const TEACHER_KEY = "rps_teacher_v1";

@@ -64,8 +64,8 @@ import {
   renderGrowthScroll,
   bindJourney,
   renderLeaderboardPage,
-} from "./journey.js?v=rad76";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad76";
+} from "./journey.js?v=rad77";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad77";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad50";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";
 import { flavorLine, isoDay } from "./data/flavor.js?v=rad70";
@@ -80,8 +80,8 @@ import {
   classIdHint,
 } from "./data/formYear.js?v=rad50";
 import { pickRandomHeroName, isPooledHeroName, HERO_NAME_COUNT } from "./data/heroNames.js?v=rad50";
-import { captureCloudFromLocation, getCloudUrl } from "./data/cloud.js?v=rad75";
-import { pullCloudBoard, scheduleCloudUpsert, cloudRankOf, upsertCloudUser } from "./cloud.js?v=rad76";
+import { captureCloudFromLocation, getCloudUrl } from "./data/cloud.js?v=rad77";
+import { pullCloudBoard, scheduleCloudUpsert, cloudRankOf, upsertCloudUser } from "./cloud.js?v=rad77";
 
 captureCloudFromLocation();
 

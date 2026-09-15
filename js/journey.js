@@ -4,7 +4,7 @@
 import { CHAPTERS, chapterList } from "./data/chapters.js?v=rad56";
 import { XP_REWARDS } from "./data/levels.js?v=rad66";
 import { CUOSHI_BATTLES, CHAPTER_BOSS_PAGES, getCuoshi, wrongLineOf } from "./data/cuoshi.js?v=rad64";
-import { IDENTITIES } from "./data/identities.js?v=rad50";
+import { IDENTITIES } from "./data/identities.js?v=rad71";
 import { getStageVisual, SKILL_BARS, skillFill, STAGE_RELIC, realmLabel } from "./data/stageVisuals.js";
 import { heroDisplayName, normalizeHeroName } from "./data/characters.js";
 import { pickRandomHeroName, HERO_NAME_COUNT } from "./data/heroNames.js";
@@ -40,7 +40,7 @@ import {
   getHomeRun,
   levelBandLines,
   stageIdForUser,
-} from "./progress.js?v=rad70";
+} from "./progress.js?v=rad71";
 import { getUnit } from "./data/units.js?v=rad67";
 import { updateUser, addXp, pushRecent } from "./storage.js";
 import { getTrial } from "./data/trials.js";
@@ -589,7 +589,7 @@ export function renderGrowthScroll(user, char, growthFocus) {
           hideQuote: true,
         })}
         <h3>${name}</h3>
-        <p class="muted">達 Lv.${band?.minLevel ?? "？"} 並通過試煉解鎖 · 「${vis.prop}」</p>
+        <p class="muted">達 Lv.${band?.minLevel ?? "？"} 解鎖 · 「${vis.prop}」</p>
       </article>`;
     }
     return `
@@ -617,8 +617,8 @@ export function renderGrowthScroll(user, char, growthFocus) {
   return `
   <section class="panel-paper growth-scroll-view">
     <p class="eyebrow ink-gold">人物成長長卷</p>
-    <h2>同一人物 · 試煉通過即轉相轉頭像</h2>
-    <p class="lead">等級靠長卷與遊戲累積；身份造型要通過短試煉才解鎖。${STAGE_RELIC.note}</p>
+    <h2>同一人物 · 達到等級帶即轉相轉頭像</h2>
+    <p class="lead">等級靠長卷與遊戲累積；稱謂同造型跟等級帶（試煉可提前解鎖更高階）。${STAGE_RELIC.note}</p>
     <p class="muted">${IDENTITY_DISCLAIMER}</p>
     <div class="growth-rail">${cards}</div>
     <div class="growth-focus thin-card">

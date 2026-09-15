@@ -2,8 +2,8 @@
  * 天機輪分頁：每答對一題可轉一次，次數可累積。部分格派錦囊。
  */
 import { WHEEL_SLICES, CHARMS, wheelGradient, wheelStopAngle, pickWheelIndex } from "./data/wheel.js?v=rad67";
-import { wheelStatus, applyWheelPrize, charmCount } from "./progress.js?v=rad70";
-import { updateUser, addXp } from "./storage.js?v=rad50";
+import { wheelStatus, applyWheelPrize, charmCount } from "./progress.js?v=rad71";
+import { updateUser, addXp } from "./storage.js?v=rad71";
 
 function discCaption(slice) {
   if (slice.charm) return `錦囊<br>${slice.caption}`;

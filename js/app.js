@@ -33,7 +33,7 @@ import {
   addXp,
   updateUser,
   pushRecent,
-} from "./storage.js?v=rad50";
+} from "./storage.js?v=rad71";
 import {
   userSnapshot,
   buildPromotionOrder,
@@ -52,7 +52,7 @@ import {
   clearHomeRun,
   charmCount,
   consumeCharm,
-} from "./progress.js?v=rad70";
+} from "./progress.js?v=rad71";
 import { renderWheelPage, bindWheel } from "./wheel.js?v=rad67";
 import {
   renderJourneyHome,
@@ -63,7 +63,7 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad70";
+} from "./journey.js?v=rad71";
 import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad50";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad50";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";

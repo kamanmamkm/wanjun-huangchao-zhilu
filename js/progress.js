@@ -12,12 +12,12 @@ import {
   migrateIdentityId,
   STARTING_IDENTITY_ID,
   IDENTITIES,
-} from "./data/identities.js?v=rad50";
+} from "./data/identities.js?v=rad71";
 import { CHAPTERS, REMEDIALS } from "./data/chapters.js?v=rad56";
 import { relicFor, isoDay } from "./data/flavor.js?v=rad50";
 import { WHEEL_SLICES } from "./data/wheel.js?v=rad67";
 import { getTrial } from "./data/trials.js";
-import { stageIdFromLevel, stageIdForUser, syncIdentityToLevel, levelBandLines, nextStageMinLevel, LEVEL_STAGE_BANDS } from "./data/levelStage.js";
+import { stageIdFromLevel, stageIdForUser, syncIdentityToLevel, levelBandLines, nextStageMinLevel, LEVEL_STAGE_BANDS } from "./data/levelStage.js?v=rad71";
 
 export {
   IDENTITY_DISCLAIMER,

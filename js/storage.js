@@ -1,9 +1,9 @@
 /**
- * 用戶資料：長卷／小遊戲累積經驗升等級；身份需試煉解鎖。
+ * 用戶資料：長卷／小遊戲累積經驗升等級；達到等級帶即轉身份。
  */
-import { migrateIdentityId, STARTING_IDENTITY_ID } from "./data/identities.js";
+import { migrateIdentityId, STARTING_IDENTITY_ID } from "./data/identities.js?v=rad71";
 import { normalizeHeroName } from "./data/characters.js";
-import { syncIdentityToLevel } from "./data/levelStage.js";
+import { syncIdentityToLevel } from "./data/levelStage.js?v=rad71";
 import { normalizeFormYear, normalizeClassId, formYearFromClassId } from "./data/formYear.js?v=rad31";
 
 const USERS_KEY = "huangchao_users_v1";
@@ -185,6 +185,7 @@ export function updateUser(mutator) {
   if (!u) return null;
   u = migrateUser(u);
   mutator(u);
+  syncIdentityToLevel(u);
   users[s.username] = u;
   writeUsers(users);
   return u;

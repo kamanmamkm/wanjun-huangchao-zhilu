@@ -1,8 +1,9 @@
 /**
  * 角色等級 ↔ 階段立繪／身份形象
- * 等級靠經驗；身份／造型只跟 identityId（試煉解鎖），唔再跟等級自動升。
+ * 等級靠經驗；稱謂／造型取「已解鎖身份」同「等級帶」較高者。
  */
-import { getIdentity, identityDisplayName, outfitForIdentity } from "./identities.js";
+import { getIdentity, identityDisplayName, outfitForIdentity } from "./identities.js?v=rad71";
+import { levelFromXp } from "./levels.js";
 import {
   stageIdFromLevel,
   effectiveStageId,
@@ -13,25 +14,42 @@ import {
 
 export { stageIdFromLevel, effectiveStageId, LEVEL_STAGE_BANDS, nextStageMinLevel };
 
-/** 立繪／稱謂跟已解鎖身份，唔跟等級帶 */
+/** 立繪／稱謂：身份同等級帶取較高 */
 export function stageIdForUser(user) {
   if (!user) return 0;
-  return Math.min(7, Math.max(0, Number(user.identityId) || 0));
+  const lv = levelFromXp(user.xp || 0).level;
+  return effectiveStageId(user.identityId, lv);
 }
 
 /**
- * 只校正缺省 identityId；不再按等級自動升身份。
- * @returns {null}
+ * 等級進入新帶時補升 identityId（只升唔降）。
+ * @returns {{ fromId: number, toId: number } | null}
  */
 export function syncIdentityToLevel(user) {
   if (!user) return null;
   if (typeof user.identityId !== "number" || user.identityId < 0) {
     user.identityId = 0;
   }
+  const from = user.identityId;
+  const lv = levelFromXp(user.xp || 0).level;
+  const to = effectiveStageId(from, lv);
+  user.identityId = to;
   if (user.progress && typeof user.progress === "object") {
-    user.progress.identityId = user.identityId;
+    user.progress.identityId = to;
+    if (to > from) {
+      user.progress.chronicle = user.progress.chronicle || {
+        promotions: [],
+        restored: [],
+        quotes: [],
+      };
+      const promos = user.progress.chronicle.promotions || [];
+      if (!promos.some((p) => Number(p.to) === to && p.trialId === "level_band")) {
+        promos.push({ to, at: Date.now(), trialId: "level_band", byLevel: lv });
+        user.progress.chronicle.promotions = promos;
+      }
+    }
   }
-  return null;
+  return to > from ? { fromId: from, toId: to } : null;
 }
 
 export function stageDisplayName(user, gender) {

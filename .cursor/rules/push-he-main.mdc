@@ -1,0 +1,19 @@
+---
+description: 完成功能後自動 PUSH 並合 MAIN，唔使再問
+alwaysApply: true
+---
+
+# PUSH 合 MAIN
+
+Kaman 已授權：呢個專案完成一項可上線嘅改動之後，**自己 commit、PUSH feature branch、合入 `main` 並 push Pages**，唔使再問。
+
+- Feature branch：`cursor/trial-gated-identity`
+- Pages 只由 `main` 出。合 MAIN 用：
+
+```
+git push origin cursor/trial-gated-identity && git fetch origin main && git checkout main && git pull origin main && git merge cursor/trial-gated-identity -m "Merge branch 'cursor/trial-gated-identity'" && git push origin main && git checkout cursor/trial-gated-identity && git log origin/main -3 --oneline && git status
+```
+
+- 需要 `required_permissions: ["all"]`。若 Auto-review 擋合 `main`，用**同一條指令**重試，並設 `request_smart_mode_approval: true` 同**原文** block reason。
+- Commit message 用廣東話／中文，寫「點解」。Cache 字串要一齊升。
+- 測試時唔好登出現場學生帳號（例如 github.io 嘅 `3A40`）。

@@ -8,9 +8,10 @@ import { getCharacter, heroDisplayName } from "./data/characters.js";
 import { levelFromXp } from "./data/levels.js";
 import { QUESTIONS } from "./data/questions.js";
 import { FORM_YEARS } from "./data/formYear.js";
-import { getCloudUrl, saveCloudUrl, studentCloudLink, cloudUrlHint } from "./data/cloud.js?v=rad77";
+import { getCloudUrl, saveCloudUrl, cloudUrlHint } from "./data/cloud.js?v=rad77";
 import { pullCloudBoard } from "./cloud.js?v=rad77";
 import { SHEETS_APPS_SCRIPT } from "./data/sheetsScript.js?v=rad73";
+import { studentPlayLink, teacherPortalLink } from "./data/portal.js?v=rad78";
 
 const TEACHER_KEY = "rps_teacher_v1";
 const USERS_KEY = "huangchao_users_v1";
@@ -245,12 +246,14 @@ function renderCloudSetup(state = {}) {
       <li>喺呢張表頂部撳「擴充功能」，再撳「Apps Script」（表入面嘅掣）。刪晒預設那幾行，貼下面腳本，撳儲存。</li>
       <li>右上「部署」→「新增部署」→ 類型揀「網頁應用程式」。執行身分揀「我」，誰能存取揀「任何人」。複製 <code>/exec</code> 結尾嗰條——唔好複製瀏覽器試算表網址。</li>
       <li>貼入下面欄，撳「記住網址」再「試連線」。</li>
-      <li>複製學生連結，貼去 Classroom／WhatsApp。學生要用呢條連結先睇到全班榜（唔係只得你部電腦）。</li>
+      <li>複製<strong>學生連結</strong>派去 Classroom；自己收藏<strong>老師連結</strong>。學生版睇唔到後台。</li>
     </ol>
     <div class="row-actions cloud-actions">
       <button type="button" class="btn" id="cloud-copy-script">複製腳本</button>
       <button type="button" class="btn ghost" id="cloud-copy-link">複製學生連結</button>
+      <button type="button" class="btn ghost" id="cloud-copy-teacher">複製老師連結</button>
     </div>
+    <p class="muted">學生：<code>${esc(studentPlayLink())}</code><br />老師：<code>${esc(teacherPortalLink())}</code></p>
     <p class="lead">下面呢段就係要貼去試算表嘅腳本：</p>
     <pre id="cloud-script" class="cloud-script" tabindex="0">${esc(SHEETS_APPS_SCRIPT)}</pre>
     <label>部署後網址（/exec 結尾）
@@ -262,8 +265,8 @@ function renderCloudSetup(state = {}) {
     </div>
     <p class="muted" id="cloud-link-hint">${
       getCloudUrl()
-        ? `學生連結已備好。而家表內 ${Array.isArray(state.cloudBoard) ? state.cloudBoard.length : "?"} 人。`
-        : "未接表前，行旅仍顯示「科舉擬榜」（虛擬同窗）。"
+        ? `學生版已接榜。而家表內 ${Array.isArray(state.cloudBoard) ? state.cloudBoard.length : "?"} 人。`
+        : "未接表前，排行仍顯示「科舉擬榜」（虛擬同窗）。"
     }</p>`;
 }
 
@@ -525,14 +528,19 @@ export function bindTeacher(ctx) {
     }
   });
   document.getElementById("cloud-copy-link")?.addEventListener("click", async () => {
-    const link = studentCloudLink();
-    if (!link) {
-      toast("請先記住網址，先有學生連結");
-      return;
-    }
+    const link = studentPlayLink();
     try {
       await navigator.clipboard.writeText(link);
-      toast("已複製學生連結，貼去 Classroom");
+      toast("已複製學生連結（無老師後台）");
+    } catch {
+      toast(link);
+    }
+  });
+  document.getElementById("cloud-copy-teacher")?.addEventListener("click", async () => {
+    const link = teacherPortalLink();
+    try {
+      await navigator.clipboard.writeText(link);
+      toast("已複製老師連結，自己收藏");
     } catch {
       toast(link);
     }

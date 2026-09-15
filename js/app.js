@@ -64,8 +64,8 @@ import {
   renderGrowthScroll,
   bindJourney,
   renderLeaderboardPage,
-} from "./journey.js?v=rad77";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad77";
+} from "./journey.js?v=rad78";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad78";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad50";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";
 import { flavorLine, isoDay } from "./data/flavor.js?v=rad70";
@@ -82,6 +82,7 @@ import {
 import { pickRandomHeroName, isPooledHeroName, HERO_NAME_COUNT } from "./data/heroNames.js?v=rad50";
 import { captureCloudFromLocation, getCloudUrl } from "./data/cloud.js?v=rad77";
 import { pullCloudBoard, scheduleCloudUpsert, cloudRankOf, upsertCloudUser } from "./cloud.js?v=rad77";
+import { isTeacherPortal } from "./data/portal.js?v=rad78";
 
 captureCloudFromLocation();
 
@@ -89,7 +90,7 @@ const app = document.getElementById("app");
 let toastTimer = null;
 let levelUpTimer = null;
 let state = {
-  view: "home",
+  view: isTeacherPortal() ? "teacher" : "home",
   authMode: "login",
   gender: "male",
   heroName: "",
@@ -590,6 +591,7 @@ function renderAuth() {
       <p class="eyebrow">萬鈞伯裘中史科成長遊戲</p>
       <h1>任平生</h1>
       <p class="subtitle">歷千年風雨，成就我人生。</p>
+      ${isTeacherPortal() ? `<p class="muted">老師版 · 學生連結睇唔到後台</p>` : ""}
       <div class="tags">
         <span class="tag">答題解鎖新造型</span>
         <span class="tag">挑戰被改亂嘅歷史</span>
@@ -735,7 +737,7 @@ function bindAuth() {
         state.formYear = normalizeFormYear(fd.get("formYear")) || formYearFromClassId(classId) || "";
       }
       state.timeline = { setId: TIMELINE_SETS[0].id };
-      state.view = "home";
+      state.view = isTeacherPortal() ? "teacher" : "home";
       state.cloudFetchedAt = 0;
       state.cloudBoard = null;
       state.cloudPushed = false;
@@ -783,6 +785,7 @@ function bindAuth() {
 /* ========== Shell ========== */
 function renderShell(user) {
   if (state.view === "practice" || state.view === "promote") state.view = "home";
+  if (!isTeacherPortal() && state.view === "teacher") state.view = "home";
   const char = getCharacter(user.gender, user.characterId);
   const snap = userSnapshot(user);
   const idn = snap.identity;
@@ -833,7 +836,7 @@ function renderShell(user) {
     ["chronicle", "史冊", "ico-book"],
     ["wheel", "天機輪", "ico-wheel"],
     ["games", "遊戲", "ico-game"],
-    ["teacher", "老師", "ico-teacher"],
+    ...(isTeacherPortal() ? [["teacher", "老師", "ico-teacher"]] : []),
   ];
 
   return `
@@ -875,6 +878,7 @@ function bindShellNav() {
   app.addEventListener("click", (e) => {
     const nav = e.target.closest("[data-nav]");
     if (nav) {
+      if (nav.dataset.nav === "teacher" && !isTeacherPortal()) return;
       state.view = nav.dataset.nav;
       if (state.view === "scroll") state.scrollStage = null;
       if (state.view === "games") {

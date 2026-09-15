@@ -298,7 +298,7 @@ export function renderLeaderboardPage(user, ui = {}) {
     <p class="lead">${
       cloud
         ? "本班史績，答對就上榜。屋企同課堂睇到同一張榜。"
-        : "老師喺「老師」頁接好 Google 試算表之後，呢度就係本班真榜。而家先同虛擬同窗較量。"
+        : "本班真榜要老師接好試算表。而家先同虛擬同窗較量。"
     }</p>
     ${renderArenaBoard(user, { ...ui, boardLimit: 40 })}
   </section>`;

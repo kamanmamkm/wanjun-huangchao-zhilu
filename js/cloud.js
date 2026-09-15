@@ -1,7 +1,7 @@
 /**
  * 全班史績榜：讀寫 Google Apps Script 網頁應用程式。
  */
-import { getCloudUrl } from "./data/cloud.js?v=rad74";
+import { getCloudUrl } from "./data/cloud.js?v=rad75";
 import { userSnapshot, ensureArena } from "./progress.js?v=rad73";
 import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad50";
 

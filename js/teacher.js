@@ -8,8 +8,8 @@ import { getCharacter, heroDisplayName } from "./data/characters.js";
 import { levelFromXp } from "./data/levels.js";
 import { QUESTIONS } from "./data/questions.js";
 import { FORM_YEARS } from "./data/formYear.js";
-import { getCloudUrl, saveCloudUrl, studentCloudLink, cloudUrlHint } from "./data/cloud.js?v=rad74";
-import { pullCloudBoard } from "./cloud.js?v=rad74";
+import { getCloudUrl, saveCloudUrl, studentCloudLink, cloudUrlHint } from "./data/cloud.js?v=rad75";
+import { pullCloudBoard } from "./cloud.js?v=rad75";
 import { SHEETS_APPS_SCRIPT } from "./data/sheetsScript.js?v=rad73";
 
 const TEACHER_KEY = "rps_teacher_v1";
@@ -237,13 +237,45 @@ export function reviewAnswer(username, reviewId, status) {
   return item;
 }
 
+function renderCloudSetup(state = {}) {
+  return `
+    <h3 class="section-title"><span>全班史績榜（就用你張 Google 試算表）</span></h3>
+    <ol class="cloud-setup">
+      <li class="is-done">開 Google 試算表（你已經完成）。就係用呢張表，唔使另外開第二樣。</li>
+      <li>喺呢張表頂部撳「擴充功能」，再撳「Apps Script」（表入面嘅掣）。刪晒預設那幾行，貼下面腳本，撳儲存。</li>
+      <li>右上「部署」→「新增部署」→ 類型揀「網頁應用程式」。執行身分揀「我」，誰能存取揀「任何人」。複製 <code>/exec</code> 結尾嗰條——唔好複製瀏覽器試算表網址。</li>
+      <li>貼入下面欄，撳「記住網址」再「試連線」。</li>
+      <li>複製學生連結，貼去 Classroom／WhatsApp。學生要用呢條連結先睇到全班榜（唔係只得你部電腦）。</li>
+    </ol>
+    <div class="row-actions cloud-actions">
+      <button type="button" class="btn" id="cloud-copy-script">複製腳本</button>
+      <button type="button" class="btn ghost" id="cloud-copy-link">複製學生連結</button>
+    </div>
+    <p class="lead">下面呢段就係要貼去試算表嘅腳本：</p>
+    <pre id="cloud-script" class="cloud-script" tabindex="0">${esc(SHEETS_APPS_SCRIPT)}</pre>
+    <label>部署後網址（/exec 結尾）
+      <input id="cloud-url" type="url" placeholder="https://script.google.com/macros/s/…/exec" value="${esc(getCloudUrl())}" />
+    </label>
+    <div class="row-actions cloud-actions">
+      <button type="button" class="btn" id="cloud-save">記住網址</button>
+      <button type="button" class="btn ghost" id="cloud-test">試連線</button>
+    </div>
+    <p class="muted" id="cloud-link-hint">${
+      getCloudUrl()
+        ? `學生連結已備好。而家表內 ${Array.isArray(state.cloudBoard) ? state.cloudBoard.length : "?"} 人。`
+        : "未接表前，行旅仍顯示「科舉擬榜」（虛擬同窗）。"
+    }</p>`;
+}
+
 export function renderTeacherPage(state = {}) {
   const t = readTeacher();
   if (!t.unlocked) {
     return `
     <section class="panel-paper teacher-view">
       <h2>老師後台</h2>
-      <p class="lead">查看本機全部學生帳號、等級，以及每人答過的題目。資料只存在此瀏覽器（電腦室／共用機適用）。</p>
+      ${renderCloudSetup(state)}
+      <h3 class="section-title"><span>睇本機學生</span></h3>
+      <p class="lead">學生帳號同答題紀錄要入密碼先睇到。資料只存在此瀏覽器。</p>
       <label>老師密碼
         <input id="teacher-pin" type="password" placeholder="預設 wanjun" />
       </label>
@@ -307,31 +339,7 @@ export function renderTeacherPage(state = {}) {
     </div>
     <p class="muted">同一瀏覽器內的註冊帳號會出現在下方。密碼預設 <code>wanjun</code>。史績榜可投影，鼓勵堂上較量。</p>
 
-    <h3 class="section-title"><span>全班史績榜（就用你張 Google 試算表）</span></h3>
-    <ol class="cloud-setup">
-      <li class="is-done">開 Google 試算表（你已經完成）。就係用呢張表，唔使另外開第二樣。</li>
-      <li>喺呢張表頂部撳「擴充功能」，再撳「Apps Script」（表入面嘅掣）。刪晒預設那幾行，貼下面腳本，撳儲存。</li>
-      <li>右上「部署」→「新增部署」→ 類型揀「網頁應用程式」。執行身分揀「我」，誰能存取揀「任何人」。複製 <code>/exec</code> 結尾嗰條——唔好複製瀏覽器試算表網址。</li>
-      <li>貼入下面欄，撳「記住網址」再「試連線」。</li>
-      <li>複製學生連結，貼去 Classroom／WhatsApp。學生要用呢條連結先睇到全班榜（唔係只得你部電腦）。</li>
-    </ol>
-    <div class="row-actions cloud-actions">
-      <button type="button" class="btn" id="cloud-copy-script">複製腳本</button>
-      <button type="button" class="btn ghost" id="cloud-copy-link">複製學生連結</button>
-    </div>
-    <label>部署後網址（/exec 結尾）
-      <input id="cloud-url" type="url" placeholder="https://script.google.com/macros/s/…/exec" value="${esc(getCloudUrl())}" />
-    </label>
-    <div class="row-actions cloud-actions">
-      <button type="button" class="btn" id="cloud-save">記住網址</button>
-      <button type="button" class="btn ghost" id="cloud-test">試連線</button>
-    </div>
-    <p class="muted" id="cloud-link-hint">${
-      getCloudUrl()
-        ? `學生連結已備好。而家表內 ${Array.isArray(state.cloudBoard) ? state.cloudBoard.length : "?"} 人。`
-        : "未接表前，行旅仍顯示「科舉擬榜」（虛擬同窗）。"
-    }</p>
-    <textarea id="cloud-script" class="cloud-script" readonly rows="10" spellcheck="false"></textarea>
+    ${renderCloudSetup(state)}
 
     <h3 class="section-title"><span>本機史績榜</span></h3>
     <ol class="arena-list teacher-podium">
@@ -443,14 +451,18 @@ export function renderTeacherPage(state = {}) {
 export function bindTeacher(ctx) {
   const { render, toast, state } = ctx;
   const scriptBox = document.getElementById("cloud-script");
-  if (scriptBox && !scriptBox.value) scriptBox.value = SHEETS_APPS_SCRIPT;
+  if (scriptBox && !scriptBox.textContent.trim()) scriptBox.textContent = SHEETS_APPS_SCRIPT;
   document.getElementById("cloud-copy-script")?.addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText(SHEETS_APPS_SCRIPT);
       toast("已複製腳本，去試算表貼上");
     } catch {
-      scriptBox?.select();
-      toast("請手動全選腳本再複製");
+      const range = document.createRange();
+      range.selectNodeContents(scriptBox);
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+      toast("請手動複製已選中嘅腳本");
     }
   });
   document.getElementById("cloud-save")?.addEventListener("click", () => {

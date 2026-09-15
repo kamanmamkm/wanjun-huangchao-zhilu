@@ -15,7 +15,7 @@ import {
 } from "./data/identities.js?v=rad71";
 import { CHAPTERS, REMEDIALS } from "./data/chapters.js?v=rad56";
 import { relicFor, isoDay } from "./data/flavor.js?v=rad50";
-import { WHEEL_SLICES } from "./data/wheel.js?v=rad67";
+import { WHEEL_SLICES } from "./data/wheel.js?v=rad72";
 import { getTrial } from "./data/trials.js";
 import { stageIdFromLevel, stageIdForUser, syncIdentityToLevel, levelBandLines, nextStageMinLevel, LEVEL_STAGE_BANDS } from "./data/levelStage.js?v=rad71";
 
@@ -442,10 +442,12 @@ export function applyWheelPrize(user, sliceIndex, day = isoDay()) {
   const p = ensureProgress(user);
   p.wheel.charges = Math.max(0, (Number(p.wheel.charges) || 0) - 1);
   const xp = Number(slice.xp) || 0;
+  const scoreDelta = Number(slice.score) || 0;
   const charm = slice.charm || "";
   if (charm) grantCharm(user, charm);
+  if (scoreDelta) p.score = Math.max(0, (Number(p.score) || 0) + scoreDelta);
   p.wheel.lastSpin = day;
-  p.wheel.lastPrize = { id: slice.id, label: slice.label, xp, charm, at: Date.now() };
+  p.wheel.lastPrize = { id: slice.id, label: slice.label, xp, score: scoreDelta, charm, at: Date.now() };
   p.wheel.log = [{ ...p.wheel.lastPrize }, ...(p.wheel.log || [])].slice(0, 20);
   return { ok: true, slice };
 }

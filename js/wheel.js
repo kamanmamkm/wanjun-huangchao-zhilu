@@ -1,13 +1,14 @@
 /**
  * 天機輪分頁：每答對一題可轉一次，次數可累積。部分格派錦囊。
  */
-import { WHEEL_SLICES, CHARMS, wheelGradient, wheelStopAngle, pickWheelIndex } from "./data/wheel.js?v=rad67";
-import { wheelStatus, applyWheelPrize, charmCount } from "./progress.js?v=rad71";
+import { WHEEL_SLICES, CHARMS, wheelGradient, wheelStopAngle, pickWheelIndex } from "./data/wheel.js?v=rad72";
+import { wheelStatus, applyWheelPrize, charmCount } from "./progress.js?v=rad72";
 import { updateUser, addXp } from "./storage.js?v=rad71";
 
 function discCaption(slice) {
   if (slice.charm) return `錦囊<br>${slice.caption}`;
-  const name = slice.caption || slice.label.split("＋")[0];
+  const name = slice.caption || slice.label.split(/[＋－]/)[0];
+  if (Number(slice.score) < 0) return `${name}<br>－${Math.abs(slice.score)}`;
   const amount = slice.xp || 0;
   return `${name}<br>＋${amount}`;
 }
@@ -46,7 +47,7 @@ export function renderWheelPage(user) {
   return `
   <section class="panel-paper wheel-view">
     <h2>天機輪</h2>
-    <p class="lead">答對題目會累積<strong>史績</strong>。轉輪可領<strong>經驗</strong>或<strong>錦囊</strong>——錦囊用嚟幫遊戲，唔會直接加史績。</p>
+    <p class="lead">答對題目會累積<strong>史績</strong>。轉輪可領<strong>經驗</strong>或<strong>錦囊</strong>，但有一格<strong>失策</strong>會扣史績——唔係每次都加。</p>
     <p class="wheel-score">現有史績 <strong>${st.score}</strong>　可轉 <strong>${st.charges}</strong> 次　今日答對 <strong>${st.todayCorrect}</strong> 題</p>
     ${charmBagHtml(user)}
     <p class="muted">${hint}</p>
@@ -65,7 +66,7 @@ export function renderWheelPage(user) {
     </div>
     ${
       st.lastPrize
-        ? `<p class="settle-line ok">最近一次：${st.lastPrize.label}</p>`
+        ? `<p class="settle-line ${Number(st.lastPrize.score) < 0 ? "no" : "ok"}">最近一次：${st.lastPrize.label}</p>`
         : ""
     }
   </section>`;

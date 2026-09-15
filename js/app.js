@@ -4,7 +4,7 @@ import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad66";
 import { levelFromXp } from "./data/levels.js?v=rad66";
 import { DIALOGUES } from "./data/dialogues.js?v=rad62";
 import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad64";
-import { CHARMS } from "./data/wheel.js?v=rad67";
+import { CHARMS } from "./data/wheel.js?v=rad72";
 import {
   getUnit,
   unitsOfGrade,
@@ -52,8 +52,8 @@ import {
   clearHomeRun,
   charmCount,
   consumeCharm,
-} from "./progress.js?v=rad71";
-import { renderWheelPage, bindWheel } from "./wheel.js?v=rad67";
+} from "./progress.js?v=rad72";
+import { renderWheelPage, bindWheel } from "./wheel.js?v=rad72";
 import {
   renderJourneyHome,
   renderScroll,
@@ -63,7 +63,7 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad71";
+} from "./journey.js?v=rad72";
 import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad50";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad50";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";

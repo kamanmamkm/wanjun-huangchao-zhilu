@@ -52,23 +52,22 @@ import {
   clearHomeRun,
   charmCount,
   consumeCharm,
-} from "./progress.js?v=rad68";
+} from "./progress.js?v=rad69";
 import { renderWheelPage, bindWheel } from "./wheel.js?v=rad67";
 import {
   renderJourneyHome,
   renderScroll,
   renderChapterDetail,
-  renderPromote,
   renderNotes,
   renderChronicle,
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad68";
+} from "./journey.js?v=rad69";
 import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad50";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad50";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";
-import { flavorLine, isoDay } from "./data/flavor.js?v=rad68";
+import { flavorLine, isoDay } from "./data/flavor.js?v=rad69";
 import {
   FORM_YEARS,
   normalizeFormYear,
@@ -725,7 +724,7 @@ function bindAuth() {
 
 /* ========== Shell ========== */
 function renderShell(user) {
-  if (state.view === "practice") state.view = "home";
+  if (state.view === "practice" || state.view === "promote") state.view = "home";
   const char = getCharacter(user.gender, user.characterId);
   const snap = userSnapshot(user);
   const idn = snap.identity;
@@ -736,11 +735,9 @@ function renderShell(user) {
         ? renderScroll(user)
         : state.view === "chapter"
           ? renderChapterDetail(user, state.scrollChapter, state.scrollStage)
-          : state.view === "promote"
-            ? renderPromote(user, char)
-            : state.view === "notes"
-              ? renderNotes(user)
-              : state.view === "chronicle"
+          : state.view === "notes"
+            ? renderNotes(user)
+            : state.view === "chronicle"
                 ? renderChronicle(user, char)
                 : state.view === "cuoshi"
                   ? renderCuoshi(user, cuoshiHubOpts())
@@ -772,7 +769,6 @@ function renderShell(user) {
     ["home", "行旅", "ico-home"],
     ["growth", "成長", "ico-growth"],
     ["scroll", "長卷", "ico-scroll"],
-    ["promote", "晉升", "ico-seal"],
     ["chronicle", "史冊", "ico-book"],
     ["wheel", "天機輪", "ico-wheel"],
     ["games", "遊戲", "ico-game"],
@@ -801,7 +797,7 @@ function renderShell(user) {
           const active =
             state.view === id ||
             (id === "scroll" && state.view === "chapter") ||
-            (id === "promote" && state.view === "notes") ||
+            (id === "home" && (state.view === "notes" || state.view === "promote")) ||
             (id === "games" &&
               ["cuoshi", "wordwall", "timeline", "dialogue", "shizhan"].includes(state.view));
           return `<button type="button" data-nav="${id}" class="${active ? "active" : ""}"><span class="ico ${ico}" aria-hidden="true"></span>${label}</button>`;
@@ -1268,7 +1264,7 @@ function renderProfile(user, char, snap) {
           .map((i) => `<li class="${i.ok ? "ok" : "no"}"><span>${i.ok ? "✓" : "✗"}</span>${i.label}</li>`)
           .join("")}
       </ul>
-      <button type="button" class="btn" data-goto="promote">前往晉升殿</button>
+      <button type="button" class="btn" data-goto="home">返回行旅</button>
     </div>
     <div class="stat-row">
       <div class="stat">答對 ${user.stats?.correct || 0}</div>

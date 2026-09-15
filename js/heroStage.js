@@ -2,7 +2,7 @@
  * 角色舞台：場景框＋立繪＋道具徽章＋貫穿小物
  * 有階段專屬海報時，主頁／成長大圖優先用海報（保留角色臉孔系統作小頭像）
  */
-import { renderAvatar } from "./avatar.js";
+import { renderAvatar } from "./avatar.js?v=rad79";
 import { getStageVisual, STAGE_RELIC, getStageArt } from "./data/stageVisuals.js";
 import { identityDisplayName, getIdentity, outfitForIdentity } from "./data/identities.js";
 
@@ -33,8 +33,10 @@ export function renderHeroStage(char, identityId, size = "hero", opts = {}) {
         <span class="sil-prop hint-${getStageVisual(preview).propKey}">${getStageVisual(preview).prop}</span>
       </div>`;
   } else if (usePoster) {
-    body = `<div class="stage-poster" role="img" aria-label="${name} · ${art.badge || outfit}">
-      <img src="${art.src}?v=rad27" alt="${name} · ${art.badge || "階段立繪"}" loading="lazy" />
+    body = `<div class="stage-poster is-alive" role="img" aria-label="${name} · ${art.badge || outfit}">
+      <img class="stage-alive-img" src="${art.src}?v=rad79" alt="${name} · ${art.badge || "階段立繪"}" loading="lazy" />
+      <div class="stage-alive-shine" aria-hidden="true"></div>
+      <div class="stage-alive-dust" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
       ${art.badge ? `<span class="stage-art-badge">${art.badge}</span>` : ""}
     </div>`;
   } else {

@@ -14,7 +14,7 @@ import {
   unitFlip,
 } from "./data/units.js?v=rad67";
 import { VIDEOS } from "./data/videos.js?v=rad50";
-import { renderAvatar } from "./avatar.js?v=rad50";
+import { renderAvatar } from "./avatar.js?v=rad79";
 import {
   CARD_TYPES,
   createBattle,
@@ -64,9 +64,9 @@ import {
   renderGrowthScroll,
   bindJourney,
   renderLeaderboardPage,
-} from "./journey.js?v=rad78";
+} from "./journey.js?v=rad79";
 import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad78";
-import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad50";
+import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad79";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";
 import { flavorLine, isoDay } from "./data/flavor.js?v=rad70";
 import {

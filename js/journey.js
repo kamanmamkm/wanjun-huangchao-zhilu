@@ -8,8 +8,8 @@ import { IDENTITIES } from "./data/identities.js?v=rad71";
 import { getStageVisual, SKILL_BARS, skillFill, STAGE_RELIC, realmLabel } from "./data/stageVisuals.js";
 import { heroDisplayName, normalizeHeroName } from "./data/characters.js";
 import { pickRandomHeroName, HERO_NAME_COUNT } from "./data/heroNames.js";
-import { renderAvatar } from "./avatar.js";
-import { renderHeroStage, renderStudyCompanion, renderPromoteReveal } from "./heroStage.js";
+import { renderAvatar } from "./avatar.js?v=rad79";
+import { renderHeroStage, renderStudyCompanion, renderPromoteReveal } from "./heroStage.js?v=rad79";
 import { nextHook, nextStageAfter, todayEncounter } from "./data/flavor.js?v=rad70";
 import {
   userSnapshot,

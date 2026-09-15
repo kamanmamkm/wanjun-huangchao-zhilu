@@ -1225,6 +1225,142 @@ select {
   }
 }
 
+@keyframes heroBreathe {
+  0%, 100% { transform: translate3d(0, 6px, 0) scale(1.04) rotate(-0.5deg); }
+  50% { transform: translate3d(-8px, -12px, 0) scale(1.08) rotate(0.6deg); }
+}
+@keyframes heroShine {
+  0%, 100% { background-position: 120% 0; opacity: 0.15; }
+  40% { opacity: 0.55; }
+  55% { background-position: -20% 0; opacity: 0.2; }
+}
+@keyframes moteDrift {
+  0% { transform: translate3d(0, 12px, 0) scale(0.6); opacity: 0; }
+  12% { opacity: 0.85; }
+  100% { transform: translate3d(18px, -220px, 0) scale(1.1); opacity: 0; }
+}
+@keyframes avBlink {
+  0%, 86%, 94%, 100% { transform: scaleY(1); }
+  90% { transform: scaleY(0.06); }
+}
+@keyframes hairSway {
+  0%, 100% { transform: rotate(-1.8deg); }
+  50% { transform: rotate(2.2deg); }
+}
+@keyframes avatarBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+@keyframes companionBob {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-5px) rotate(1.5deg); }
+}
+
+.stage-poster.is-alive {
+  overflow: hidden;
+}
+.stage-poster.is-alive .stage-alive-img {
+  animation: heroBreathe 5.6s ease-in-out infinite;
+  transform-origin: 52% 78%;
+  will-change: transform;
+  filter: saturate(1.12) contrast(1.06) brightness(1.05);
+}
+.stage-alive-shine {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 38%, rgba(255, 248, 220, 0.42) 50%, transparent 62%);
+  background-size: 220% 100%;
+  animation: heroShine 7.5s ease-in-out infinite;
+  mix-blend-mode: soft-light;
+}
+.stage-alive-dust {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  overflow: hidden;
+}
+.stage-alive-dust i {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff6d0 0%, rgba(212, 176, 106, 0.15) 70%);
+  box-shadow: 0 0 8px rgba(255, 236, 180, 0.7);
+  animation: moteDrift 8.5s linear infinite;
+}
+.stage-alive-dust i:nth-child(1) { left: 16%; bottom: 8%; animation-duration: 7.2s; }
+.stage-alive-dust i:nth-child(2) { left: 38%; bottom: 4%; animation-duration: 9.4s; animation-delay: -2s; width: 5px; height: 5px; }
+.stage-alive-dust i:nth-child(3) { left: 62%; bottom: 10%; animation-duration: 8.1s; animation-delay: -4s; }
+.stage-alive-dust i:nth-child(4) { left: 78%; bottom: 2%; animation-duration: 10.2s; animation-delay: -1s; width: 4px; height: 9px; border-radius: 40%; }
+.stage-alive-dust i:nth-child(5) { left: 50%; bottom: 16%; animation-duration: 6.8s; animation-delay: -3.5s; }
+
+.avatar-svg .av-eyes {
+  transform-box: fill-box;
+  transform-origin: 50% 42%;
+  animation: avBlink 5.2s ease-in-out infinite;
+}
+.avatar-svg .av-hair,
+.avatar-svg .av-sleeve {
+  transform-box: fill-box;
+  transform-origin: 50% 0%;
+  animation: hairSway 3.8s ease-in-out infinite;
+}
+.avatar-svg .av-prop {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: hairSway 4.6s ease-in-out infinite reverse;
+}
+
+.avatar-ring {
+  animation: avatarBob 3.6s ease-in-out infinite;
+}
+.avatar-art.stage-face img {
+  animation: heroBreathe 7s ease-in-out infinite;
+  transform-origin: 50% 20%;
+}
+.avatar-art.avatar-sm.stage-face img,
+.avatar-ring .avatar-art.stage-face img,
+.growth-av .avatar-art.stage-face img {
+  animation: avatarBob 3.4s ease-in-out infinite;
+  transform-origin: 50% 40%;
+}
+.study-companion .avatar-art,
+.study-companion .avatar-svg {
+  animation: companionBob 3.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage-poster.is-alive .stage-alive-img,
+  .stage-alive-shine,
+  .stage-alive-dust i,
+  .avatar-svg .av-eyes,
+  .avatar-svg .av-hair,
+  .avatar-svg .av-sleeve,
+  .avatar-svg .av-prop,
+  .avatar-ring,
+  .avatar-art.stage-face img,
+  .study-companion .avatar-art,
+  .study-companion .avatar-svg {
+    animation: none;
+  }
+}
+.reduce-motion .stage-poster.is-alive .stage-alive-img,
+.reduce-motion .stage-alive-shine,
+.reduce-motion .stage-alive-dust i,
+.reduce-motion .avatar-svg .av-eyes,
+.reduce-motion .avatar-svg .av-hair,
+.reduce-motion .avatar-svg .av-sleeve,
+.reduce-motion .avatar-svg .av-prop,
+.reduce-motion .avatar-ring,
+.reduce-motion .avatar-art.stage-face img,
+.reduce-motion .study-companion .avatar-art,
+.reduce-motion .study-companion .avatar-svg {
+  animation: none;
+}
+
 .player-meta strong {
   display: block;
   font-family: var(--font-display);

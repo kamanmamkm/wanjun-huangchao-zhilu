@@ -9,7 +9,7 @@ import { levelFromXp } from "./data/levels.js";
 import { QUESTIONS } from "./data/questions.js";
 import { FORM_YEARS } from "./data/formYear.js";
 import { getCloudUrl, saveCloudUrl, studentCloudLink, cloudUrlHint } from "./data/cloud.js?v=rad75";
-import { pullCloudBoard } from "./cloud.js?v=rad75";
+import { pullCloudBoard } from "./cloud.js?v=rad76";
 import { SHEETS_APPS_SCRIPT } from "./data/sheetsScript.js?v=rad73";
 
 const TEACHER_KEY = "rps_teacher_v1";
@@ -267,6 +267,29 @@ function renderCloudSetup(state = {}) {
     }</p>`;
 }
 
+function renderLiveClassBoard(state = {}) {
+  if (!getCloudUrl()) return "";
+  const rows = Array.isArray(state.cloudBoard) ? state.cloudBoard : [];
+  const pending = !Array.isArray(state.cloudBoard);
+  const list = pending
+    ? "<li>載入中</li>"
+    : rows.length
+      ? rows
+          .slice(0, 30)
+          .map(
+            (r, i) => `<li>
+              <span class="arena-pos">${i + 1}</span>
+              <span class="arena-name">${esc(r.heroName || r.username)} · ${esc(r.formYear || "")} · ${esc(r.identityName || "")}</span>
+              <span class="arena-pts">${Number(r.score) || 0}</span>
+            </li>`
+          )
+          .join("")
+      : "<li>尚未有學生呈報。學生答一題或打開「排行」就會上榜。</li>";
+  return `
+    <h3 class="section-title"><span>全班實況</span></h3>
+    <ol class="arena-list teacher-podium">${list}</ol>`;
+}
+
 export function renderTeacherPage(state = {}) {
   const t = readTeacher();
   if (!t.unlocked) {
@@ -274,6 +297,7 @@ export function renderTeacherPage(state = {}) {
     <section class="panel-paper teacher-view">
       <h2>老師後台</h2>
       ${renderCloudSetup(state)}
+      ${renderLiveClassBoard(state)}
       <h3 class="section-title"><span>睇本機學生</span></h3>
       <p class="lead">學生帳號同答題紀錄要入密碼先睇到。資料只存在此瀏覽器。</p>
       <label>老師密碼
@@ -340,6 +364,7 @@ export function renderTeacherPage(state = {}) {
     <p class="muted">同一瀏覽器內的註冊帳號會出現在下方。密碼預設 <code>wanjun</code>。史績榜可投影，鼓勵堂上較量。</p>
 
     ${renderCloudSetup(state)}
+    ${renderLiveClassBoard(state)}
 
     <h3 class="section-title"><span>本機史績榜</span></h3>
     <ol class="arena-list teacher-podium">
@@ -472,7 +497,10 @@ export function bindTeacher(ctx) {
       toast(cloudUrlHint(raw));
       return;
     }
-    if (state) state.cloudFetchedAt = 0;
+    if (state) {
+      state.cloudFetchedAt = 0;
+      state.cloudPushed = false;
+    }
     toast("已記住全班榜網址");
     render();
   });

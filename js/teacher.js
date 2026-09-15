@@ -8,6 +8,9 @@ import { getCharacter, heroDisplayName } from "./data/characters.js";
 import { levelFromXp } from "./data/levels.js";
 import { QUESTIONS } from "./data/questions.js";
 import { FORM_YEARS } from "./data/formYear.js";
+import { getCloudUrl, saveCloudUrl, studentCloudLink } from "./data/cloud.js?v=rad73";
+import { pullCloudBoard } from "./cloud.js?v=rad73";
+import { SHEETS_APPS_SCRIPT } from "./data/sheetsScript.js?v=rad73";
 
 const TEACHER_KEY = "rps_teacher_v1";
 const USERS_KEY = "huangchao_users_v1";
@@ -75,6 +78,7 @@ export function listStudents() {
         level: lv.level,
         identityId: u.identityId || 0,
         identityName: identityDisplayName(idn, u.gender),
+        score: Number(u.progress?.score) || 0,
         correct: u.stats?.correct || 0,
         wrong: u.stats?.wrong || 0,
         games: u.stats?.games || 0,
@@ -88,7 +92,7 @@ export function listStudents() {
         createdAt: u.createdAt || 0,
       };
     })
-    .sort((a, b) => b.level - a.level || (b.xp || 0) - (a.xp || 0));
+    .sort((a, b) => (b.score || 0) - (a.score || 0) || b.level - a.level || (b.xp || 0) - (a.xp || 0));
 }
 
 function esc(s) {
@@ -256,6 +260,9 @@ export function renderTeacherPage(state = {}) {
   const reviews = collectPendingReviews();
   const chapters = chapterList();
 
+  const podium = students.slice(0, 3);
+  const medals = ["金榜", "亞元", "探花"];
+
   const detail = selected
     ? `
     <div class="teacher-detail">
@@ -298,7 +305,48 @@ export function renderTeacherPage(state = {}) {
       <h2 style="margin:0">老師後台</h2>
       <button type="button" class="btn ghost" id="teacher-lock">鎖定</button>
     </div>
-    <p class="muted">同一瀏覽器內的註冊帳號會出現在下方。密碼預設 <code>wanjun</code>。</p>
+    <p class="muted">同一瀏覽器內的註冊帳號會出現在下方。密碼預設 <code>wanjun</code>。史績榜可投影，鼓勵堂上較量。</p>
+
+    <h3 class="section-title"><span>全班史績榜（Google 試算表）</span></h3>
+    <ol class="cloud-setup">
+      <li class="is-done">開 Google 試算表（你已經完成）</li>
+      <li>試算表頂部「擴充功能」→「Apps Script」。刪晒預設那幾行，貼下面腳本，撳儲存（磁碟圖示）。</li>
+      <li>右上「部署」→「新增部署」→ 類型選「網頁應用程式」。執行身分選「我」，誰能存取選「任何人」。撳部署，複製那個以 <code>/exec</code> 結尾的網址。</li>
+      <li>貼入下面欄，撳「記住網址」再「試連線」。</li>
+      <li>複製學生連結，貼去 Classroom／WhatsApp。學生要用呢條連結先睇到全班榜（唔係只得你部電腦）。</li>
+    </ol>
+    <div class="row-actions cloud-actions">
+      <button type="button" class="btn" id="cloud-copy-script">複製腳本</button>
+      <button type="button" class="btn ghost" id="cloud-copy-link">複製學生連結</button>
+    </div>
+    <label>Apps Script 網址
+      <input id="cloud-url" type="url" placeholder="https://script.google.com/macros/s/…/exec" value="${esc(getCloudUrl())}" />
+    </label>
+    <div class="row-actions cloud-actions">
+      <button type="button" class="btn" id="cloud-save">記住網址</button>
+      <button type="button" class="btn ghost" id="cloud-test">試連線</button>
+    </div>
+    <p class="muted" id="cloud-link-hint">${
+      getCloudUrl()
+        ? `學生連結已備好。而家表內 ${Array.isArray(state.cloudBoard) ? state.cloudBoard.length : "?"} 人。`
+        : "未接表前，行旅仍顯示「科舉擬榜」（虛擬同窗）。"
+    }</p>
+    <textarea id="cloud-script" class="cloud-script" readonly rows="10" spellcheck="false"></textarea>
+
+    <h3 class="section-title"><span>本機史績榜</span></h3>
+    <ol class="arena-list teacher-podium">
+      ${
+        podium
+          .map(
+            (s, i) => `<li class="${selected?.username === s.username ? "is-you" : ""}">
+              <span class="arena-pos">${i + 1}</span>
+              <span class="arena-name">${esc(medals[i] || "")} · ${esc(s.heroName || s.username)}（${esc(s.username)}）</span>
+              <span class="arena-pts">${s.score}</span>
+            </li>`
+          )
+          .join("") || "<li>尚未有學生帳號</li>"
+      }
+    </ol>
 
     <h3 class="section-title"><span>學生帳號（${students.length}／${all.length}）</span></h3>
     <div class="toolbar">
@@ -313,7 +361,7 @@ export function renderTeacherPage(state = {}) {
       <table class="teacher-table">
         <thead>
           <tr>
-            <th>班號</th><th>角色名</th><th>年級</th><th>身份</th><th>等級</th><th>XP</th><th>答對/錯</th><th>答題數</th>
+            <th>班號</th><th>角色名</th><th>年級</th><th>身份</th><th>等級</th><th>史績</th><th>XP</th><th>答對/錯</th><th>答題數</th>
           </tr>
         </thead>
         <tbody>
@@ -327,12 +375,13 @@ export function renderTeacherPage(state = {}) {
               <td>${esc(s.formYear || "—")}</td>
               <td>${esc(s.identityName)}</td>
               <td>Lv.${s.level}</td>
+              <td>${s.score}</td>
               <td>${s.xp}</td>
               <td>${s.correct}/${s.wrong}</td>
               <td>${s.attemptCount}</td>
             </tr>`
               )
-              .join("") || `<tr><td colspan="8">尚未有學生帳號</td></tr>`
+              .join("") || `<tr><td colspan="9">尚未有學生帳號</td></tr>`
           }
         </tbody>
       </table>
@@ -393,6 +442,59 @@ export function renderTeacherPage(state = {}) {
 
 export function bindTeacher(ctx) {
   const { render, toast, state } = ctx;
+  const scriptBox = document.getElementById("cloud-script");
+  if (scriptBox && !scriptBox.value) scriptBox.value = SHEETS_APPS_SCRIPT;
+  document.getElementById("cloud-copy-script")?.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(SHEETS_APPS_SCRIPT);
+      toast("已複製腳本，去試算表貼上");
+    } catch {
+      scriptBox?.select();
+      toast("請手動全選腳本再複製");
+    }
+  });
+  document.getElementById("cloud-save")?.addEventListener("click", () => {
+    const url = saveCloudUrl(document.getElementById("cloud-url")?.value);
+    if (!url) {
+      toast("網址唔啱，要係 script.google.com … /exec");
+      return;
+    }
+    if (state) state.cloudFetchedAt = 0;
+    toast("已記住全班榜網址");
+    render();
+  });
+  document.getElementById("cloud-test")?.addEventListener("click", async () => {
+    const url = saveCloudUrl(document.getElementById("cloud-url")?.value) || getCloudUrl();
+    if (!url) {
+      toast("請先貼 /exec 網址");
+      return;
+    }
+    try {
+      const rows = await pullCloudBoard();
+      if (state) {
+        state.cloudBoard = rows;
+        state.cloudError = "";
+        state.cloudFetchedAt = Date.now();
+      }
+      toast(`連線成功，而家有 ${rows.length} 人`);
+      render();
+    } catch {
+      toast("連線失敗：檢查部署權限係咪「任何人」");
+    }
+  });
+  document.getElementById("cloud-copy-link")?.addEventListener("click", async () => {
+    const link = studentCloudLink();
+    if (!link) {
+      toast("請先記住網址，先有學生連結");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(link);
+      toast("已複製學生連結，貼去 Classroom");
+    } catch {
+      toast(link);
+    }
+  });
   document.getElementById("teacher-unlock")?.addEventListener("click", () => {
     try {
       unlockTeacher(document.getElementById("teacher-pin")?.value || "");

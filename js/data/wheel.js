@@ -11,7 +11,6 @@ export const WHEEL_SLICES = [
   { id: "xp8", label: "修業＋8 經驗", caption: "修業", weight: 3, xp: 8 },
   { id: "xp16", label: "勤學＋16 經驗", caption: "勤學", weight: 2, xp: 16 },
   { id: "charm_lamp", label: "錦囊·續燈", caption: "續燈", weight: 3, charm: "lamp" },
-  { id: "score_loss", label: "失策－12 史績", caption: "失策", weight: 2, score: -12 },
   { id: "charm_peek", label: "錦囊·窺卷", caption: "窺卷", weight: 2, charm: "peek" },
   { id: "xp24", label: "大進＋24 經驗", caption: "大進", weight: 1, xp: 24 },
   { id: "charm_silk", label: "錦囊·絲引", caption: "絲引", weight: 1, charm: "silk" },
@@ -38,9 +37,9 @@ export function wheelStopAngle(index, spins = 5) {
 export function wheelGradient() {
   const n = WHEEL_SLICES.length;
   const step = 360 / n;
-  const colors = ["#c84436", "#b29455", "#35665b", "#2a1614", "#8a7340", "#a3312b", "#246b87"];
+  const colors = ["#c84436", "#b29455", "#35665b", "#8a7340", "#a3312b", "#246b87"];
   return WHEEL_SLICES.map((s, i) => {
-    const c = Number(s.score) < 0 ? "#2a1614" : colors[i % colors.length];
+    const c = colors[i % colors.length];
     return `${c} ${i * step}deg ${(i + 1) * step}deg`;
   }).join(", ");
 }

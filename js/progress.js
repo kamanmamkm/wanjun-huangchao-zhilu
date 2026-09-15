@@ -15,7 +15,8 @@ import {
 } from "./data/identities.js?v=rad71";
 import { CHAPTERS, REMEDIALS } from "./data/chapters.js?v=rad56";
 import { relicFor, isoDay } from "./data/flavor.js?v=rad50";
-import { WHEEL_SLICES } from "./data/wheel.js?v=rad72";
+import { WHEEL_SLICES } from "./data/wheel.js?v=rad67";
+import { ARENA_RIVALS, rivalWeekScore, weekId } from "./data/arena.js?v=rad73";
 import { getTrial } from "./data/trials.js";
 import { stageIdFromLevel, stageIdForUser, syncIdentityToLevel, levelBandLines, nextStageMinLevel, LEVEL_STAGE_BANDS } from "./data/levelStage.js?v=rad71";
 
@@ -59,6 +60,7 @@ export function ensureProgress(user) {
   user.progress.charms = user.progress.charms || {};
   user.progress.visit = user.progress.visit || { day: "", streak: 0 };
   user.progress.homeRun = user.progress.homeRun || null;
+  user.progress.arena = user.progress.arena || {};
   user.progress.wheel = user.progress.wheel || {};
   const w = user.progress.wheel;
   w.lastSpin = w.lastSpin || "";
@@ -70,6 +72,64 @@ export function ensureProgress(user) {
   }
   w.charges = Math.max(0, Number(w.charges) || 0);
   return user.progress;
+}
+
+export function ensureArena(user, day = isoDay()) {
+  const p = ensureProgress(user);
+  const a = p.arena || {};
+  p.arena = a;
+  const week = weekId();
+  if (a.day && a.day !== day) {
+    a.yesterdayScore = Number(a.todayScore) || 0;
+    a.todayScore = 0;
+  }
+  if (!a.day) a.todayScore = Number(a.todayScore) || 0;
+  a.day = day;
+  if (a.week !== week) {
+    a.week = week;
+    a.weekScore = 0;
+  }
+  a.weekScore = Number(a.weekScore) || 0;
+  a.todayScore = Number(a.todayScore) || 0;
+  a.yesterdayScore = Number(a.yesterdayScore) || 0;
+  a.bestStreak = Math.max(Number(a.bestStreak) || 0, Number(user.streak) || 0);
+  return a;
+}
+
+export function arenaStandings(user) {
+  const a = ensureArena(user);
+  const mine = {
+    id: "you",
+    name: "你",
+    you: true,
+    score: a.weekScore,
+  };
+  const rows = [
+    mine,
+    ...ARENA_RIVALS.map((r) => ({
+      id: r.id,
+      name: r.name,
+      vibe: r.vibe,
+      you: false,
+      score: rivalWeekScore(r.id, a.week),
+    })),
+  ].sort((x, y) => y.score - x.score || (x.you ? -1 : 1));
+  const rank = rows.findIndex((r) => r.you) + 1;
+  const ahead = rows.filter((r) => !r.you && r.score > mine.score).pop();
+  const chase = ahead ? { name: ahead.name, need: ahead.score - mine.score + 1 } : null;
+  return {
+    week: a.week,
+    todayScore: a.todayScore,
+    yesterdayScore: a.yesterdayScore,
+    weekScore: a.weekScore,
+    bestStreak: a.bestStreak,
+    streak: Number(user.streak) || 0,
+    rank,
+    total: rows.length,
+    rows,
+    chase,
+    lead: !chase,
+  };
 }
 
 export function userSnapshot(user) {
@@ -117,6 +177,7 @@ export function recordAttempt(user, payload = {}) {
   const qText = String(payload.qText || "").slice(0, 160);
   const skill = payload.skill || "";
   const topic = payload.topic || "";
+  const beforeArena = arenaStandings(user);
 
   user.attemptIds = [recordId, ...(user.attemptIds || [])].slice(0, 400);
   user.quizLog = user.quizLog || [];
@@ -150,7 +211,11 @@ export function recordAttempt(user, payload = {}) {
 
   const p = ensureProgress(user);
   if (correct) {
-    p.score = (p.score || 0) + (seenQid ? 2 : 10);
+    const gained = seenQid ? 2 : 10;
+    p.score = (p.score || 0) + gained;
+    const arena = ensureArena(user);
+    arena.todayScore += gained;
+    arena.weekScore += gained;
     const day = isoDay();
     if (p.wheel.dayCorrect !== day) {
       p.wheel.dayCorrect = day;
@@ -190,7 +255,18 @@ export function recordAttempt(user, payload = {}) {
     p.chapters[payload.chapterId] = ch;
   }
 
-  return { ok: true, duplicate: false, recordId };
+  const arena = ensureArena(user);
+  arena.bestStreak = Math.max(Number(arena.bestStreak) || 0, Number(user.streak) || 0);
+  const afterArena = arenaStandings(user);
+  return {
+    ok: true,
+    duplicate: false,
+    recordId,
+    overtook: afterArena.rank < beforeArena.rank,
+    rank: afterArena.rank,
+    lead: afterArena.lead,
+    chase: afterArena.chase,
+  };
 }
 
 export const STAGE_MASTERY_RATE = 0.8;
@@ -442,12 +518,10 @@ export function applyWheelPrize(user, sliceIndex, day = isoDay()) {
   const p = ensureProgress(user);
   p.wheel.charges = Math.max(0, (Number(p.wheel.charges) || 0) - 1);
   const xp = Number(slice.xp) || 0;
-  const scoreDelta = Number(slice.score) || 0;
   const charm = slice.charm || "";
   if (charm) grantCharm(user, charm);
-  if (scoreDelta) p.score = Math.max(0, (Number(p.score) || 0) + scoreDelta);
   p.wheel.lastSpin = day;
-  p.wheel.lastPrize = { id: slice.id, label: slice.label, xp, score: scoreDelta, charm, at: Date.now() };
+  p.wheel.lastPrize = { id: slice.id, label: slice.label, xp, charm, at: Date.now() };
   p.wheel.log = [{ ...p.wheel.lastPrize }, ...(p.wheel.log || [])].slice(0, 20);
   return { ok: true, slice };
 }

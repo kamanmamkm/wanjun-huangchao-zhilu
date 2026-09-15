@@ -2409,16 +2409,20 @@ button:active:not(:disabled):not(.locked),
 .cloud-setup li.is-done { color: var(--gold-deep, #8a7340); }
 .cloud-actions { margin: 0.4rem 0 0.65rem; flex-wrap: wrap; }
 .cloud-script {
+  display: block;
   width: 100%;
+  min-height: 14rem;
+  max-height: 22rem;
+  overflow: auto;
+  white-space: pre;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   line-height: 1.4;
-  padding: 0.55rem 0.65rem;
+  padding: 0.7rem 0.75rem;
   border-radius: 8px;
   border: 1px solid rgba(110, 84, 48, 0.28);
-  background: rgba(255, 252, 245, 0.85);
-  color: inherit;
-  resize: vertical;
+  background: #fffdf6;
+  color: #2a241c;
   margin: 0.35rem 0 1rem;
 }
 .visit-streak {

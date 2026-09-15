@@ -8,8 +8,8 @@ const LS_KEY = "rps_cloud_url_v1";
 
 export function normalizeCloudUrl(raw) {
   const s = String(raw || "").trim();
-  const m = s.match(/https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec/);
-  return m ? m[0] : "";
+  const m = s.match(/https:\/\/script\.google\.com\/macros\/s\/([A-Za-z0-9_-]+)/);
+  return m ? `https://script.google.com/macros/s/${m[1]}/exec` : "";
 }
 
 export function cloudUrlHint(raw) {

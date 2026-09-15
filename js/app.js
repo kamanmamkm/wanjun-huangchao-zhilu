@@ -52,7 +52,7 @@ import {
   clearHomeRun,
   charmCount,
   consumeCharm,
-} from "./progress.js?v=rad69";
+} from "./progress.js?v=rad70";
 import { renderWheelPage, bindWheel } from "./wheel.js?v=rad67";
 import {
   renderJourneyHome,
@@ -63,11 +63,11 @@ import {
   renderCuoshi,
   renderGrowthScroll,
   bindJourney,
-} from "./journey.js?v=rad69";
+} from "./journey.js?v=rad70";
 import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad50";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad50";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";
-import { flavorLine, isoDay } from "./data/flavor.js?v=rad69";
+import { flavorLine, isoDay } from "./data/flavor.js?v=rad70";
 import {
   FORM_YEARS,
   normalizeFormYear,

@@ -2,6 +2,8 @@
  * 短循環趣味：答題旁白、過關信物、今日機緣、下回鉤。
  */
 import { CHAPTERS, chapterList } from "./chapters.js";
+import { QUESTIONS } from "./questions.js";
+import { filterByFormYear } from "./formYear.js";
 
 const GOOD_LINES = [
   "善。這一點站得住。",
@@ -75,6 +77,8 @@ export function nextStageAfter(chapterId, stageId) {
 export const ENCOUNTERS = [
   {
     id: "enc_confucius_qin",
+    grade: "中一",
+    topic: "人物識時",
     setup: "城門外有人爭論：「孔子輔佐秦始皇統一六國。」你點應？",
     options: [
       { text: "二人不同世，屬張冠李戴", good: true, reply: "正是。識人先識其時。" },
@@ -84,6 +88,7 @@ export const ENCOUNTERS = [
   },
   {
     id: "enc_ode",
+    topic: "史料",
     setup: "攤販吹噓某官「愛民如子」，但講不出一件政事。你覺得？",
     options: [
       { text: "這是頌詞，缺少可核實的作為", good: true, reply: "善。評價要另找制度、詔令來核。" },
@@ -93,6 +98,8 @@ export const ENCOUNTERS = [
   },
   {
     id: "enc_zhenguan",
+    grade: "中一",
+    topic: "隋唐",
     setup: "童子背書：「貞觀之治就是八股取士。」你點糾正？",
     options: [
       { text: "貞觀指唐太宗時期較清明的治世", good: true, reply: "對。八股是明清科舉文體，時代不同。" },
@@ -102,6 +109,8 @@ export const ENCOUNTERS = [
   },
   {
     id: "enc_zhenghe",
+    grade: "中二",
+    topic: "明",
     setup: "有人把鄭和下西洋當成張騫出使西域。你點辨？",
     options: [
       { text: "鄭和在明朝；張騫是漢代", good: true, reply: "正是。都係「西行」，時代與任務不同。" },
@@ -111,6 +120,8 @@ export const ENCOUNTERS = [
   },
   {
     id: "enc_summer",
+    grade: "中一",
+    topic: "夏商周",
     setup: "路邊賭先後：「商周夏」。你點排？",
     options: [
       { text: "傳統史序是夏→商→周", good: true, reply: "記穩這條骨幹，後面朝代先疊得上去。" },
@@ -120,6 +131,8 @@ export const ENCOUNTERS = [
   },
   {
     id: "enc_keju_qin",
+    grade: "中一",
+    topic: "秦漢",
     setup: "有人話：「秦始皇用科舉揀官。」你點辨？",
     options: [
       { text: "科舉係隋唐以後先成熟，秦行郡縣任官", good: true, reply: "對。制度要對時代，唔好後世套前朝。" },
@@ -129,6 +142,8 @@ export const ENCOUNTERS = [
   },
   {
     id: "enc_song_changan",
+    grade: "中二",
+    topic: "宋元",
     setup: "同學寫「北宋都城係長安」。你點改？",
     options: [
       { text: "北宋都開封（東京）", good: true, reply: "記穩。長安多指漢唐帝都。" },
@@ -138,6 +153,8 @@ export const ENCOUNTERS = [
   },
   {
     id: "enc_opium_cause",
+    grade: "中二",
+    topic: "清",
     setup: "有人話鴉片戰爭「只因為中國唔肯開放」。你點應？",
     options: [
       { text: "要因包括貿易、禁煙同武力侵權，唔好單一歸因", good: true, reply: "善。大事往往多因交織。" },
@@ -147,6 +164,8 @@ export const ENCOUNTERS = [
   },
   {
     id: "enc_sun_three",
+    grade: "中三",
+    topic: "民國",
     setup: "有人問三民主義係邊三民。你點答？",
     options: [
       { text: "民族、民權、民生", good: true, reply: "記穩這三綱，後面民國史先接得上。" },
@@ -156,6 +175,8 @@ export const ENCOUNTERS = [
   },
   {
     id: "enc_reform",
+    grade: "中三",
+    topic: "當代",
     setup: "有人把改革開放講成「1949 年開始」。你點糾正？",
     options: [
       { text: "改革開放以 1978 年十一屆三中全會前後為標誌", good: true, reply: "開國同改革係兩段，年分要分開記。" },
@@ -165,6 +186,8 @@ export const ENCOUNTERS = [
   },
   {
     id: "enc_ming_prime",
+    grade: "中二",
+    topic: "明",
     setup: "有人話「明朝宰相權最大」。你點辨？",
     options: [
       { text: "明太祖廢丞相，六部直隸皇帝", good: true, reply: "對。明朝君權加強，唔好當成漢唐宰相。" },
@@ -181,8 +204,68 @@ export function isoDay(d = new Date()) {
   return `${y}-${m}-${day}`;
 }
 
-export function todayEncounter(day = isoDay()) {
-  const n = [...String(day)].reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-  const enc = ENCOUNTERS[n % ENCOUNTERS.length];
-  return { ...enc, day };
+function prevIsoDay(day) {
+  const [y, m, d] = String(day).split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() - 1);
+  return isoDay(dt);
+}
+
+function hashStr(s) {
+  let n = 2166136261;
+  for (const ch of String(s)) {
+    n ^= ch.charCodeAt(0);
+    n = Math.imul(n, 16777619);
+  }
+  return n >>> 0;
+}
+
+function seededShuffle(arr, seed) {
+  const a = [...arr];
+  let s = seed >>> 0;
+  for (let i = a.length - 1; i > 0; i--) {
+    s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
+    const j = s % (i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function mcToEncounter(q) {
+  return {
+    id: q.id,
+    grade: q.grade,
+    topic: q.topic,
+    setup: q.q,
+    options: (q.options || []).map((text, i) => ({
+      text,
+      good: i === q.answer,
+      reply: i === q.answer ? q.explain : "未中。先核時代同史實，聽日仲有新題。",
+    })),
+  };
+}
+
+export function dailyEncounterPool(user) {
+  const year = user?.formYear;
+  const debates = filterByFormYear(ENCOUNTERS, year);
+  const quizzes = filterByFormYear(QUESTIONS.mc || [], year).map(mcToEncounter);
+  const pool = [...debates, ...quizzes].filter((e) => e.id && e.setup && e.options?.length);
+  return pool.length ? pool : ENCOUNTERS;
+}
+
+/** 按年級每日一題；同年級同日相同，聽日保證唔同。刷新頁唔會換題。 */
+export function todayEncounter(user, day = isoDay()) {
+  const pool = dailyEncounterPool(user);
+  const year = user?.formYear || "中一";
+  let idx = hashStr(`${day}|${year}`) % pool.length;
+  if (pool.length > 1) {
+    const yIdx = hashStr(`${prevIsoDay(day)}|${year}`) % pool.length;
+    if (idx === yIdx) idx = (idx + 1) % pool.length;
+  }
+  const enc = pool[idx];
+  return {
+    ...enc,
+    options: seededShuffle(enc.options, hashStr(`${day}|${enc.id}`)),
+    day,
+  };
 }

@@ -10,7 +10,7 @@ import { heroDisplayName, normalizeHeroName } from "./data/characters.js";
 import { pickRandomHeroName, HERO_NAME_COUNT } from "./data/heroNames.js";
 import { renderAvatar } from "./avatar.js";
 import { renderHeroStage, renderStudyCompanion, renderPromoteReveal } from "./heroStage.js";
-import { nextHook, nextStageAfter, todayEncounter } from "./data/flavor.js?v=rad69";
+import { nextHook, nextStageAfter, todayEncounter } from "./data/flavor.js?v=rad70";
 import {
   userSnapshot,
   wheelStatus,
@@ -40,7 +40,7 @@ import {
   getHomeRun,
   levelBandLines,
   stageIdForUser,
-} from "./progress.js?v=rad69";
+} from "./progress.js?v=rad70";
 import { getUnit } from "./data/units.js?v=rad67";
 import { updateUser, addXp, pushRecent } from "./storage.js";
 import { getTrial } from "./data/trials.js";
@@ -138,16 +138,17 @@ function lastHookLine(user) {
 }
 
 function renderFlavorCard(user, ui) {
-  const enc = todayEncounter();
+  const enc = todayEncounter(user);
   const done = user.progress?.flavor?.day === enc.day;
   if (done) {
     return `<div class="flavor-card done">
       <p class="eyebrow">今日機緣已遇</p>
-      <p>${user.progress.flavor.reply || "今日已遇。聽日再來。"}</p>
+      <p>${user.progress.flavor.reply || "今日已遇。"}</p>
+      <p class="muted" style="margin:.35rem 0 0">聽日再開，另有一題。</p>
     </div>`;
   }
   return `<div class="flavor-card open">
-    <p class="eyebrow">今日機緣 · 廿秒就完</p>
+    <p class="eyebrow">今日機緣 · ${enc.topic || "每日換題"}</p>
     <p>${enc.setup}</p>
     <div class="options">
       ${enc.options
@@ -158,7 +159,7 @@ function renderFlavorCard(user, ui) {
 }
 
 function tonightHook(user) {
-  const enc = todayEncounter();
+  const enc = todayEncounter(user);
   const flavorDone = user.progress?.flavor?.day === enc.day;
   const wheel = wheelStatus(user);
   const saved = getHomeRun(user);
@@ -166,7 +167,7 @@ function tonightHook(user) {
     return {
       kind: "flavor",
       label: "今日機緣",
-      detail: "返屋企先應呢一條，一日一次。",
+      detail: "今日一題，聽日換新。",
       hideQuestButton: true,
     };
   }
@@ -722,8 +723,8 @@ function bindFlavor(user, ctx) {
     render();
   });
   appClick("[data-flavor-pick]", (btn) => {
-    const enc = todayEncounter();
     const fresh = ctx.getUser?.() || user;
+    const enc = todayEncounter(fresh);
     if (fresh.progress?.flavor?.day === enc.day) {
       toast("今日機緣已遇");
       state.flavorOpen = false;
@@ -734,7 +735,13 @@ function bindFlavor(user, ctx) {
     if (!opt) return;
     updateUser((u) => {
       const p = u.progress || {};
-      p.flavor = { day: enc.day, id: enc.id, good: !!opt.good, reply: opt.reply };
+      p.flavor = {
+        day: enc.day,
+        id: enc.id,
+        good: !!opt.good,
+        reply: opt.reply,
+        seen: [...(p.flavor?.seen || []).filter((id) => id !== enc.id), enc.id].slice(-48),
+      };
       u.progress = p;
     });
     ctx.submitAnswer?.(opt.good ? XP_REWARDS.flavorGood || 3 : 0, {

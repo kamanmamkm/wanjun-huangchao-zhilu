@@ -1,5 +1,5 @@
 /**
- * 《任平生》主介面：行旅首頁、歷史長卷、晉升殿、待考札記、史冊
+ * 《任平生》主介面：行旅首頁、歷史長卷、待考札記、史冊
  */
 import { CHAPTERS, chapterList } from "./data/chapters.js?v=rad56";
 import { XP_REWARDS } from "./data/levels.js?v=rad66";
@@ -10,7 +10,7 @@ import { heroDisplayName, normalizeHeroName } from "./data/characters.js";
 import { pickRandomHeroName, HERO_NAME_COUNT } from "./data/heroNames.js";
 import { renderAvatar } from "./avatar.js";
 import { renderHeroStage, renderStudyCompanion, renderPromoteReveal } from "./heroStage.js";
-import { nextHook, nextStageAfter, todayEncounter } from "./data/flavor.js?v=rad68";
+import { nextHook, nextStageAfter, todayEncounter } from "./data/flavor.js?v=rad69";
 import {
   userSnapshot,
   wheelStatus,
@@ -28,7 +28,6 @@ import {
   scoreTrial,
   flattenTrialParts,
   applyPromotion,
-  openWeakRemedials,
   getTrialData,
   IDENTITY_DISCLAIMER,
   identityDisplayName,
@@ -41,7 +40,7 @@ import {
   getHomeRun,
   levelBandLines,
   stageIdForUser,
-} from "./progress.js?v=rad68";
+} from "./progress.js?v=rad69";
 import { getUnit } from "./data/units.js?v=rad67";
 import { updateUser, addXp, pushRecent } from "./storage.js";
 import { getTrial } from "./data/trials.js";
@@ -100,19 +99,25 @@ export function nextJourneyTask(user, ui = {}) {
 
   const order = buildPromotionOrder(user);
   if (order.readyForTrial) {
+    const finale = order.gate?.isFinale || order.gate?.trialId === "trial_ascension";
     return {
       kind: "trial",
-      label: "開始試煉",
-      detail: order.nextName ? `挑戰「${order.nextName}」` : "晉升試煉已解鎖",
-      goto: "promote",
+      label: finale ? "終章試煉：天下待定" : "開始試煉",
+      detail: finale
+        ? "三段試煉可分開完成，全過後即可登基。"
+        : order.nextName
+          ? `挑戰「${order.nextName}」`
+          : "晉升試煉已解鎖",
+      goto: "home",
+      hideQuestButton: finale,
     };
   }
   if (order.trialPassed && order.next) {
     return {
       kind: "promote",
       label: `確認晉升「${order.nextName}」`,
-      detail: "條件已齊，可到晉升殿完成躍升",
-      goto: "promote",
+      detail: "條件已齊，可在行旅完成躍升。",
+      goto: "home",
     };
   }
 
@@ -256,14 +261,21 @@ export function renderJourneyHome(user, char, ui = {}) {
     .filter(Boolean)
     .join("");
 
+  const isFinale = order.gate?.isFinale || order.gate?.trialId === "trial_ascension";
   const questAction = task.resumeRun
     ? `data-resume-run="1"`
-    : task.enterStage
-      ? `data-enter-stage="${task.enterStage}"`
-      : `data-goto="${task.goto || "scroll"}"`;
+    : task.kind === "trial" && !isFinale
+      ? `id="btn-trial"`
+      : task.kind === "promote"
+        ? `id="btn-confirm-promote"`
+        : task.enterStage
+          ? `data-enter-stage="${task.enterStage}"`
+          : `data-goto="${task.goto || "scroll"}"`;
   const streak = visitStreak(user);
   const wheel = wheelStatus(user);
   const flavorFirst = task.kind === "flavor";
+  const questIsTrial = task.kind === "trial";
+  const questIsPromote = task.kind === "promote";
 
   let promoteBlock = "";
   if (order.next) {
@@ -278,19 +290,18 @@ export function renderJourneyHome(user, char, ui = {}) {
             })
             .join("")}
         </ul>
-        <button type="button" class="btn ghost" data-goto="promote">前往晉升殿</button>
       </div>`;
-    } else if (order.readyForTrial) {
+    } else if (order.readyForTrial && !isFinale && !questIsTrial) {
       promoteBlock = `<div class="promote-teaser edict">
         <h4>下一身份：${order.nextName}</h4>
         <p class="muted" style="margin:0 0 .5rem">條件已齊，可開始試煉。</p>
-        <button type="button" class="btn" data-goto="promote">開始試煉</button>
+        <button type="button" class="btn" id="btn-trial">開始試煉</button>
       </div>`;
-    } else if (order.trialPassed) {
+    } else if (order.trialPassed && !questIsPromote) {
       promoteBlock = `<div class="promote-teaser edict">
         <h4>下一身份：${order.nextName}</h4>
-        <p class="muted" style="margin:0 0 .5rem">試煉已過，可確認晉升。</p>
-        <button type="button" class="btn" data-goto="promote">確認晉升</button>
+        <p class="muted" style="margin:0 0 .5rem">${isFinale ? "三段試煉已過，可確認登基。" : "試煉已過，可確認晉升。"}</p>
+        <button type="button" class="btn" id="btn-confirm-promote">${isFinale ? "確認登基" : "確認晉升"}</button>
       </div>`;
     }
   }
@@ -342,6 +353,8 @@ export function renderJourneyHome(user, char, ui = {}) {
       }
       ${flavorFirst ? "" : renderFlavorCard(user, ui)}
       ${promoteBlock}
+      ${renderFinaleBoard(user, order)}
+      <div id="trial-panel" class="hidden"></div>
       <div class="poster-skills">${skillBars}</div>
     </div>
     <div class="poster-art" aria-label="${heroName} 立繪">
@@ -1316,23 +1329,11 @@ function paintBoss(root, ctx) {
   });
 }
 
-export function renderPromote(user, char) {
-  const order = buildPromotionOrder(user);
-  const snap = userSnapshot(user);
-  const list = order.items
-    .map((i) => {
-      const mark = i.ok ? "✓" : "○";
-      const extra = !i.ok && i.hint ? `<div class="muted" style="font-size:.82rem">${i.hint}</div>` : "";
-      return `<li class="${i.ok ? "ok" : "wait"}"><span>${mark}</span><div>${i.label}${extra}</div></li>`;
-    })
-    .join("");
-  const rem = openWeakRemedials(user);
+function renderFinaleBoard(user, order) {
   const isFinale = order.gate?.isFinale || order.gate?.trialId === "trial_ascension";
   const finale = isFinale || user.identityId >= 6 ? getFinaleState(user) : null;
-
-  const finaleBlock =
-    finale && (order.canChallenge || order.trialPassed || user.identityId >= 6)
-      ? `
+  if (!finale || !(order.canChallenge || order.trialPassed || user.identityId >= 6)) return "";
+  return `
     <div class="finale-board">
       <h3>終章試煉：天下待定</h3>
       <p class="lead">三段試煉可分開完成。全部通過後即可登基，解鎖帝王／女帝稱謂與造型。</p>
@@ -1354,63 +1355,10 @@ export function renderPromote(user, char) {
       </div>
       ${
         finale.allDone
-          ? `<p class="ink-gold">三段皆過——可確認登基，解鎖帝王／女帝。</p>
-             <button type="button" class="btn gold" id="btn-confirm-promote">確認登基</button>`
+          ? `<p class="ink-gold">三段皆過——可確認登基，解鎖帝王／女帝。</p>`
           : ""
       }
-    </div>`
-      : "";
-
-  return `
-  <section class="panel-paper promote-view">
-    <p class="eyebrow ink-gold">晉升殿 · ${realmLabel(snap.stageId)}</p>
-    <h2>等級累積經驗 · 試煉解鎖身份</h2>
-    <p class="lead disclaimer">${IDENTITY_DISCLAIMER}</p>
-    <div class="level-band-table" style="display:grid;gap:.35rem;margin:0 0 1rem;font-size:.9rem">
-      ${levelBandLines(user.gender)
-        .map((b) => {
-          const on = snap.stageId === b.id;
-          return `<div style="display:flex;justify-content:space-between;gap:1rem;padding:.35rem .55rem;border-radius:6px;background:${on ? "rgba(215,170,80,.18)" : "transparent"};border:1px solid ${on ? "var(--gold, #d7aa50)" : "transparent"}">
-            <strong>${b.name}</strong><span>${b.range}${on ? " · 當前" : ""}</span>
-          </div>`;
-        })
-        .join("")}
-    </div>
-    <div class="promote-layout">
-      <div class="promote-silhouette">
-        ${renderHeroStage(char, snap.stageId, "lg", { gender: user.gender, priorityBoost: true, preferStageArt: true })}
-        <p>當前：<strong>${snap.identityName}</strong> · Lv.${snap.level.level}</p>
-      </div>
-      <div class="edict big">
-        <h3>下一身份：${order.nextName || "—"}</h3>
-        <ul class="edict-list">${list}</ul>
-        <div class="row-actions">
-          ${
-            order.readyForTrial && !isFinale
-              ? `<button type="button" class="btn" id="btn-trial">開始試煉</button>`
-              : ""
-          }
-          ${!order.levelOk ? `<button type="button" class="btn" data-goto="home">去行旅升級</button>` : ""}
-          ${order.levelOk && !order.tasksOk ? `<button type="button" class="btn" data-goto="scroll">去完成學習任務</button>` : ""}
-          ${
-            order.trialPassed && order.next && !isFinale
-              ? `<button type="button" class="btn gold" id="btn-confirm-promote">確認晉升「${order.nextName}」</button>`
-              : ""
-          }
-          <button type="button" class="btn ghost" data-goto="notes">前往札記</button>
-        </div>
-        ${
-          rem.length
-            ? `<div class="rem-box"><p>建議補強：</p>${rem
-                .map((r) => `<button type="button" class="chip" data-goto="${r.goto}">${r.title}</button>`)
-                .join("")}</div>`
-            : ""
-        }
-      </div>
-    </div>
-    ${finaleBlock}
-    <div id="trial-panel" class="hidden"></div>
-  </section>`;
+    </div>`;
 }
 
 function bindPromote(user, ctx) {
@@ -1471,6 +1419,7 @@ function paintTrial(ctx) {
   const panel = document.getElementById("trial-panel");
   if (!panel || !trial) return;
   panel.classList.remove("hidden");
+  panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
   const seg = state.trial.segId
     ? (trial.segments || []).find((s) => s.id === state.trial.segId)
     : null;
@@ -1518,11 +1467,11 @@ function paintTrial(ctx) {
         <p>總分 ${Math.round(result.avg)}｜史料 ${Math.round(result.sourceAvg)}｜論證 ${Math.round(result.argueAvg)}</p>
         ${
           result.passed
-            ? `<p>${seg ? "可繼續下一段，或返回晉升殿。" : "可按「確認晉升」完成身份躍升。"}</p>`
+            ? `<p>${seg ? "可繼續下一段。" : "可按「確認晉升」完成身份躍升。"}</p>`
             : `<ul>${result.fails.map((f) => `<li>${f}</li>`).join("")}</ul>
                <p>完成補強後可再挑戰<strong>另一組同等難度</strong>（唔使等日數）。</p>`
         }
-        <button type="button" class="btn" data-goto="promote">${seg ? "返回終章" : "返回晉升殿"}</button>
+        <button type="button" class="btn" data-goto="home">返回行旅</button>
       </div>`;
     if (result.passed) {
       pushRecent(seg ? `通過終章·${seg.title}` : `通過${trial.title}`);
@@ -1598,12 +1547,12 @@ export function renderNotes(user) {
 
   return `
   <section class="panel-paper">
-    <p class="eyebrow ink-red">晉升殿 · 待考札記</p>
+    <p class="eyebrow ink-red">待考札記</p>
     <h2>待考札記</h2>
     <p class="lead">長卷關卡結算可重答錯題；呢度只記尚未掌握嘅弱項，蓋章後再戰。</p>
     <div class="note-grid">${cards || "<p>暫無未掌握錯題。繼續長卷或趣味關卡吧。</p>"}</div>
     <div class="row-actions">
-      <button type="button" class="btn ghost" data-goto="promote">返回晉升殿</button>
+      <button type="button" class="btn ghost" data-goto="home">返回行旅</button>
       <button type="button" class="btn" data-goto="scroll">去長卷</button>
     </div>
   </section>`;

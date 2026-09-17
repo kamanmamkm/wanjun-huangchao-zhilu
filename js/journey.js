@@ -667,7 +667,6 @@ export function renderGrowthScroll(user, char, growthFocus) {
     const unlocked = cur >= idn.id;
     const current = cur === idn.id;
     const nextHint = idn.id === cur + 1;
-    const vis = getStageVisual(idn.id);
     const name = identityDisplayName(idn, user.gender);
     const band = bands.find((b) => b.id === idn.id);
     const promo = promotions.find((p) => p.to === idn.id);
@@ -691,7 +690,7 @@ export function renderGrowthScroll(user, char, growthFocus) {
           hideQuote: true,
         })}
         <h3>${name}</h3>
-        <p class="muted">達 Lv.${band?.minLevel ?? "？"} 解鎖 · 「${vis.prop}」</p>
+        <p class="muted">達 Lv.${band?.minLevel ?? "？"} 解鎖</p>
       </article>`;
     }
     return `
@@ -704,7 +703,7 @@ export function renderGrowthScroll(user, char, growthFocus) {
         preferStageArt: true,
       })}
       <h3>${current ? `【${name}】` : name} ${current ? "· 目前" : "· 已解鎖"}</h3>
-      <p>${band?.range || ""} · ${vis.scene} · ${vis.prop}</p>
+      <p>${band?.range || ""}</p>
       <p class="muted">${promo?.trialId && promo.trialId !== "level_band" ? new Date(promo.at).toLocaleDateString() + " 試煉晉升" : promo?.byLevel ? `Lv.${promo.byLevel} 晉升` : promo ? new Date(promo.at).toLocaleDateString() + " 晉升" : idn.id === 0 ? "開局" : ""}</p>
     </article>`;
   }).join("");
@@ -728,8 +727,6 @@ export function renderGrowthScroll(user, char, growthFocus) {
       <div class="growth-focus-meta">
         <p class="realm-kicker">${realmLabel(focusId)} · ${focusBand?.range || ""} · ${focusVis.vibe}</p>
         <h3>${identityDisplayName(focusIdn, user.gender)}</h3>
-        <p>${focusVis.pose} · ${focusVis.prop}</p>
-        ${focusVis.bgHint ? `<p>背景：${focusVis.scene}（${focusVis.bgHint}）</p>` : ""}
         <p class="stage-quote">「${focusVis.quote}」</p>
         <p class="muted">${focusPromo?.trialId && focusPromo.trialId !== "level_band" ? `晉升於 ${new Date(focusPromo.at).toLocaleString()}` : focusPromo?.byLevel ? `Lv.${focusPromo.byLevel} 晉升` : focusPromo ? `晉升於 ${new Date(focusPromo.at).toLocaleString()}` : focusId === 0 ? "旅程起點" : "已解鎖造型"}</p>
       </div>

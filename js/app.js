@@ -27,13 +27,12 @@ import {
 } from "./data/shizhan.js?v=rad50";
 import {
   getCurrentUser,
-  registerUser,
-  loginUser,
   clearSession,
   addXp,
   updateUser,
   pushRecent,
-} from "./storage.js?v=rad71";
+  onUserWrite,
+} from "./storage.js?v=rad80";
 import {
   userSnapshot,
   buildPromotionOrder,
@@ -53,7 +52,7 @@ import {
   charmCount,
   consumeCharm,
 } from "./progress.js?v=rad73";
-import { renderWheelPage, bindWheel } from "./wheel.js?v=rad67";
+import { renderWheelPage, bindWheel } from "./wheel.js?v=rad80";
 import {
   renderJourneyHome,
   renderScroll,
@@ -64,8 +63,8 @@ import {
   renderGrowthScroll,
   bindJourney,
   renderLeaderboardPage,
-} from "./journey.js?v=rad79";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad78";
+} from "./journey.js?v=rad80";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad80";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad79";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";
 import { flavorLine, isoDay } from "./data/flavor.js?v=rad70";
@@ -80,11 +79,25 @@ import {
   classIdHint,
 } from "./data/formYear.js?v=rad50";
 import { pickRandomHeroName, isPooledHeroName, HERO_NAME_COUNT } from "./data/heroNames.js?v=rad50";
-import { captureCloudFromLocation, getCloudUrl } from "./data/cloud.js?v=rad77";
-import { pullCloudBoard, scheduleCloudUpsert, cloudRankOf, upsertCloudUser } from "./cloud.js?v=rad77";
+import { captureCloudFromLocation, getCloudUrl } from "./data/cloud.js?v=rad80";
+import {
+  pullCloudBoard,
+  scheduleCloudUpsert,
+  cloudRankOf,
+  upsertCloudUser,
+  loginWithCloud,
+  registerWithCloud,
+  scheduleCloudSync,
+} from "./cloud.js?v=rad80";
 import { isTeacherPortal } from "./data/portal.js?v=rad78";
 
 captureCloudFromLocation();
+
+onUserWrite((u) => scheduleCloudSync(u));
+window.addEventListener("pagehide", () => {
+  const u = getCurrentUser();
+  if (u) scheduleCloudSync(u, { immediate: true });
+});
 
 const app = document.getElementById("app");
 let toastTimer = null;
@@ -576,8 +589,8 @@ function renderAuth() {
             <option value="female" ${state.gender === "female" ? "selected" : ""}>女（開局：庶民 · Lv.1 起步）</option>
           </select>
         </label>
-        <p class="muted" style="margin:0;font-size:.88rem">年級喺註冊時決定，之後登入會沿用。</p>`
-            : ""
+        <p class="muted" style="margin:0;font-size:.88rem">年級喺註冊時決定，之後登入會沿用。已有學號請登入——堂上屋企同一個存檔。</p>`
+            : `<p class="muted" style="margin:0;font-size:.88rem">堂上同屋企用同一個學號同密碼，進度會跟住你走。</p>`
         }
         <p class="form-error" id="auth-error"></p>
         <button class="btn btn-wide" type="submit">${state.authMode === "login" ? "⚔️ 進入任平生" : "🏯 創角出發"}</button>
@@ -716,36 +729,49 @@ function bindAuth() {
     const strong = app.querySelector(".hero-caption strong");
     if (strong) strong.textContent = String(e.target.value).trim() || "行者";
   });
-  app.querySelector("#auth-form")?.addEventListener("submit", (e) => {
+  app.querySelector("#auth-form")?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const fd = new FormData(e.target);
     const err = app.querySelector("#auth-error");
+    const btn = e.target.querySelector("[type=submit]");
     try {
+      if (btn) btn.disabled = true;
+      if (err) err.textContent = getCloudUrl() ? "正在接通存檔…" : "";
       if (state.authMode === "login") {
-        loginUser(fd.get("username"), fd.get("password"));
+        const result = await loginWithCloud(fd.get("username"), fd.get("password"));
+        state.timeline = { setId: TIMELINE_SETS[0].id };
+        state.view = isTeacherPortal() ? "teacher" : "home";
+        state.cloudFetchedAt = 0;
+        state.cloudBoard = null;
+        state.cloudPushed = false;
+        render();
+        const year = result.user?.formYear || "";
+        if (result.from === "cloud") toast("已接回進度——堂上屋企同一個存檔");
+        else toast(year ? `歡迎踏上任平生——${year}` : "歡迎踏上任平生");
       } else {
         const classId = normalizeClassId(fd.get("username")) || String(fd.get("username") || "");
-        registerUser({
+        await registerWithCloud({
           username: classId,
           password: fd.get("password"),
-          gender: state.gender,
+          gender: fd.get("gender") || state.gender,
           heroName: fd.get("heroName"),
           formYear: fd.get("formYear") || formYearFromClassId(classId),
         });
         state.heroName = "";
         state.username = "";
         state.formYear = normalizeFormYear(fd.get("formYear")) || formYearFromClassId(classId) || "";
+        state.timeline = { setId: TIMELINE_SETS[0].id };
+        state.view = isTeacherPortal() ? "teacher" : "home";
+        state.cloudFetchedAt = 0;
+        state.cloudBoard = null;
+        state.cloudPushed = false;
+        render();
+        const year = getCurrentUser()?.formYear || "";
+        toast(year ? `歡迎踏上任平生——${year}` : "歡迎踏上任平生");
       }
-      state.timeline = { setId: TIMELINE_SETS[0].id };
-      state.view = isTeacherPortal() ? "teacher" : "home";
-      state.cloudFetchedAt = 0;
-      state.cloudBoard = null;
-      state.cloudPushed = false;
-      render();
-      const year = getCurrentUser()?.formYear || "";
-      toast(year ? `歡迎踏上任平生——${year}` : "歡迎踏上任平生");
     } catch (ex) {
-      err.textContent = ex.message;
+      if (err) err.textContent = ex.message;
+      if (btn) btn.disabled = false;
     }
   });
   app.querySelector("#guest-try-btn")?.addEventListener("click", () => {

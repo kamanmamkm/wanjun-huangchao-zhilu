@@ -42,9 +42,9 @@ import {
   levelBandLines,
   stageIdForUser,
 } from "./progress.js?v=rad73";
-import { getCloudUrl } from "./data/cloud.js?v=rad77";
+import { getCloudUrl } from "./data/cloud.js?v=rad80";
 import { getUnit } from "./data/units.js?v=rad67";
-import { updateUser, addXp, pushRecent } from "./storage.js";
+import { updateUser, addXp, pushRecent } from "./storage.js?v=rad80";
 import { getTrial } from "./data/trials.js";
 
 function chapterShortTitle(ch) {

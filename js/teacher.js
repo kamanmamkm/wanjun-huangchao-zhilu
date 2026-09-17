@@ -8,9 +8,9 @@ import { getCharacter, heroDisplayName } from "./data/characters.js";
 import { levelFromXp } from "./data/levels.js";
 import { QUESTIONS } from "./data/questions.js";
 import { FORM_YEARS } from "./data/formYear.js";
-import { getCloudUrl, saveCloudUrl, cloudUrlHint } from "./data/cloud.js?v=rad77";
-import { pullCloudBoard } from "./cloud.js?v=rad77";
-import { SHEETS_APPS_SCRIPT } from "./data/sheetsScript.js?v=rad73";
+import { getCloudUrl, saveCloudUrl, cloudUrlHint } from "./data/cloud.js?v=rad80";
+import { pullCloudBoard, cloudHasSave } from "./cloud.js?v=rad80";
+import { SHEETS_APPS_SCRIPT } from "./data/sheetsScript.js?v=rad80";
 import { studentPlayLink, teacherPortalLink } from "./data/portal.js?v=rad78";
 
 const TEACHER_KEY = "rps_teacher_v1";
@@ -243,7 +243,7 @@ function renderCloudSetup(state = {}) {
     <h3 class="section-title"><span>全班史績榜（就用你張 Google 試算表）</span></h3>
     <ol class="cloud-setup">
       <li class="is-done">開 Google 試算表（你已經完成）。就係用呢張表，唔使另外開第二樣。</li>
-      <li>喺呢張表頂部撳「擴充功能」，再撳「Apps Script」（表入面嘅掣）。刪晒預設那幾行，貼下面腳本，撳儲存。</li>
+      <li>喺呢張表頂部撳「擴充功能」，再撳「Apps Script」（表入面嘅掣）。刪晒預設那幾行，貼下面腳本，撳儲存。若以前貼過舊版：儲存後去「部署 → 管理部署 → 筆形編輯 → 版本揀新版本」（網址唔會變）。</li>
       <li>右上「部署」→「新增部署」→ 類型揀「網頁應用程式」。執行身分揀「我」，誰能存取揀「任何人」。複製 <code>/exec</code> 結尾嗰條——唔好複製瀏覽器試算表網址。</li>
       <li>貼入下面欄，撳「記住網址」再「試連線」。</li>
       <li>複製<strong>學生連結</strong>派去 Classroom；自己收藏<strong>老師連結</strong>。學生版睇唔到後台。</li>
@@ -254,6 +254,7 @@ function renderCloudSetup(state = {}) {
       <button type="button" class="btn ghost" id="cloud-copy-teacher">複製老師連結</button>
     </div>
     <p class="muted">學生：<code>${esc(studentPlayLink())}</code><br />老師：<code>${esc(teacherPortalLink())}</code></p>
+    <p class="muted">腳本會自己開「存檔」分頁，同一學號喺學校／屋企接進度。表入面只有密碼指紋，冇明文密碼。</p>
     <p class="lead">下面呢段就係要貼去試算表嘅腳本：</p>
     <pre id="cloud-script" class="cloud-script" tabindex="0">${esc(SHEETS_APPS_SCRIPT)}</pre>
     <label>部署後網址（/exec 結尾）
@@ -265,7 +266,11 @@ function renderCloudSetup(state = {}) {
     </div>
     <p class="muted" id="cloud-link-hint">${
       getCloudUrl()
-        ? `學生版已接榜。而家表內 ${Array.isArray(state.cloudBoard) ? state.cloudBoard.length : "?"} 人。`
+        ? Array.isArray(state.cloudBoard)
+          ? cloudHasSave()
+            ? `學生版已接榜同存檔。而家表內 ${state.cloudBoard.length} 人。`
+            : "已接榜，但雲端腳本尚未更新，進度唔會跟去第二部機。請複製新腳本，貼去 Apps Script 後發佈「新版本」。"
+          : "學生版已接榜。載入人數中…"
         : "未接表前，排行仍顯示「科舉擬榜」（虛擬同窗）。"
     }</p>`;
 }
@@ -521,7 +526,11 @@ export function bindTeacher(ctx) {
         state.cloudError = "";
         state.cloudFetchedAt = Date.now();
       }
-      toast(`連線成功，而家有 ${rows.length} 人`);
+      toast(
+        cloudHasSave()
+          ? `連線成功，史績榜＋雲端存檔已開，而家有 ${rows.length} 人`
+          : `連線成功，而家有 ${rows.length} 人。腳本尚未更新，進度仲唔會跟去第二部機——請貼新腳本並發佈「新版本」。`
+      );
       render();
     } catch {
       toast("連線失敗：檢查部署權限係咪「任何人」");

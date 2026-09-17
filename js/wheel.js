@@ -3,7 +3,7 @@
  */
 import { WHEEL_SLICES, CHARMS, wheelGradient, wheelStopAngle, pickWheelIndex } from "./data/wheel.js?v=rad67";
 import { wheelStatus, applyWheelPrize, charmCount } from "./progress.js?v=rad73";
-import { updateUser, addXp } from "./storage.js?v=rad71";
+import { updateUser, addXp } from "./storage.js?v=rad80";
 
 function discCaption(slice) {
   if (slice.charm) return `錦囊<br>${slice.caption}`;

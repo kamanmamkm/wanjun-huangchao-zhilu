@@ -10,7 +10,7 @@ import { heroDisplayName, normalizeHeroName } from "./data/characters.js";
 import { pickRandomHeroName, HERO_NAME_COUNT } from "./data/heroNames.js";
 import { renderAvatar } from "./avatar.js?v=rad79";
 import { renderHeroStage, renderStudyCompanion, renderPromoteReveal } from "./heroStage.js?v=rad79";
-import { nextHook, nextStageAfter, todayEncounter, dailyStageQuestions } from "./data/flavor.js?v=rad82";
+import { nextHook, nextStageAfter, todayEncounter, dailyStageQuestions, hydrateStageQuestions, flavorDoneToday, flavorHitsToday, DAILY_FLAVOR_HITS } from "./data/flavor.js?v=rad83";
 import {
   userSnapshot,
   wheelStatus,
@@ -41,7 +41,7 @@ import {
   arenaStandings,
   levelBandLines,
   stageIdForUser,
-} from "./progress.js?v=rad73";
+} from "./progress.js?v=rad83";
 import { getCloudUrl } from "./data/cloud.js?v=rad80";
 import { getUnit } from "./data/units.js?v=rad67";
 import { updateUser, addXp, pushRecent } from "./storage.js?v=rad80";
@@ -141,16 +141,17 @@ function lastHookLine(user) {
 
 function renderFlavorCard(user, ui) {
   const enc = todayEncounter(user);
-  const done = user.progress?.flavor?.day === enc.day;
+  const done = flavorDoneToday(user, enc.day);
+  const hits = flavorHitsToday(user, enc.day);
   if (done) {
     return `<div class="flavor-card done">
       <p class="eyebrow">今日機緣已遇</p>
       <p>${user.progress.flavor.reply || "今日已遇。"}</p>
-      <p class="muted" style="margin:.35rem 0 0">聽日再開，另有一題。</p>
+      <p class="muted" style="margin:.35rem 0 0">今日 ${DAILY_FLAVOR_HITS} 題已齊，聽日再開。</p>
     </div>`;
   }
   return `<div class="flavor-card open">
-    <p class="eyebrow">今日機緣 · ${enc.topic || "每日換題"}</p>
+    <p class="eyebrow">今日機緣 · ${enc.topic || "換題"} · ${hits + 1}／${DAILY_FLAVOR_HITS}</p>
     <p>${enc.setup}</p>
     <div class="options">
       ${enc.options
@@ -162,14 +163,14 @@ function renderFlavorCard(user, ui) {
 
 function tonightHook(user) {
   const enc = todayEncounter(user);
-  const flavorDone = user.progress?.flavor?.day === enc.day;
+  const flavorDone = flavorDoneToday(user, enc.day);
   const wheel = wheelStatus(user);
   const saved = getHomeRun(user);
   if (!flavorDone) {
     return {
       kind: "flavor",
       label: "今日機緣",
-      detail: "今日一題，聽日換新。",
+      detail: `今日仲有 ${enc.remain} 題`,
       hideQuestButton: true,
     };
   }
@@ -575,7 +576,7 @@ export function renderChapterDetail(user, chapterId, stageId) {
       <p class="eyebrow ink-red">${ch.arc}</p>
       <h2>${ch.title}</h2>
       <p class="lead">${ch.blurb}</p>
-      <p class="muted">答題關每日按年級換題，刷新唔會換。已完成＝做完當日題目。已掌握＝首次答對八成。未達可做錯題重答，完成後為「已完成修正」，首次成績保留。</p>
+      <p class="muted">答題關每次進入換一組新題（約 8 題），避開剛做過嘅。已完成＝做完當日呢組。已掌握＝首次答對八成。未達可做錯題重答，完成後為「已完成修正」，首次成績保留。</p>
       <div class="stage-grid">
         ${(ch.stages || [])
           .map((s, i) => {
@@ -603,6 +604,48 @@ export function renderChapterDetail(user, chapterId, stageId) {
   const stage = (ch.stages || []).find((s) => s.id === stageId);
   if (!stage) return renderChapterDetail(user, chapterId, null);
   return renderStagePlay(user, ch, stage);
+}
+
+function questionsOfStage(user, ch, stage) {
+  const rec = user.progress?.chapters?.[ch.id]?.stages?.[stage.id] || {};
+  const drawN = Number(rec.drawN) || 1;
+  if (Array.isArray(rec.currentQids) && rec.currentQids.length) {
+    const hydrated = hydrateStageQuestions(user, stage, ch.id, rec.currentQids, drawN);
+    if (hydrated.length) return hydrated;
+  }
+  return dailyStageQuestions(user, stage, ch.id, {
+    drawN,
+    excludeIds: rec.lastQids || [],
+  });
+}
+
+function bumpStageDraw(ch, stage) {
+  let qs = [];
+  updateUser((u) => {
+    const p = u.progress || {};
+    p.chapters = p.chapters || {};
+    const chp = p.chapters[ch.id] || { stages: {} };
+    chp.stages = chp.stages || {};
+    const raw = chp.stages[stage.id];
+    const rec =
+      raw && typeof raw === "object"
+        ? { ...raw }
+        : raw === true
+          ? { completed: true, mastered: true }
+          : {};
+    const drawN = (Number(rec.drawN) || 0) + 1;
+    qs = dailyStageQuestions(u, stage, ch.id, {
+      drawN,
+      excludeIds: rec.currentQids || rec.lastQids || [],
+    });
+    rec.drawN = drawN;
+    rec.lastQids = rec.currentQids || rec.lastQids || [];
+    rec.currentQids = qs.map((q) => q.id);
+    chp.stages[stage.id] = rec;
+    p.chapters[ch.id] = chp;
+    u.progress = p;
+  });
+  return qs;
 }
 
 function renderStagePlay(user, ch, stage) {
@@ -646,12 +689,12 @@ function renderStagePlay(user, ch, stage) {
       <div id="boss-body"></div>
     </section>`;
   }
-  const qs = dailyStageQuestions(user, stage, ch.id);
+  const qs = questionsOfStage(user, ch, stage);
   return `
   <section class="panel-paper stage-play study-mode" id="stage-quiz" data-chapter="${ch.id}" data-stage="${stage.id}">
     ${companionSlot}
     <div class="q-top">
-      <span>${ch.title} · ${stage.title} · 今日題</span>
+      <span>${ch.title} · ${stage.title} · 本局新題</span>
       <span id="sq-progress">進度 1 / ${qs.length}</span>
     </div>
     <div id="sq-body"></div>
@@ -824,7 +867,7 @@ function bindFlavor(user, ctx) {
   appClick("[data-flavor-pick]", (btn) => {
     const fresh = ctx.getUser?.() || user;
     const enc = todayEncounter(fresh);
-    if (fresh.progress?.flavor?.day === enc.day) {
+    if (flavorDoneToday(fresh, enc.day)) {
       toast("今日機緣已遇");
       state.flavorOpen = false;
       render();
@@ -832,10 +875,12 @@ function bindFlavor(user, ctx) {
     }
     const opt = enc.options[Number(btn.dataset.flavorPick)];
     if (!opt) return;
+    const nextHits = flavorHitsToday(fresh, enc.day) + 1;
     updateUser((u) => {
       const p = u.progress || {};
       p.flavor = {
         day: enc.day,
+        hits: nextHits,
         id: enc.id,
         good: !!opt.good,
         reply: opt.reply,
@@ -846,14 +891,15 @@ function bindFlavor(user, ctx) {
     ctx.submitAnswer?.(opt.good ? XP_REWARDS.flavorGood || 3 : 0, {
       correct: !!opt.good,
       wrong: !opt.good,
-      qid: `flavor-${enc.day}`,
+      qid: `flavor-${enc.day}-${nextHits}`,
       qText: enc.setup,
       source: "機緣",
       keepView: true,
       nudge: false,
     });
-    toast(opt.reply);
-    state.flavorOpen = false;
+    const leftover = DAILY_FLAVOR_HITS - nextHits;
+    toast(leftover > 0 ? `${opt.reply}（仲有 ${leftover} 題）` : opt.reply);
+    if (leftover <= 0) state.flavorOpen = false;
     render();
   });
 }
@@ -908,10 +954,12 @@ export function bindJourney(user, ctx) {
     state.stageQuiz = blankStageQuiz();
     state.bossStep = 0;
     state.bossPlay = null;
+    const chEnter = CHAPTERS[cid];
+    const stageEnter = chEnter?.stages?.find((s) => s.id === sid);
+    if (stageEnter?.questions?.length) bumpStageDraw(chEnter, stageEnter);
     render();
-    // after render, bind quiz/boss
     setTimeout(() => {
-      bindStageRuntime(user, ctx);
+      bindStageRuntime(ctx.getUser?.() || user, ctx);
     }, 0);
   });
 
@@ -1158,7 +1206,7 @@ function bindStageRuntime(user, ctx) {
   if (quizRoot) {
     const ch = CHAPTERS[quizRoot.dataset.chapter];
     const stage = ch.stages.find((s) => s.id === quizRoot.dataset.stage);
-    const qs = dailyStageQuestions(user, stage, ch.id);
+    const qs = questionsOfStage(ctx.getUser?.() || user, ch, stage);
     const qidKey = qs.map((q) => q.id).join(",");
     if (!state.stageQuiz || state.stageQuiz.qidKey !== qidKey) {
       state.stageQuiz = { ...blankStageQuiz(), qidKey };
@@ -1249,6 +1297,9 @@ function paintQuizSettle(qs, state, ch, stage, ctx) {
     state.bossStep = 0;
     state.bossPlay = null;
     state.view = "chapter";
+    const chNext = CHAPTERS[cid];
+    const stageNext = chNext?.stages?.find((s) => s.id === sid);
+    if (stageNext?.questions?.length) bumpStageDraw(chNext, stageNext);
     render();
   });
 }

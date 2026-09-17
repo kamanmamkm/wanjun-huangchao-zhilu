@@ -2,7 +2,7 @@
  * 短循環趣味：答題旁白、過關信物、今日機緣、下回鉤。
  */
 import { CHAPTERS, chapterList } from "./chapters.js";
-import { QUESTIONS } from "./questions.js";
+import { QUESTIONS } from "./questions.js?v=rad83";
 import { filterByFormYear } from "./formYear.js";
 
 const GOOD_LINES = [
@@ -204,13 +204,6 @@ export function isoDay(d = new Date()) {
   return `${y}-${m}-${day}`;
 }
 
-function prevIsoDay(day) {
-  const [y, m, d] = String(day).split("-").map(Number);
-  const dt = new Date(y, m - 1, d);
-  dt.setDate(dt.getDate() - 1);
-  return isoDay(dt);
-}
-
 function hashStr(s) {
   let n = 2166136261;
   for (const ch of String(s)) {
@@ -253,24 +246,46 @@ export function dailyEncounterPool(user) {
   return pool.length ? pool : ENCOUNTERS;
 }
 
-/** 按年級每日一題；同年級同日相同，聽日保證唔同。刷新頁唔會換題。 */
+export const DAILY_FLAVOR_HITS = 3;
+export const STAGE_QUIZ_COUNT = 8;
+
+export function flavorHitsToday(user, day = isoDay()) {
+  const f = user?.progress?.flavor || {};
+  if (f.day !== day) return 0;
+  const hits = Number(f.hits);
+  if (Number.isFinite(hits) && hits > 0) return Math.min(DAILY_FLAVOR_HITS, hits);
+  return f.id ? 1 : 0;
+}
+
+export function flavorDoneToday(user, day = isoDay()) {
+  return flavorHitsToday(user, day) >= DAILY_FLAVOR_HITS;
+}
+
+/** 按年級每日最多三題，避開最近做過；刷新唔會換同一題。 */
 export function todayEncounter(user, day = isoDay()) {
   const pool = dailyEncounterPool(user);
   const year = user?.formYear || "中一";
-  let idx = hashStr(`${day}|${year}`) % pool.length;
-  if (pool.length > 1) {
-    const yIdx = hashStr(`${prevIsoDay(day)}|${year}`) % pool.length;
-    if (idx === yIdx) idx = (idx + 1) % pool.length;
+  const seen = user?.progress?.flavor?.seen || [];
+  const hits = flavorHitsToday(user, day);
+  const unseen = pool.filter((e) => !seen.includes(e.id));
+  const src = unseen.length ? unseen : pool;
+  let idx = hashStr(`${day}|${year}|${hits}`) % Math.max(src.length, 1);
+  if (src.length > 1) {
+    const prevIdx = hashStr(`${day}|${year}|${Math.max(0, hits - 1)}`) % src.length;
+    if (idx === prevIdx) idx = (idx + 1) % src.length;
   }
-  const enc = pool[idx];
+  const enc = src[idx] || pool[0];
   return {
     ...enc,
-    options: seededShuffle(enc.options, hashStr(`${day}|${enc.id}`)),
+    options: seededShuffle(enc.options, hashStr(`${day}|${enc.id}|${hits}`)),
     day,
+    hit: hits + 1,
+    remain: Math.max(0, DAILY_FLAVOR_HITS - hits),
   };
 }
 
 function mcToStageQuestion(q) {
+  const a = Number(q.answer);
   return {
     id: q.id,
     type: q.type || "mc",
@@ -278,7 +293,7 @@ function mcToStageQuestion(q) {
     topic: q.topic || "",
     q: q.q,
     options: [...(q.options || [])],
-    answer: Number(q.answer) || 0,
+    answer: Number.isFinite(a) ? a : 0,
     explain: q.explain || "",
     misconception: q.misconception || "",
     grade: q.grade || "",
@@ -296,11 +311,8 @@ function shuffleStageQuestion(q, seed) {
   };
 }
 
-/** 長卷答題關：按年級＋當日抽題，同年級同日相同；聽日換，刷新唔會換。 */
-export function dailyStageQuestions(user, stage, chapterId, day = isoDay()) {
+function stageQuestionPool(user, stage) {
   const baked = (stage.questions || []).map(mcToStageQuestion).filter((q) => q.q && q.options?.length);
-  if (!baked.length) return baked;
-  const n = baked.length;
   const year = user?.formYear || "中一";
   const bank = filterByFormYear(QUESTIONS.mc || [], year).map(mcToStageQuestion);
   const seen = new Set();
@@ -310,14 +322,36 @@ export function dailyStageQuestions(user, stage, chapterId, day = isoDay()) {
     seen.add(q.id);
     pool.push(q);
   }
-  const src = pool.length >= n ? pool : baked;
-  let order = seededShuffle(src, hashStr(`${day}|${year}|${chapterId}|${stage.id}`));
-  if (src.length > n) {
-    const yFirst = seededShuffle(src, hashStr(`${prevIsoDay(day)}|${year}|${chapterId}|${stage.id}`))[0]?.id;
-    if (order[0]?.id === yFirst) {
-      const rest = order.slice(1);
-      order = [...rest, order[0]];
-    }
-  }
-  return order.slice(0, n).map((q, i) => shuffleStageQuestion(q, hashStr(`${day}|${q.id}|${i}`)));
+  return pool.length ? pool : baked;
+}
+
+export function hydrateStageQuestions(user, stage, chapterId, ids, drawN) {
+  const pool = stageQuestionPool(user, stage);
+  const byId = new Map(pool.map((q) => [q.id, q]));
+  const out = [];
+  (ids || []).forEach((id, i) => {
+    const q = byId.get(id);
+    if (!q) return;
+    out.push(shuffleStageQuestion(q, hashStr(`${chapterId}|${stage.id}|${drawN}|${id}|${i}`)));
+  });
+  return out;
+}
+
+/** 長卷答題關：每次抽一組新題（約 8 題），避開剛做過同已答過嘅。 */
+export function dailyStageQuestions(user, stage, chapterId, opts = {}) {
+  const baked = (stage.questions || []).map(mcToStageQuestion).filter((q) => q.q && q.options?.length);
+  if (!baked.length) return baked;
+  const pool = stageQuestionPool(user, stage);
+  const n = Math.min(STAGE_QUIZ_COUNT, Math.max(baked.length, pool.length));
+  const exclude = new Set(opts.excludeIds || []);
+  const answered = user?.answered || {};
+  const fresh = pool.filter((q) => !exclude.has(q.id) && !answered[q.id]);
+  const unused = pool.filter((q) => !exclude.has(q.id));
+  const src = fresh.length >= n ? fresh : unused.length >= n ? unused : pool;
+  const drawN = Number(opts.drawN) || 1;
+  const year = user?.formYear || "中一";
+  const order = seededShuffle(src, hashStr(`${year}|${chapterId}|${stage.id}|${drawN}`));
+  return order.slice(0, n).map((q, i) =>
+    shuffleStageQuestion(q, hashStr(`${chapterId}|${stage.id}|${drawN}|${q.id}|${i}`))
+  );
 }

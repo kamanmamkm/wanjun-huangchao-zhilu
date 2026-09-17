@@ -9,7 +9,7 @@ import { levelFromXp } from "./data/levels.js";
 import { QUESTIONS } from "./data/questions.js";
 import { FORM_YEARS } from "./data/formYear.js";
 import { getCloudUrl, saveCloudUrl, cloudUrlHint } from "./data/cloud.js?v=rad80";
-import { pullCloudBoard, cloudHasSave } from "./cloud.js?v=rad80";
+import { pullCloudBoard, cloudHasSave } from "./cloud.js?v=rad83";
 import { SHEETS_APPS_SCRIPT } from "./data/sheetsScript.js?v=rad80";
 import { studentPlayLink, teacherPortalLink } from "./data/portal.js?v=rad78";
 

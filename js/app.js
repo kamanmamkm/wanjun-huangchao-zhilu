@@ -63,11 +63,11 @@ import {
   renderGrowthScroll,
   bindJourney,
   renderLeaderboardPage,
-} from "./journey.js?v=rad81";
+} from "./journey.js?v=rad82";
 import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad80";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad79";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";
-import { flavorLine, isoDay } from "./data/flavor.js?v=rad70";
+import { flavorLine, isoDay } from "./data/flavor.js?v=rad82";
 import {
   FORM_YEARS,
   normalizeFormYear,

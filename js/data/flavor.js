@@ -269,3 +269,55 @@ export function todayEncounter(user, day = isoDay()) {
     day,
   };
 }
+
+function mcToStageQuestion(q) {
+  return {
+    id: q.id,
+    type: q.type || "mc",
+    skill: q.skill || "recall",
+    topic: q.topic || "",
+    q: q.q,
+    options: [...(q.options || [])],
+    answer: Number(q.answer) || 0,
+    explain: q.explain || "",
+    misconception: q.misconception || "",
+    grade: q.grade || "",
+  };
+}
+
+function shuffleStageQuestion(q, seed) {
+  const labeled = (q.options || []).map((text, i) => ({ text, i }));
+  if (labeled.length < 2) return q;
+  const mixed = seededShuffle(labeled, seed);
+  return {
+    ...q,
+    options: mixed.map((o) => o.text),
+    answer: mixed.findIndex((o) => o.i === q.answer),
+  };
+}
+
+/** 長卷答題關：按年級＋當日抽題，同年級同日相同；聽日換，刷新唔會換。 */
+export function dailyStageQuestions(user, stage, chapterId, day = isoDay()) {
+  const baked = (stage.questions || []).map(mcToStageQuestion).filter((q) => q.q && q.options?.length);
+  if (!baked.length) return baked;
+  const n = baked.length;
+  const year = user?.formYear || "中一";
+  const bank = filterByFormYear(QUESTIONS.mc || [], year).map(mcToStageQuestion);
+  const seen = new Set();
+  const pool = [];
+  for (const q of [...bank, ...baked]) {
+    if (!q?.id || seen.has(q.id)) continue;
+    seen.add(q.id);
+    pool.push(q);
+  }
+  const src = pool.length >= n ? pool : baked;
+  let order = seededShuffle(src, hashStr(`${day}|${year}|${chapterId}|${stage.id}`));
+  if (src.length > n) {
+    const yFirst = seededShuffle(src, hashStr(`${prevIsoDay(day)}|${year}|${chapterId}|${stage.id}`))[0]?.id;
+    if (order[0]?.id === yFirst) {
+      const rest = order.slice(1);
+      order = [...rest, order[0]];
+    }
+  }
+  return order.slice(0, n).map((q, i) => shuffleStageQuestion(q, hashStr(`${day}|${q.id}|${i}`)));
+}

@@ -10,7 +10,7 @@ import { heroDisplayName, normalizeHeroName } from "./data/characters.js";
 import { pickRandomHeroName, HERO_NAME_COUNT } from "./data/heroNames.js";
 import { renderAvatar } from "./avatar.js?v=rad79";
 import { renderHeroStage, renderStudyCompanion, renderPromoteReveal } from "./heroStage.js?v=rad79";
-import { nextHook, nextStageAfter, todayEncounter } from "./data/flavor.js?v=rad70";
+import { nextHook, nextStageAfter, todayEncounter, dailyStageQuestions } from "./data/flavor.js?v=rad82";
 import {
   userSnapshot,
   wheelStatus,
@@ -575,7 +575,7 @@ export function renderChapterDetail(user, chapterId, stageId) {
       <p class="eyebrow ink-red">${ch.arc}</p>
       <h2>${ch.title}</h2>
       <p class="lead">${ch.blurb}</p>
-      <p class="muted">已完成＝做完全部題目。已掌握＝首次答對八成。未達可做錯題重答，完成後為「已完成修正」，首次成績保留。</p>
+      <p class="muted">答題關每日按年級換題，刷新唔會換。已完成＝做完當日題目。已掌握＝首次答對八成。未達可做錯題重答，完成後為「已完成修正」，首次成績保留。</p>
       <div class="stage-grid">
         ${(ch.stages || [])
           .map((s, i) => {
@@ -646,12 +646,12 @@ function renderStagePlay(user, ch, stage) {
       <div id="boss-body"></div>
     </section>`;
   }
-  const qs = stage.questions || [];
+  const qs = dailyStageQuestions(user, stage, ch.id);
   return `
   <section class="panel-paper stage-play study-mode" id="stage-quiz" data-chapter="${ch.id}" data-stage="${stage.id}">
     ${companionSlot}
     <div class="q-top">
-      <span>${ch.title} · ${stage.title}</span>
+      <span>${ch.title} · ${stage.title} · 今日題</span>
       <span id="sq-progress">進度 1 / ${qs.length}</span>
     </div>
     <div id="sq-body"></div>
@@ -1158,8 +1158,11 @@ function bindStageRuntime(user, ctx) {
   if (quizRoot) {
     const ch = CHAPTERS[quizRoot.dataset.chapter];
     const stage = ch.stages.find((s) => s.id === quizRoot.dataset.stage);
-    const qs = stage.questions || [];
-    state.stageQuiz = state.stageQuiz || blankStageQuiz();
+    const qs = dailyStageQuestions(user, stage, ch.id);
+    const qidKey = qs.map((q) => q.id).join(",");
+    if (!state.stageQuiz || state.stageQuiz.qidKey !== qidKey) {
+      state.stageQuiz = { ...blankStageQuiz(), qidKey };
+    }
     paintQuiz(qs, state, ch, stage, ctx);
   }
   const bossRoot = document.getElementById("boss-stage");

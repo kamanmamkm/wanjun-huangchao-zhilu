@@ -22,6 +22,51 @@ function writeUsers(users) {
   localStorage.setItem(USERS_KEY, JSON.stringify(users));
 }
 
+let afterWrite = null;
+
+/** 進度寫入本機後通知（用來上雲）。getCurrentUser 遷移寫回唔會觸發。 */
+export function onUserWrite(fn) {
+  afterWrite = typeof fn === "function" ? fn : null;
+}
+
+function notifyWrite(user) {
+  if (afterWrite && user) {
+    try {
+      afterWrite(user);
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+function resolveLocalName(users, username) {
+  const raw = String(username || "").trim();
+  if (!raw) return "";
+  const classId = normalizeClassId(raw);
+  if (users[raw]) return raw;
+  if (users[raw.toUpperCase()]) return raw.toUpperCase();
+  if (classId && users[classId]) return classId;
+  return "";
+}
+
+export function findLocalUser(username) {
+  const users = readUsers();
+  const name = resolveLocalName(users, username);
+  if (!name) return null;
+  return migrateUser(users[name]);
+}
+
+export function upsertLocalUser(user) {
+  if (!user?.username) return null;
+  const users = readUsers();
+  const u = migrateUser(user);
+  const name = String(u.username || "").toUpperCase();
+  u.username = name;
+  users[name] = u;
+  writeUsers(users);
+  return u;
+}
+
 function blankProgress() {
   return {
     identityId: STARTING_IDENTITY_ID,
@@ -138,24 +183,18 @@ export function registerUser({ username, password, gender, characterId, heroName
     createdAt: Date.now(),
     stats: { correct: 0, wrong: 0, games: 0 },
     identitySchema: IDENTITY_SCHEMA,
+    savedAt: Date.now(),
   };
   writeUsers(users);
   setSession(name);
+  notifyWrite(users[name]);
   return users[name];
 }
 
 export function loginUser(username, password) {
   const users = readUsers();
-  const raw = String(username || "").trim();
-  const classId = normalizeClassId(raw);
-  const name = users[raw]
-    ? raw
-    : users[raw.toUpperCase()]
-      ? raw.toUpperCase()
-      : classId && users[classId]
-        ? classId
-        : raw;
-  let u = users[name];
+  const name = resolveLocalName(users, username);
+  let u = name ? users[name] : null;
   if (!u || u.password !== String(password)) throw new Error("帳號或密碼錯誤");
   u = migrateUser(u);
   users[name] = u;
@@ -186,8 +225,10 @@ export function updateUser(mutator) {
   u = migrateUser(u);
   mutator(u);
   syncIdentityToLevel(u);
+  u.savedAt = Date.now();
   users[s.username] = u;
   writeUsers(users);
+  notifyWrite(u);
   return u;
 }
 

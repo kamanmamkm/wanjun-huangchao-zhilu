@@ -1,5 +1,5 @@
 import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad50";
-import { QUESTIONS } from "./data/questions.js?v=rad50";
+import { QUESTIONS } from "./data/questions.js?v=rad83";
 import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad66";
 import { levelFromXp } from "./data/levels.js?v=rad66";
 import { DIALOGUES } from "./data/dialogues.js?v=rad62";
@@ -51,8 +51,8 @@ import {
   clearHomeRun,
   charmCount,
   consumeCharm,
-} from "./progress.js?v=rad73";
-import { renderWheelPage, bindWheel } from "./wheel.js?v=rad80";
+} from "./progress.js?v=rad83";
+import { renderWheelPage, bindWheel } from "./wheel.js?v=rad83";
 import {
   renderJourneyHome,
   renderScroll,
@@ -63,11 +63,11 @@ import {
   renderGrowthScroll,
   bindJourney,
   renderLeaderboardPage,
-} from "./journey.js?v=rad82";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad80";
+} from "./journey.js?v=rad83";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad83";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad79";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";
-import { flavorLine, isoDay } from "./data/flavor.js?v=rad82";
+import { flavorLine, isoDay } from "./data/flavor.js?v=rad83";
 import {
   FORM_YEARS,
   normalizeFormYear,
@@ -88,7 +88,7 @@ import {
   loginWithCloud,
   registerWithCloud,
   scheduleCloudSync,
-} from "./cloud.js?v=rad80";
+} from "./cloud.js?v=rad83";
 import { isTeacherPortal } from "./data/portal.js?v=rad78";
 
 captureCloudFromLocation();

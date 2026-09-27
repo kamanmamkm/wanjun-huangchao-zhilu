@@ -5,16 +5,49 @@ import { WHEEL_SLICES, CHARMS, wheelGradient, wheelStopAngle, pickWheelIndex } f
 import { wheelStatus, applyWheelPrize, charmCount } from "./progress.js?v=rad83";
 import { updateUser, addXp } from "./storage.js?v=rad80";
 
-const ink = `fill="none" stroke="#fffaf3" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"`;
+function relic(body) {
+  return `<svg class="wheel-glyph" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="30" fill="#fff8ea" stroke="#e4cf9a" stroke-width="1.4"/>${body}</svg>`;
+}
 
 /** 盤面只見器物，唔寫字。 */
 const SLICE_GLYPH = {
-  xp8: `<svg class="wheel-glyph" viewBox="0 0 64 64" aria-hidden="true"><g ${ink}><path d="M16 8h6c1.4 0 2 1.2 2 2.6v42.8c0 1.4-.6 2.6-2 2.6h-6c-1.4 0-2-1.2-2-2.6V10.6C14 9.2 14.6 8 16 8z"/><path d="M29 8h6c1.4 0 2 1.2 2 2.6v42.8c0 1.4-.6 2.6-2 2.6h-6c-1.4 0-2-1.2-2-2.6V10.6C27 9.2 27.6 8 29 8z"/><path d="M42 8h6c1.4 0 2 1.2 2 2.6v42.8c0 1.4-.6 2.6-2 2.6h-6c-1.4 0-2-1.2-2-2.6V10.6C40 9.2 40.6 8 42 8z"/></g></svg>`,
-  xp16: `<svg class="wheel-glyph" viewBox="0 0 64 64" aria-hidden="true"><g ${ink}><path d="M16 6l18 30"/><path d="M30 32l10 18-14-5z" fill="#fffaf3" stroke="none"/><ellipse cx="44" cy="50" rx="15" ry="8"/><ellipse cx="44" cy="50" rx="5" ry="2.4" fill="#fffaf3" stroke="none"/></g></svg>`,
-  charm_lamp: `<svg class="wheel-glyph" viewBox="0 0 64 64" aria-hidden="true"><g ${ink}><path d="M30 30c1-7 7-12 8-20 1 9 8 12 9 20" fill="#fffaf3" stroke="none"/><path d="M16 40h32c1.6 7-3 14-16 14S14.4 47 16 40z" fill="rgba(255,250,243,.18)"/><path d="M12 40h40"/><path d="M48 34c8 2 10 10 4 14"/><path d="M32 54v6"/></g></svg>`,
-  charm_peek: `<svg class="wheel-glyph" viewBox="0 0 64 64" aria-hidden="true"><g ${ink}><path d="M20 16h24v32H20z" fill="rgba(255,250,243,.16)"/><ellipse cx="20" cy="32" rx="7" ry="17"/><ellipse cx="44" cy="32" rx="7" ry="17"/></g></svg>`,
-  xp24: `<svg class="wheel-glyph" viewBox="0 0 64 64" aria-hidden="true"><g ${ink}><rect x="14" y="26" width="36" height="28" rx="3" fill="rgba(255,250,243,.16)"/><path d="M24 26V16h16v10"/><circle cx="32" cy="14" r="5" fill="#fffaf3" stroke="none"/></g></svg>`,
-  charm_silk: `<svg class="wheel-glyph" viewBox="0 0 64 64" aria-hidden="true"><g ${ink}><path d="M16 18h30l12 28H28z" fill="rgba(255,250,243,.2)"/><path d="M16 18c-8 5-8 18 0 24"/><path d="M20 22c-5 4-5 12 0 16"/></g></svg>`,
+  xp8: relic(`
+    <rect x="13" y="12" width="10" height="40" rx="2.4" fill="#e7c56a" stroke="#8a581c" stroke-width="1.1"/>
+    <rect x="27" y="12" width="10" height="40" rx="2.4" fill="#f4dc96" stroke="#8a581c" stroke-width="1.1"/>
+    <rect x="41" y="12" width="10" height="40" rx="2.4" fill="#d7ae4c" stroke="#8a581c" stroke-width="1.1"/>
+    <path d="M11 23h42M11 42h42" stroke="#9a2a24" stroke-width="2.3" stroke-linecap="round"/>`),
+  xp16: relic(`
+    <ellipse cx="40" cy="44" rx="16" ry="9" fill="#6a5344"/>
+    <ellipse cx="40" cy="43" rx="13" ry="6.5" fill="#8b705c"/>
+    <ellipse cx="40" cy="43" rx="5.5" ry="2.6" fill="#1a120e"/>
+    <path d="M14 12 L34 36" stroke="#c9a15a" stroke-width="4.2" stroke-linecap="round"/>
+    <path d="M31 34l9 15-11-3z" fill="#1c1a18"/>
+    <circle cx="33.5" cy="34" r="2.3" fill="#f0d78c"/>`),
+  charm_lamp: relic(`
+    <path d="M32 7c5 7 9 9 9 16 0 7-4 10-9 10s-9-3-9-10c0-7 4-9 9-16z" fill="#f3b423"/>
+    <path d="M32 14c2.4 4 4.2 5.2 4.2 8.2 0 3.2-1.8 5-4.2 5s-4.2-1.8-4.2-5c0-3 1.8-4.2 4.2-8.2z" fill="#fff6cf"/>
+    <path d="M15 42h34c1.2 8-6 13-17 13S13.8 50 15 42z" fill="#c4843a" stroke="#7a4e16" stroke-width="1.1"/>
+    <path d="M12 40.5h40" stroke="#8a5a20" stroke-width="3.2" stroke-linecap="round"/>
+    <path d="M46 35c9 1 11 9 5 13" fill="none" stroke="#c4843a" stroke-width="3" stroke-linecap="round"/>`),
+  charm_peek: relic(`
+    <rect x="18" y="18" width="28" height="28" rx="1.2" fill="#f6efd8" stroke="#d4c092" stroke-width="1"/>
+    <rect x="10" y="16" width="9" height="32" rx="4.5" fill="#9a2a24"/>
+    <rect x="45" y="16" width="9" height="32" rx="4.5" fill="#9a2a24"/>
+    <circle cx="14.5" cy="19" r="1.7" fill="#f0d78c"/>
+    <circle cx="14.5" cy="45" r="1.7" fill="#f0d78c"/>
+    <circle cx="49.5" cy="19" r="1.7" fill="#f0d78c"/>
+    <circle cx="49.5" cy="45" r="1.7" fill="#f0d78c"/>`),
+  xp24: relic(`
+    <rect x="15" y="27" width="34" height="26" rx="3" fill="#2f8a72" stroke="#1d5c4c" stroke-width="1.1"/>
+    <rect x="18" y="30" width="28" height="20" rx="2" fill="#49b094"/>
+    <path d="M25 27V17h14v10" fill="#e6c56a" stroke="#8a6230" stroke-width="1"/>
+    <circle cx="32" cy="15" r="5.2" fill="#f3dc96" stroke="#8a6230" stroke-width="1"/>
+    <circle cx="32" cy="40" r="3.2" fill="#e7f7f1"/>`),
+  charm_silk: relic(`
+    <ellipse cx="22" cy="34" rx="11" ry="16" fill="#8e241f"/>
+    <ellipse cx="22" cy="34" rx="6" ry="11" fill="#d25548"/>
+    <path d="M22 18h22l12 30H30z" fill="#b4332c"/>
+    <path d="M30 23h12l7 16H35z" fill="#f0d78c"/>`),
 };
 
 function discGlyph(slice) {

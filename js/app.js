@@ -52,7 +52,7 @@ import {
   charmCount,
   consumeCharm,
 } from "./progress.js?v=rad83";
-import { renderWheelPage, bindWheel } from "./wheel.js?v=rad83";
+import { renderWheelPage, bindWheel } from "./wheel.js?v=rad85";
 import {
   renderJourneyHome,
   renderScroll,

@@ -1859,6 +1859,15 @@ function timelineOrderSorted(order) {
   return order.every((it, i) => i === 0 || Number(it.year) > Number(order[i - 1].year));
 }
 
+/** 相鄰兩件年份顛倒，就係一處逆流。 */
+function timelineClashes(order) {
+  const out = [];
+  for (let i = 0; i < (order?.length || 0) - 1; i++) {
+    if (Number(order[i].year) > Number(order[i + 1].year)) out.push(i);
+  }
+  return out;
+}
+
 function dealTimelineRound(set) {
   const n = Math.min(set.pick || 5, set.items.length);
   const picked = shuffle([...set.items]).slice(0, n);
@@ -1878,6 +1887,7 @@ function resetTimelineDeal(set) {
   state.timeline.order = deal.order;
   state.timeline.pick = null;
   state.timeline.marks = [];
+  state.timeline.clashes = [];
   state.timeline.revealed = false;
   state.timeline.feedback = "";
   state.timeline.cleared = false;
@@ -1892,6 +1902,8 @@ function moveTimelineCard(from, to) {
   state.timeline.order = order;
   state.timeline.pick = null;
   state.timeline.marks = [];
+  state.timeline.clashes = [];
+  state.timeline.feedback = "";
 }
 
 function swapTimelineCards(a, b) {
@@ -1903,6 +1915,8 @@ function swapTimelineCards(a, b) {
   state.timeline.order = order;
   state.timeline.pick = null;
   state.timeline.marks = [];
+  state.timeline.clashes = [];
+  state.timeline.feedback = "";
 }
 
 function renderTimeline() {
@@ -1922,14 +1936,16 @@ function renderTimeline() {
   const reduce = preferReduceMotion();
   const revealed = !!state.timeline.revealed;
   const marks = state.timeline.marks || [];
+  const clashes = state.timeline.clashes || [];
   const pick = state.timeline.pick;
   const peeks = state.timeline.peeks || {};
+  const sailing = !!state.timeline.cleared;
   return `
   <section class="panel">
     ${runHudHtml()}
     <h2>時光長河</h2>
-    <p class="lead">${set.title}（${set.grade}）——本題 ${order.length} 件。由上至下排成<strong>由早到晚</strong>，開船核對。${inUnitRun() ? "" : formYearHint(year)}</p>
-    <p class="muted">${reduce ? "撳兩張牌可交換位置。" : "拖上拖落，或撳兩張牌交換。"}</p>
+    <p class="lead">${set.title}（${set.grade}）——${order.length} 隻船，由上至下係<strong>由早到晚</strong>。開船睇順唔順流。${inUnitRun() ? "" : formYearHint(year)}</p>
+    <p class="muted">${reduce ? "撳上下箭咀，或撳兩隻船交換。" : "拖船、撳上下，或撳兩隻船對調。"}全對先見年份。</p>
     <div class="toolbar">
       ${
         !inUnitRun() && pool.length > 1
@@ -1944,19 +1960,25 @@ function renderTimeline() {
       ${inUnitRun() ? "" : `<button class="btn ghost" type="button" id="tl-reshuffle">再抽一局</button>`}
       ${charmUseButtons(["peek"])}
     </div>
-    <div class="timeline-river" id="tl-list" role="list">
+    <div class="timeline-river${sailing ? " is-sailing" : ""}" id="tl-list" role="list">
       ${order
         .map((item, i) => {
           const mark = marks[i] || "";
           const selected = pick === i ? " is-picked" : "";
+          const clash = clashes.includes(i);
           return `
           <div class="tl-card${selected}${mark === "ok" ? " is-ok" : ""}${mark === "bad" ? " is-bad" : ""}" role="button" aria-label="${item.label}" tabindex="0" data-tl-i="${i}" ${
-            reduce ? "" : 'draggable="true"'
+            reduce || sailing ? "" : 'draggable="true"'
           }>
             <span class="tl-ord" aria-hidden="true">${i + 1}</span>
             <span class="tl-label">${item.label}</span>
-            ${revealed ? `<span class="tl-year">${formatEraYear(item.year)}</span>` : peeks[item.id] ? `<span class="tl-year tl-hint">${item.hint || formatEraYear(item.year)}</span>` : ""}
-          </div>`;
+            ${revealed ? `<span class="tl-year">${formatEraYear(item.year)}</span>` : peeks[item.id] ? `<span class="tl-year tl-hint">${item.hint || formatEraYear(item.year)}</span>` : `<span class="tl-year tl-wait">${sailing ? "" : "？"}</span>`}
+            <span class="tl-moves">
+              <button type="button" data-tl-up="${i}" aria-label="上移" ${i === 0 || sailing ? "disabled" : ""}>↑</button>
+              <button type="button" data-tl-down="${i}" aria-label="下移" ${i === order.length - 1 || sailing ? "disabled" : ""}>↓</button>
+            </span>
+          </div>
+          ${clash ? `<p class="tl-clash">逆流——上面嗰隻船其實遲啲先到</p>` : ""}`;
         })
         .join("")}
     </div>
@@ -2019,6 +2041,23 @@ function bindTimeline() {
     render();
   };
 
+  list?.querySelectorAll("[data-tl-up]").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const i = Number(btn.dataset.tlUp);
+      moveTimelineCard(i, i - 1);
+      render();
+    });
+  });
+  list?.querySelectorAll("[data-tl-down]").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const i = Number(btn.dataset.tlDown);
+      moveTimelineCard(i, i + 1);
+      render();
+    });
+  });
+
   list?.querySelectorAll("[data-tl-i]").forEach((card) => {
     const i = Number(card.dataset.tlI);
     card.addEventListener("click", () => onPick(i));
@@ -2058,16 +2097,18 @@ function bindTimeline() {
   app.querySelector("#tl-check")?.addEventListener("click", () => {
     const order = state.timeline.order || [];
     if (!order.length || state.timeline.cleared) return;
-    const sorted = [...order].sort((a, b) => Number(a.year) - Number(b.year));
-    const marks = order.map((it, i) => (it.id === sorted[i].id ? "ok" : "bad"));
-    const ok = marks.filter((m) => m === "ok").length;
     const all = timelineOrderSorted(order);
-    state.timeline.marks = all ? order.map(() => "ok") : marks;
+    const clashes = all ? [] : timelineClashes(order);
+    state.timeline.clashes = clashes;
+    state.timeline.marks = all
+      ? order.map(() => "ok")
+      : order.map((_, i) => (clashes.includes(i) || clashes.includes(i - 1) ? "bad" : "ok"));
     state.timeline.pick = null;
     if (all) {
       state.timeline.revealed = true;
       state.timeline.cleared = true;
-      state.timeline.feedback = `時序全對 ${order.length}/${order.length}`;
+      const sail = ["順流！年份浮出水面。", "船隊排好，長河開通。", "由早到晚，一帆風順。"];
+      state.timeline.feedback = sail[order.length % sail.length];
       submitAnswer(XP_REWARDS.timelineComplete, {
         recordId: makeAttemptId(),
         correct: true,
@@ -2102,8 +2143,9 @@ function bindTimeline() {
       render();
       return;
     }
-    state.timeline.revealed = !inUnitRun();
-    state.timeline.feedback = `時序正確 ${ok}/${order.length}　可再排`;
+    state.timeline.revealed = false;
+    state.timeline.feedback =
+      clashes.length === 1 ? "有一處逆流，調轉嗰兩隻船再開。" : `${clashes.length} 處逆流，船撞埋一齊。`;
     submitAnswer(0, {
       recordId: makeAttemptId(),
       wrong: true,
@@ -2118,7 +2160,7 @@ function bindTimeline() {
       const dead = burnRunLife("時序未通，燈火少一盞");
       if (dead) return;
     } else {
-      toast("尚未全對，再排一次");
+      toast(clashes.length === 1 ? "一處逆流，調轉再試" : "有船逆流，再排一次");
     }
     render();
   });

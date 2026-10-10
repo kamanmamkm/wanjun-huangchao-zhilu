@@ -90,8 +90,6 @@ export function renderWheelPage(user) {
     <h2>天機輪</h2>
     <p class="lead">答對題目會累積<strong>史績</strong>。轉輪可領<strong>經驗</strong>或<strong>錦囊</strong>——錦囊用嚟幫遊戲，唔會直接加史績。</p>
     <p class="wheel-score">現有史績 <strong>${st.score}</strong>　可轉 <strong>${st.charges}</strong> 次　今日答對 <strong>${st.todayCorrect}</strong> 題</p>
-    ${charmBagHtml(user)}
-    <p class="muted">${hint}</p>
     <div class="wheel-stage">
       <div class="wheel-pointer" aria-hidden="true"></div>
       <div class="wheel-disc" id="wheel-disc" style="background:conic-gradient(from -90deg, ${wheelGradient()})">
@@ -105,6 +103,8 @@ export function renderWheelPage(user) {
       <button type="button" class="btn ghost" data-goto="scroll">去長卷答題</button>
       <button type="button" class="btn ghost" data-goto="games">去用錦囊</button>
     </div>
+    <p class="muted">${hint}</p>
+    ${charmBagHtml(user)}
     ${
       st.lastPrize
         ? `<p class="settle-line ok">最近一次：${st.lastPrize.label}</p>`

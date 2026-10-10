@@ -53,6 +53,7 @@ import {
   consumeCharm,
 } from "./progress.js?v=rad83";
 import { renderWheelPage, bindWheel } from "./wheel.js?v=rad88";
+import { renderCase, bindCase } from "./case.js?v=rad91";
 import {
   renderJourneyHome,
   renderScroll,
@@ -63,7 +64,7 @@ import {
   renderGrowthScroll,
   bindJourney,
   renderLeaderboardPage,
-} from "./journey.js?v=rad83";
+} from "./journey.js?v=rad91";
 import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad83";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad79";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";
@@ -88,7 +89,7 @@ import {
   loginWithCloud,
   registerWithCloud,
   scheduleCloudSync,
-} from "./cloud.js?v=rad83";
+} from "./cloud.js?v=rad90";
 import { isTeacherPortal } from "./data/portal.js?v=rad78";
 
 captureCloudFromLocation();
@@ -429,6 +430,18 @@ function render() {
       /boss|試煉/i.test(String(state.scrollStage)));
   document.body.className = `stage-visual-${id}${isCourt ? " theme-court" : ""}`;
   ensureCloudBoard();
+  if (!state.caseBooted) {
+    state.caseBooted = true;
+    try {
+      const back = sessionStorage.getItem("huangchao_case_open");
+      if (back && state.view === "home") {
+        state.view = "case";
+        state.caseId = back;
+      }
+    } catch {
+      /* 這部瀏覽器不保留分頁狀態時，仍可從首頁「繼續查案」返回 */
+    }
+  }
   if (state.view === "home") {
     const day = isoDay();
     if (user.progress?.visit?.day !== day) {
@@ -850,7 +863,9 @@ function renderShell(user) {
                                     ? renderDialogue()
                                     : state.view === "shizhan"
                                       ? renderShizhan(user, char, idn)
-                                      : "";
+                                      : state.view === "case"
+                                        ? renderCase(user, state.caseId)
+                                        : "";
 
   const topNav = null; // nav built below
 
@@ -968,6 +983,19 @@ function bindShellNav() {
     const playBtn = e.target.closest("[data-unit-play]");
     if (playBtn) {
       openUnitPlay(playBtn.dataset.unitPlay, playBtn.dataset.playId || "");
+      return;
+    }
+    const caseBtn = e.target.closest("[data-open-case]");
+    if (caseBtn) {
+      state.view = "case";
+      state.caseId = caseBtn.dataset.openCase || "";
+      state.caseResumeLogged = false;
+      try {
+        sessionStorage.setItem("huangchao_case_open", state.caseId);
+      } catch {
+        /* ignore */
+      }
+      render();
       return;
     }
     const go = e.target.closest("[data-goto]");
@@ -1327,6 +1355,7 @@ function bindShell(user) {
   if (state.view === "timeline") bindTimeline();
   if (state.view === "dialogue") bindDialogue();
   if (state.view === "shizhan") bindShizhan(user, char);
+  if (state.view === "case") bindCase(user, { toast, render, state, getUser: getCurrentUser });
 }
 
 function renderHome(user, char) {

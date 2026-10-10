@@ -45,6 +45,7 @@ import {
 import { getCloudUrl } from "./data/cloud.js?v=rad80";
 import { getUnit } from "./data/units.js?v=rad67";
 import { updateUser, addXp, pushRecent } from "./storage.js?v=rad80";
+import { renderCaseEntry } from "./case.js?v=rad91";
 import { getTrial } from "./data/trials.js";
 
 function chapterShortTitle(ch) {
@@ -455,6 +456,7 @@ export function renderJourneyHome(user, char, ui = {}) {
           : ""
       }
       ${flavorFirst ? "" : renderFlavorCard(user, ui)}
+      ${renderCaseEntry(user)}
       ${renderArenaBoard(user, ui)}
       ${promoteBlock}
       ${renderFinaleBoard(user, order)}

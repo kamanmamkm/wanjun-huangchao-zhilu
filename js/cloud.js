@@ -212,6 +212,7 @@ export function packSave(user) {
       homeRun: p.homeRun || null,
       arena: p.arena || {},
       wheel: p.wheel || {},
+      cases: p.cases || {},
     },
   };
 }

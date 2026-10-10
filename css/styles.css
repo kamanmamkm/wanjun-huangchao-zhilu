@@ -2664,6 +2664,17 @@ button:active:not(:disabled):not(.locked),
 .flavor-card p { margin: 0 0 0.5rem; }
 .flavor-card.done p { margin: 0; color: var(--ink-soft); }
 .flavor-card .options { display: grid; gap: 0.4rem; }
+.flavor-serial h3 { margin: 0.2rem 0 0.4rem; font-size: 1.05rem; }
+.flavor-serial .serial-row {
+  margin: 0.45rem 0;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid rgba(110, 84, 48, 0.28);
+  border-radius: 8px;
+}
+.flavor-serial .serial-ok { color: var(--ink, #2a241c); }
+.flavor-serial .serial-no { color: var(--cinnabar-deep, #9a3424); }
+.flavor-serial button { max-width: 100%; text-align: left; }
+.relic-stamp.is-goal { border-style: dashed; }
 .relic-tray {
   display: flex;
   flex-wrap: wrap;

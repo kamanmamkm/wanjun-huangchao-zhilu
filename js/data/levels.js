@@ -16,6 +16,7 @@ export const XP_REWARDS = {
   shizhanLose: 8,
   chapterBonus: 20,
   flavorGood: 3,
+  flavorSerial: 8,
   remedialBonus: 15,
   trialPassBonus: 40,
   caseComplete: 12,

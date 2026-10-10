@@ -11,6 +11,7 @@ import { pickRandomHeroName, HERO_NAME_COUNT } from "./data/heroNames.js";
 import { renderAvatar } from "./avatar.js?v=rad79";
 import { renderHeroStage, renderStudyCompanion, renderPromoteReveal } from "./heroStage.js?v=rad79";
 import { nextHook, nextStageAfter, todayEncounter, dailyStageQuestions, hydrateStageQuestions, flavorDoneToday, flavorHitsToday, DAILY_FLAVOR_HITS } from "./data/flavor.js?v=rad83";
+import { renderFlavorSerial, renderSerialAside, bindFlavorSerial, serialLeadsFlavor, serialHookDetail, serialGoalChip } from "./flavorSerial.js?v=rad98";
 import {
   userSnapshot,
   wheelStatus,
@@ -41,7 +42,7 @@ import {
   arenaStandings,
   levelBandLines,
   stageIdForUser,
-} from "./progress.js?v=rad92";
+} from "./progress.js?v=rad98";
 import { getCloudUrl } from "./data/cloud.js?v=rad80";
 import { getUnit } from "./data/units.js?v=rad67";
 import { updateUser, addXp, pushRecent } from "./storage.js?v=rad95";
@@ -142,17 +143,24 @@ function lastHookLine(user) {
 }
 
 function renderFlavorCard(user, ui) {
+  const serial = renderFlavorSerial(user);
+  if (serial) return serial;
+  const aside = renderSerialAside(user);
   const enc = todayEncounter(user);
   const done = flavorDoneToday(user, enc.day);
   const hits = flavorHitsToday(user, enc.day);
   if (done) {
-    return `<div class="flavor-card done">
+    const closed = user.progress?.flavor?.serialClosed;
+    const line = closed
+      ? "今日連載已完成。沒有另一件新事件。"
+      : `今日 ${DAILY_FLAVOR_HITS} 題已齊，聽日再開。`;
+    return `${aside}<div class="flavor-card done">
       <p class="eyebrow">今日機緣已遇</p>
       <p>${user.progress.flavor.reply || "今日已遇。"}</p>
-      <p class="muted" style="margin:.35rem 0 0">今日 ${DAILY_FLAVOR_HITS} 題已齊，聽日再開。</p>
+      <p class="muted" style="margin:.35rem 0 0">${line}</p>
     </div>`;
   }
-  return `<div class="flavor-card open">
+  return `${aside}<div class="flavor-card open">
     <p class="eyebrow">今日機緣 · ${enc.topic || "換題"} · ${hits + 1}／${DAILY_FLAVOR_HITS}</p>
     <p>${enc.setup}</p>
     <div class="options">
@@ -207,6 +215,14 @@ function tonightHook(user) {
   const enc = todayEncounter(user);
   const flavorDone = flavorDoneToday(user, enc.day);
   const saved = getHomeRun(user);
+  if (serialLeadsFlavor(user)) {
+    return {
+      kind: "flavor",
+      label: "今日機緣",
+      detail: serialHookDetail(user),
+      hideQuestButton: true,
+    };
+  }
   if (!flavorDone) {
     return {
       kind: "flavor",
@@ -232,12 +248,13 @@ function tonightHook(user) {
 
 function renderRelicTray(user) {
   const relics = user.progress?.relics || [];
-  if (!relics.length) {
+  const chip = serialGoalChip(user);
+  if (!relics.length && !chip) {
     return `<p class="relic-tray muted">過關可偶得信物</p>`;
   }
   return `<div class="relic-tray" aria-label="信物">${relics
     .map((r) => `<span class="relic-stamp" title="${String(r.hint || "").replace(/"/g, "&quot;")}">${r.name}</span>`)
-    .join("")}</div>`;
+    .join("")}${chip}</div>`;
 }
 
 function escArena(s) {
@@ -1084,6 +1101,7 @@ export function bindJourney(user, ctx) {
   bindHeroNameEdit(ctx);
   bindGrowth(user, ctx);
   bindFlavor(user, ctx);
+  bindFlavorSerial(user, ctx);
 
   const slot = document.getElementById("study-companion-slot");
   if (slot && ctx.getCharacter) {
@@ -1833,12 +1851,13 @@ export function renderChronicle(user, char) {
         )
         .join("")
     : `<li class="ledger-empty">尚未入冊。去長卷過關或打錯史，史頁就會寫入呢度。</li>`;
-  const stamps = relics.length
+  const chip = serialGoalChip(user);
+  const stamps = relics.length || chip
     ? `<div class="chronicle-seals">
         <h3>信物印記</h3>
         <div class="relic-tray">${relics
           .map((r) => `<span class="relic-stamp" title="${String(r.hint || "").replace(/"/g, "&quot;")}">${r.name}</span>`)
-          .join("")}</div>
+          .join("")}${chip}</div>
       </div>`
     : "";
   return `

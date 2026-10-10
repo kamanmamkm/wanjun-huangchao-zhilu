@@ -237,6 +237,7 @@ export function packSave(user) {
       arena: p.arena || {},
       wheel: p.wheel || {},
       cases: p.cases || {},
+      museum: p.museum || {},
     },
   };
 }

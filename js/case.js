@@ -5,7 +5,7 @@
 import { CASES, getCase } from "./data/cases.js?v=rad90";
 import { XP_REWARDS } from "./data/levels.js?v=rad90";
 import { updateUser, addXp } from "./storage.js?v=rad95";
-import { cloudSyncStatus } from "./cloud.js?v=rad95";
+import { cloudSyncStatus } from "./cloud.js?v=rad97";
 
 const LOG_KEY = "huangchao_case_log_v1";
 const LOG_EXPORT_KEY = "huangchao_case_log_export_v1";
@@ -174,8 +174,15 @@ export function caseCsv() {
 
 export function rememberCaseOpen(username, caseId) {
   try {
-    if (!caseId) sessionStorage.removeItem(CASE_OPEN_KEY);
-    else sessionStorage.setItem(CASE_OPEN_KEY, `${String(username || "").toUpperCase()}|${caseId}`);
+    if (!caseId) {
+      sessionStorage.removeItem(CASE_OPEN_KEY);
+      if (sessionStorage.getItem("huangchao_resume_kind") === "case") {
+        sessionStorage.removeItem("huangchao_resume_kind");
+      }
+    } else {
+      sessionStorage.setItem(CASE_OPEN_KEY, `${String(username || "").toUpperCase()}|${caseId}`);
+      sessionStorage.setItem("huangchao_resume_kind", "case");
+    }
   } catch {
     /* 分頁狀態寫唔到時，仍可從首頁繼續 */
   }
@@ -646,6 +653,9 @@ export function bindCase(user, ctx) {
     state.caseResumeLogged = false;
     try {
       sessionStorage.removeItem("huangchao_case_open");
+      if (sessionStorage.getItem("huangchao_resume_kind") === "case") {
+        sessionStorage.removeItem("huangchao_resume_kind");
+      }
     } catch {
       /* ignore */
     }

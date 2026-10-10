@@ -54,6 +54,7 @@ import {
 } from "./progress.js?v=rad92";
 import { renderWheelPage, bindWheel } from "./wheel.js?v=rad95";
 import { renderCase, bindCase, rememberCaseOpen, recallCaseOpen, caseSaveNoteText } from "./case.js?v=rad95";
+import { renderMuseum, bindMuseum, recallMuseumOpen, rememberMuseumOpen } from "./museum.js?v=rad97";
 import {
   renderJourneyHome,
   renderScroll,
@@ -64,8 +65,8 @@ import {
   renderGrowthScroll,
   bindJourney,
   renderLeaderboardPage,
-} from "./journey.js?v=rad95";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad83";
+} from "./journey.js?v=rad97";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad97";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad79";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";
 import { flavorLine, isoDay } from "./data/flavor.js?v=rad83";
@@ -90,7 +91,7 @@ import {
   registerWithCloud,
   scheduleCloudSync,
   onCloudSync,
-} from "./cloud.js?v=rad95";
+} from "./cloud.js?v=rad97";
 import { isTeacherPortal } from "./data/portal.js?v=rad78";
 
 captureCloudFromLocation();
@@ -151,6 +152,8 @@ let state = {
   cloudFetching: false,
   cloudMyRank: 0,
   cloudPushed: false,
+  museumId: "",
+  museumFocus: "",
 };
 
 function toast(msg) {
@@ -439,13 +442,30 @@ function render() {
   if (!state.caseBooted) {
     state.caseBooted = true;
     try {
-      const back = recallCaseOpen(user.username);
-      if (back && state.view === "home") {
-        state.view = "case";
-        state.caseId = back;
+      const kind = sessionStorage.getItem("huangchao_resume_kind") || "";
+      if (state.view === "home") {
+        if (kind === "museum") {
+          const back = recallMuseumOpen(user.username);
+          if (back) {
+            state.view = "museum";
+            state.museumId = back;
+          }
+        } else {
+          const back = recallCaseOpen(user.username);
+          if (back) {
+            state.view = "case";
+            state.caseId = back;
+          } else if (kind !== "case") {
+            const museum = recallMuseumOpen(user.username);
+            if (museum) {
+              state.view = "museum";
+              state.museumId = museum;
+            }
+          }
+        }
       }
     } catch {
-      /* 這部瀏覽器不保留分頁狀態時，仍可從首頁「繼續查案」返回 */
+      /* 這部瀏覽器不保留分頁狀態時，仍可從首頁返回 */
     }
   }
   if (state.view === "home") {
@@ -869,9 +889,11 @@ function renderShell(user) {
                                     ? renderDialogue()
                                     : state.view === "shizhan"
                                       ? renderShizhan(user, char, idn)
-                                      : state.view === "case"
-                                        ? renderCase(user, state.caseId)
-                                        : "";
+                                      : state.view === "museum"
+                                        ? renderMuseum(user, state.museumId)
+                                        : state.view === "case"
+                                          ? renderCase(user, state.caseId)
+                                          : "";
 
   const topNav = null; // nav built below
 
@@ -997,6 +1019,14 @@ function bindShellNav() {
       state.caseId = caseBtn.dataset.openCase || "";
       state.caseResumeLogged = false;
       rememberCaseOpen(getCurrentUser()?.username, state.caseId);
+      render();
+      return;
+    }
+    const museumBtn = e.target.closest("[data-open-museum]");
+    if (museumBtn) {
+      state.view = "museum";
+      state.museumId = museumBtn.dataset.openMuseum || "hall";
+      rememberMuseumOpen(getCurrentUser()?.username, state.museumId);
       render();
       return;
     }
@@ -1347,11 +1377,14 @@ function bindShell(user) {
     clearSession();
     try {
       sessionStorage.removeItem("huangchao_case_open");
+      sessionStorage.removeItem("huangchao_museum_open");
+      sessionStorage.removeItem("huangchao_resume_kind");
     } catch {
       /* ignore */
     }
     state.view = "home";
     state.caseId = "";
+    state.museumId = "";
     state.caseResumeLogged = false;
     state.caseBooted = false;
     render();
@@ -1367,6 +1400,7 @@ function bindShell(user) {
   if (state.view === "dialogue") bindDialogue();
   if (state.view === "shizhan") bindShizhan(user, char);
   if (state.view === "case") bindCase(user, { toast, render, state, getUser: getCurrentUser });
+  if (state.view === "museum") bindMuseum(user, { toast, render, state, getUser: getCurrentUser });
 }
 
 function renderHome(user, char) {

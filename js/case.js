@@ -4,10 +4,24 @@
  */
 import { CASES, getCase } from "./data/cases.js?v=rad90";
 import { XP_REWARDS } from "./data/levels.js?v=rad90";
-import { updateUser, addXp } from "./storage.js?v=rad80";
+import { updateUser, addXp } from "./storage.js?v=rad95";
+import { cloudSyncStatus } from "./cloud.js?v=rad95";
 
 const LOG_KEY = "huangchao_case_log_v1";
+const LOG_EXPORT_KEY = "huangchao_case_log_export_v1";
+const CASE_OPEN_KEY = "huangchao_case_open";
 const LOG_MAX = 200;
+const REASON_LABEL = {
+  teacher: "老師指定",
+  self: "自願嘗試",
+  review: "溫習需要",
+  other: "其他",
+  skip: "不想回答",
+  unanswered: "未回答",
+};
+const KNOWN_REASONS = new Set(Object.keys(REASON_LABEL));
+const drafts = new Map();
+let clearArmed = false;
 
 function esc(s) {
   return String(s || "")
@@ -31,7 +45,55 @@ function readLog() {
 }
 
 function writeLog(rows) {
-  localStorage.setItem(LOG_KEY, JSON.stringify(rows.slice(-LOG_MAX)));
+  try {
+    localStorage.setItem(LOG_KEY, JSON.stringify(rows));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function logRoom() {
+  const n = readLog().length;
+  return { n, max: LOG_MAX, full: n >= LOG_MAX };
+}
+
+/** 空值係未回答。只有明確揀「自己想試」先算自願，唔好由空白推斷。 */
+export function reasonCode(value) {
+  const id = String(value || "").trim();
+  if (!id) return "unanswered";
+  if (KNOWN_REASONS.has(id)) return id;
+  return id;
+}
+
+function explicitAttemptReasons(rows) {
+  const map = new Map();
+  rows.forEach((row) => {
+    const id = row?.attemptId;
+    if (!id || map.has(id)) return;
+    if (row && Object.prototype.hasOwnProperty.call(row, "reason") && reasonCode(row.reason) !== "unanswered") {
+      map.set(id, reasonCode(row.reason));
+    }
+  });
+  rows.forEach((row) => {
+    const id = row?.attemptId;
+    if (!id || map.has(id)) return;
+    const item = String(row?.itemId || "").trim();
+    if (row?.event === "reason" && KNOWN_REASONS.has(item) && item !== "unanswered") map.set(id, item);
+  });
+  return map;
+}
+
+function rowReason(row, map) {
+  if (row && Object.prototype.hasOwnProperty.call(row, "reason")) return reasonCode(row.reason);
+  if (map?.has(row?.attemptId)) return map.get(row.attemptId);
+  const item = String(row?.itemId || "").trim();
+  if (row?.event === "reason" && KNOWN_REASONS.has(item)) return item;
+  return "unanswered";
+}
+
+function reasonLabel(code) {
+  return REASON_LABEL[code] || "未回答";
 }
 
 export function researchOn(user) {
@@ -62,29 +124,73 @@ function getStoredCode(username) {
 
 export function logCaseEvent(user, run, task, event, extra = {}) {
   if (!researchOn(user) || !run || !task) return;
-  const row = {
-    code: researchCode(user),
-    taskId: task.id,
-    version: task.version,
-    attemptId: run.attemptId || "",
-    event,
-    at: new Date().toISOString(),
-    step: extra.step ?? run.step ?? "",
-    itemId: extra.itemId || "",
-    ok: extra.ok == null ? "" : extra.ok ? "1" : "0",
-  };
-  const rows = readLog();
-  rows.push(row);
-  writeLog(rows);
+  try {
+    const reason = reasonCode(run.reason);
+    const rows = readLog();
+    let changed = false;
+    if (reason !== "unanswered" && run.attemptId) {
+      rows.forEach((row) => {
+        if (row.attemptId === run.attemptId && rowReason(row) === "unanswered") {
+          row.reason = reason;
+          changed = true;
+        }
+      });
+    }
+    if (rows.length >= LOG_MAX) {
+      if (changed && !writeLog(rows)) return false;
+      return "full";
+    }
+    rows.push({
+      code: researchCode(user),
+      taskId: task.id,
+      version: task.version,
+      attemptId: run.attemptId || "",
+      event,
+      at: new Date().toISOString(),
+      step: extra.step ?? run.step ?? "",
+      itemId: extra.itemId || "",
+      ok: extra.ok == null ? "" : extra.ok ? "1" : "0",
+      reason,
+    });
+    if (!writeLog(rows)) return false;
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function caseCsv() {
-  const head = ["code", "taskId", "version", "attemptId", "event", "at", "step", "itemId", "ok"];
+  const head = ["code", "taskId", "version", "attemptId", "event", "at", "step", "itemId", "ok", "reason", "reasonLabel"];
+  const rows = readLog();
+  const map = explicitAttemptReasons(rows);
   const lines = [head.join(",")];
-  readLog().forEach((row) => {
-    lines.push(head.map((k) => `"${String(row[k] ?? "").replace(/"/g, '""')}"`).join(","));
+  rows.forEach((row) => {
+    const reason = rowReason(row, map);
+    const view = { ...row, reason, reasonLabel: reasonLabel(reason) };
+    lines.push(head.map((k) => `"${String(view[k] ?? "").replace(/"/g, '""')}"`).join(","));
   });
   return lines.join("\n");
+}
+
+export function rememberCaseOpen(username, caseId) {
+  try {
+    if (!caseId) sessionStorage.removeItem(CASE_OPEN_KEY);
+    else sessionStorage.setItem(CASE_OPEN_KEY, `${String(username || "").toUpperCase()}|${caseId}`);
+  } catch {
+    /* 分頁狀態寫唔到時，仍可從首頁繼續 */
+  }
+}
+
+export function recallCaseOpen(username) {
+  try {
+    const raw = sessionStorage.getItem(CASE_OPEN_KEY) || "";
+    const i = raw.indexOf("|");
+    if (i < 0) return "";
+    if (raw.slice(0, i) !== String(username || "").toUpperCase()) return "";
+    return raw.slice(i + 1);
+  } catch {
+    return "";
+  }
 }
 
 function blankRun(task, prev) {
@@ -109,9 +215,15 @@ function blankRun(task, prev) {
 }
 
 export function readRun(user, task) {
+  const pending = drafts.get(draftKey(user?.username, task?.id));
+  if (pending) return pending;
   const run = user?.progress?.cases?.[task.id];
   if (!run || typeof run !== "object") return null;
   return run;
+}
+
+function draftKey(username, taskId) {
+  return `${String(username || "").toUpperCase()}|${taskId || ""}`;
 }
 
 function saveRun(username, task, next) {
@@ -129,7 +241,7 @@ function saveRun(username, task, next) {
 }
 
 function failSave(toast) {
-  toast("進度未儲存，請再試一次。");
+  toast("進度未儲存，查案可以繼續。請再試一次。");
 }
 
 export function renderCaseEntry(user) {
@@ -153,11 +265,41 @@ function stepNo(run) {
 
 function progressLine(task, run) {
   const n = stepNo(run);
-  return `<p class="case-step">第${n}步／共${task.steps.length}步　${esc(task.steps[n - 1] || "")}</p>`;
+  return `<p class="case-step" tabindex="-1">第${n}步／共${task.steps.length}步　${esc(task.steps[n - 1] || "")}</p>`;
 }
 
 function saveNote() {
-  return `<p class="muted case-save-note">查案進度存在這個學號的存檔。老師若已接好雲端，會跟其他學習紀錄一同上傳；否則只留在這部裝置。研究紀錄（要自行開啟）只在這部裝置，不是全班統計。</p>`;
+  return `<p class="muted case-save-note">${esc(caseSaveNoteText())}</p>`;
+}
+
+export function caseSaveNoteText() {
+  const s = cloudSyncStatus();
+  let cloud = "這版有雲端同步程式。尚未設定後端，進度未上傳。";
+  if (s.configured && s.synced) cloud = "這版有雲端同步程式。已設定後端，最近一次已成功同步。";
+  else if (s.configured && s.failed) cloud = "這版有雲端同步程式。已設定後端，但最近一次同步未成功，進度未上傳。";
+  else if (s.configured) cloud = "這版有雲端同步程式。已設定後端，尚未確認同步成功，進度未算已上傳。";
+  return `查案進度存在這個學號的本機存檔。${cloud} 研究紀錄只在這部裝置，不是全班統計。`;
+}
+
+function researchTools() {
+  const room = logRoom();
+  let exported = "";
+  try {
+    exported = localStorage.getItem(LOG_EXPORT_KEY) || "";
+  } catch {
+    exported = "";
+  }
+  const full = room.full
+    ? "已滿。新紀錄暫停寫入，未匯出的舊紀錄沒有刪除。"
+    : "未滿時會繼續保留，不會自動刪走未匯出紀錄。";
+  const clearLabel = clearArmed ? "再按一次，確認清除" : "清除這部裝置的研究紀錄";
+  return `
+    <p class="muted case-log-note">這部裝置研究紀錄 ${room.n}／${room.max} 筆。${full} 匯出是 CSV 檔，只包括已同意記錄的事件。</p>
+    <p class="muted">${exported ? `上次匯出：${esc(exported)}。` : "這部裝置尚未按過匯出。"}清除要再按一次確認，未匯出的紀錄會一併消失。</p>
+    <div class="case-actions">
+      <button type="button" class="btn ghost" id="case-csv">匯出研究紀錄（CSV）</button>
+      <button type="button" class="btn ghost" id="case-log-clear">${clearLabel}</button>
+    </div>`;
 }
 
 function feedbackHtml(ok, text) {
@@ -198,7 +340,7 @@ function renderStep1(user, task, run) {
   const on = researchOn(user);
   const reason = on
     ? `<fieldset class="case-reason">
-        <legend>今次你點解開啟呢個任務？（可不答）</legend>
+        <legend>今次你點解開啟呢個任務？（可不答。未選會記為未回答，不會當成自己想試）</legend>
         <div class="case-choices">${optionButtons("reason", task.reasons, run.reason)}</div>
       </fieldset>`
     : "";
@@ -206,6 +348,7 @@ function renderStep1(user, task, run) {
     ${saveNote()}
     <label class="case-optin"><input type="checkbox" id="case-research" ${on ? "checked" : ""}/> 允許在這部裝置記錄學習過程（研究用途）。正式收集前，由老師確認學校要求同同意程序。記錄不含姓名，亦不儲存自由文字。</label>
     ${reason}
+    ${researchTools()}
     <p class="case-fiction">${esc(task.scene.fictionLabel)}</p>
     <p>${esc(task.scene.text)}</p>
     <blockquote class="case-record"><p class="eyebrow">${esc(task.record.kind)}</p><p>${esc(task.record.text)}</p></blockquote>
@@ -287,7 +430,7 @@ function renderStep4(task, run) {
       ${ready ? `<button type="button" class="btn" data-case-goto="5">去結案</button>` : ""}
       <button type="button" class="btn ghost" data-case-goto="2">返回查看線索</button>
     </div>
-    ${run.hintOpen ? `<p class="case-hint" role="status">提示：${esc(ev.hint)}</p>` : ""}`;
+    ${run.hintOpen ? `<p class="case-hint" tabindex="-1" role="status">提示：${esc(ev.hint)}</p>` : ""}`;
 }
 
 function renderStep5(task, run) {
@@ -331,8 +474,7 @@ function renderStep6(task, run) {
       <button type="button" class="btn ghost" data-case-replay="1">再挑戰一次</button>
     </div>
     ${saveNote()}
-    <p class="muted">匯出只包括這部裝置上、已同意記錄的事件，不是全班統計。</p>
-    <button type="button" class="btn ghost" id="case-csv">匯出這部裝置的研究紀錄（CSV）</button>`;
+    ${researchTools()}`;
 }
 
 function taskOf(root) {
@@ -345,26 +487,33 @@ export function bindCase(user, ctx) {
   if (!root) return;
   const task = taskOf(root);
   const username = user.username;
-  try {
-    sessionStorage.setItem("huangchao_case_open", task.id);
-  } catch {
-    /* ignore */
-  }
+  rememberCaseOpen(username, task.id);
   let run = readRun(user, task);
+  const noteLog = (result) => {
+    if (result === "full") toast("研究紀錄已滿 200 筆，新紀錄未寫入，舊紀錄仍保留。請先匯出，再按清除。");
+    else if (result === false) toast("研究紀錄未寫入，查案可以繼續。");
+  };
   if (run && run.step > 1 && !state.caseResumeLogged) {
     state.caseResumeLogged = true;
-    logCaseEvent(user, run, task, "resume", { step: run.step });
+    noteLog(logCaseEvent(user, run, task, "resume", { step: run.step }));
   }
 
   const commit = (next, event, extra) => {
     const ok = saveRun(username, task, next);
-    if (!ok) {
+    const key = draftKey(username, task.id);
+    if (ok) drafts.delete(key);
+    else {
+      drafts.set(key, next);
       failSave(toast);
-      return null;
     }
-    const fresh = ctx.getUser?.() || user;
-    if (event) logCaseEvent(fresh, next, task, event, extra);
+    if (event) noteLog(logCaseEvent(ctx.getUser?.() || user, next, task, event, extra));
     return next;
+  };
+
+  const paint = (sel, keepClear) => {
+    if (!keepClear) clearArmed = false;
+    state.caseFocus = sel || "";
+    render();
   };
 
   root.querySelector("#case-research")?.addEventListener("change", (e) => {
@@ -375,7 +524,7 @@ export function bindCase(user, ctx) {
       if (on && !u.progress.researchCode) u.progress.researchCode = newId("R");
     });
     if (!ok) failSave(toast);
-    render();
+    paint("#case-research");
   });
 
   root.querySelectorAll("[data-reason]").forEach((btn) => {
@@ -384,7 +533,7 @@ export function bindCase(user, ctx) {
       const base = readRun(ctx.getUser?.() || user, task) || blankRun(task, null);
       const next = { ...base, reason };
       if (!commit(next, "reason", { step: 1, itemId: reason })) return;
-      render();
+      paint(`[data-reason="${reason}"]`);
     });
   });
 
@@ -397,7 +546,7 @@ export function bindCase(user, ctx) {
       const next = { ...base, path, step: path === "direct" ? 3 : 2 };
       if (!commit(next, starting ? "start" : "", { step: next.step, itemId: path })) return;
       state.caseResumeLogged = true;
-      render();
+      paint("");
     });
   });
 
@@ -407,7 +556,7 @@ export function bindCase(user, ctx) {
       const cur = readRun(ctx.getUser?.() || user, task);
       if (!cur) return;
       if (!commit({ ...cur, step, openClue: step === 2 ? cur.openClue : "" })) return;
-      render();
+      paint("");
     });
   });
 
@@ -420,7 +569,7 @@ export function bindCase(user, ctx) {
       const openClue = cur.openClue === id ? "" : id;
       const first = !cur.read?.[id];
       if (!commit({ ...cur, read, openClue }, first ? "clue_open" : "", { step: 2, itemId: id })) return;
-      render();
+      paint(`[data-clue="${id}"]`);
     });
   });
 
@@ -432,7 +581,7 @@ export function bindCase(user, ctx) {
       if (!cur || !opt || cur.judgmentOk) return;
       const next = { ...cur, judgment: id, judgmentOk: !!opt.ok };
       if (!commit(next, "answer", { step: 3, itemId: task.judgment.id + ":" + id, ok: !!opt.ok })) return;
-      render();
+      paint(`[data-judge="${id}"]`);
     });
   });
 
@@ -443,7 +592,7 @@ export function bindCase(user, ctx) {
       const cur = readRun(ctx.getUser?.() || user, task);
       if (!cur || !opt) return;
       if (!commit({ ...cur, evidenceClue: id }, "answer", { step: 4, itemId: "clue:" + id, ok: !!opt.ok })) return;
-      render();
+      paint(`[data-evidence="${id}"]`);
     });
   });
 
@@ -456,7 +605,7 @@ export function bindCase(user, ctx) {
         if (!cur || !opt) return;
         const slots = { ...(cur.slots || {}), [slot.id]: id };
         if (!commit({ ...cur, slots }, "answer", { step: 4, itemId: slot.id + ":" + id, ok: !!opt.ok })) return;
-        render();
+        paint(`[data-slot-${slot.id}="${id}"]`);
       });
     });
   });
@@ -466,7 +615,7 @@ export function bindCase(user, ctx) {
     if (!cur) return;
     const first = !cur.hintUsed;
     if (!commit({ ...cur, hintUsed: true, hintOpen: !cur.hintOpen }, first ? "hint" : "", { step: 4, itemId: "evidence" })) return;
-    render();
+    paint(cur.hintOpen ? "[data-case-hint]" : ".case-hint");
   });
 
   root.querySelectorAll("[data-check]").forEach((btn) => {
@@ -488,7 +637,7 @@ export function bindCase(user, ctx) {
         logCaseEvent(ctx.getUser?.() || user, next, task, "complete", { step: 5, itemId: task.id, ok: true });
         toast(`首次完成，經驗 +${XP_REWARDS.caseComplete || 12}。重玩不會再加。`);
       }
-      render();
+      paint(`[data-check="${id}"]`);
     });
   });
 
@@ -507,7 +656,7 @@ export function bindCase(user, ctx) {
     const cur = readRun(ctx.getUser?.() || user, task);
     if (!cur) return;
     if (!commit({ ...cur, step: 5 })) return;
-    render();
+    paint("");
   });
 
   root.querySelector("[data-case-replay]")?.addEventListener("click", () => {
@@ -515,7 +664,7 @@ export function bindCase(user, ctx) {
     const next = blankRun(task, cur);
     if (!commit(next, "replay", { step: 1, itemId: task.id })) return;
     state.caseResumeLogged = true;
-    render();
+    paint("");
   });
 
   root.querySelector("#case-csv")?.addEventListener("click", () => {
@@ -527,6 +676,39 @@ export function bindCase(user, ctx) {
     a.download = "case-research.csv";
     a.click();
     URL.revokeObjectURL(url);
+    try {
+      localStorage.setItem(LOG_EXPORT_KEY, new Date().toISOString());
+    } catch {
+      /* 匯出檔已下載，時間記唔到唔阻擋 */
+    }
     toast("已匯出這部裝置的研究紀錄。");
+    paint("#case-csv");
   });
+
+  root.querySelector("#case-log-clear")?.addEventListener("click", () => {
+    if (!clearArmed) {
+      clearArmed = true;
+      paint("#case-log-clear", true);
+      return;
+    }
+    clearArmed = false;
+    try {
+      localStorage.removeItem(LOG_KEY);
+    } catch {
+      toast("研究紀錄未清除，查案可以繼續。");
+      paint("#case-log-clear");
+      return;
+    }
+    toast("已清除這部裝置的研究紀錄。");
+    paint("#case-log-clear");
+  });
+
+  const sel = state.caseFocus || "";
+  state.caseFocus = "";
+  const focusEl = (sel && root.querySelector(sel)) || root.querySelector(".case-step");
+  if (focusEl) {
+    focusEl.focus({ preventScroll: true });
+    if (focusEl.classList.contains("case-step")) root.scrollIntoView({ block: "start" });
+    else focusEl.scrollIntoView({ block: "nearest" });
+  }
 }

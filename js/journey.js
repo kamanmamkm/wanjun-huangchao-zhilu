@@ -44,8 +44,8 @@ import {
 } from "./progress.js?v=rad92";
 import { getCloudUrl } from "./data/cloud.js?v=rad80";
 import { getUnit } from "./data/units.js?v=rad67";
-import { updateUser, addXp, pushRecent } from "./storage.js?v=rad80";
-import { renderCaseEntry } from "./case.js?v=rad91";
+import { updateUser, addXp, pushRecent } from "./storage.js?v=rad95";
+import { renderCaseEntry } from "./case.js?v=rad95";
 import { getTrial } from "./data/trials.js";
 
 function chapterShortTitle(ch) {

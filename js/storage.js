@@ -210,9 +210,12 @@ export function getCurrentUser() {
   let u = users[s.username];
   if (!u) return null;
   u = migrateUser(u);
-  // 等級帶補升／遷移後一律寫回，確保形象即時生效
   users[s.username] = u;
-  writeUsers(users);
+  try {
+    writeUsers(users);
+  } catch {
+    /* 讀取時寫回失敗，仍返回這個帳號，避免畫面停住 */
+  }
   return u;
 }
 

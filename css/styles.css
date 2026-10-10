@@ -3004,6 +3004,11 @@ button:active:not(:disabled):not(.locked),
   display: block;
   margin: 0.6rem 0;
 }
+.case-step:focus,
+.case-hint:focus {
+  outline: 2px solid var(--gold-deep, #8a7340);
+  outline-offset: 2px;
+}
 .case-view button:focus-visible,
 .case-entry button:focus-visible {
   outline: 2px solid var(--gold-deep, #8a7340);

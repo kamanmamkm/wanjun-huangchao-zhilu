@@ -3,7 +3,7 @@
  */
 import { WHEEL_SLICES, CHARMS, wheelGradient, wheelStopAngle, pickWheelIndex } from "./data/wheel.js?v=rad67";
 import { wheelStatus, applyWheelPrize, charmCount } from "./progress.js?v=rad92";
-import { updateUser, addXp } from "./storage.js?v=rad80";
+import { updateUser, addXp } from "./storage.js?v=rad95";
 
 function relic(body) {
   return `<svg class="wheel-glyph" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="30" fill="#fff8ea" stroke="#e4cf9a" stroke-width="1.4"/>${body}</svg>`;

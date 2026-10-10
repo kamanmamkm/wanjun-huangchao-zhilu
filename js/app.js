@@ -65,7 +65,7 @@ import {
   renderGrowthScroll,
   bindJourney,
   renderLeaderboardPage,
-} from "./journey.js?v=rad98";
+} from "./journey.js?v=rad99";
 import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad97";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad79";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";
@@ -895,7 +895,7 @@ function renderShell(user) {
                                           ? renderCase(user, state.caseId)
                                           : "";
 
-  const topNav = null; // nav built below
+  const homeProto = state.view === "home" && !isTeacherPortal();
 
   const navItems = [
     ["home", "行旅", "ico-home"],
@@ -908,9 +908,24 @@ function renderShell(user) {
     ...(isTeacherPortal() ? [["teacher", "老師", "ico-teacher"]] : []),
   ];
 
+  const navHtml = navItems
+    .map(([id, label, ico]) => {
+      const active =
+        state.view === id ||
+        (id === "scroll" && state.view === "chapter") ||
+        (id === "home" && (state.view === "notes" || state.view === "promote")) ||
+        (id === "games" &&
+          ["cuoshi", "wordwall", "timeline", "dialogue", "shizhan"].includes(state.view));
+      return `<button type="button" data-nav="${id}" class="${active ? "active" : ""}"><span class="ico ${ico}" aria-hidden="true"></span>${label}</button>`;
+    })
+    .join("");
+
   return `
-  <div class="app-shell paper-shell">
-    <header class="topbar">
+  <div class="app-shell paper-shell${homeProto ? " is-home" : ""}">
+    ${
+      homeProto
+        ? ""
+        : `<header class="topbar">
       <div class="player-badge">
         <div class="avatar-ring">${renderAvatar(char, snap.stageId ?? idn.id, "sm", { gender: user.gender })}</div>
         <div class="player-meta">
@@ -924,19 +939,8 @@ function renderShell(user) {
         <button class="btn ghost" id="logout-btn" type="button">登出</button>
       </div>
     </header>
-    <nav class="nav mobile-nav">
-      ${navItems
-        .map(([id, label, ico]) => {
-          const active =
-            state.view === id ||
-            (id === "scroll" && state.view === "chapter") ||
-            (id === "home" && (state.view === "notes" || state.view === "promote")) ||
-            (id === "games" &&
-              ["cuoshi", "wordwall", "timeline", "dialogue", "shizhan"].includes(state.view));
-          return `<button type="button" data-nav="${id}" class="${active ? "active" : ""}"><span class="ico ${ico}" aria-hidden="true"></span>${label}</button>`;
-        })
-        .join("")}
-    </nav>
+    <nav class="nav mobile-nav">${navHtml}</nav>`
+    }
     <main id="main">${main}</main>
   </div>`;
 }

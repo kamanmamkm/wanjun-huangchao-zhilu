@@ -9,7 +9,8 @@ import { levelFromXp } from "./data/levels.js";
 import { QUESTIONS } from "./data/questions.js";
 import { FORM_YEARS } from "./data/formYear.js";
 import { getCloudUrl, saveCloudUrl, cloudUrlHint } from "./data/cloud.js?v=rad80";
-import { pullCloudBoard, cloudHasSave } from "./cloud.js?v=rad83";
+import { pullCloudBoard, cloudHasSave } from "./cloud.js?v=rad97";
+import { TEACHER_LETTER_GUIDE } from "./data/letters.js?v=rad97";
 import { SHEETS_APPS_SCRIPT } from "./data/sheetsScript.js?v=rad80";
 import { studentPlayLink, teacherPortalLink } from "./data/portal.js?v=rad78";
 
@@ -101,6 +102,12 @@ function esc(s) {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/"/g, "&quot;");
+}
+
+function renderLetterGuide() {
+  return `
+    <h3 class="section-title"><span>下一星期的歷史來信</span></h3>
+    <pre class="cloud-script" tabindex="0">${esc(TEACHER_LETTER_GUIDE)}</pre>`;
 }
 
 function findQuestion(qid) {
@@ -305,6 +312,7 @@ export function renderTeacherPage(state = {}) {
     <section class="panel-paper teacher-view">
       <h2>老師後台</h2>
       ${renderCloudSetup(state)}
+      ${renderLetterGuide()}
       ${renderLiveClassBoard(state)}
       <h3 class="section-title"><span>睇本機學生</span></h3>
       <p class="lead">學生帳號同答題紀錄要入密碼先睇到。資料只存在此瀏覽器。</p>
@@ -372,6 +380,7 @@ export function renderTeacherPage(state = {}) {
     <p class="muted">同一瀏覽器內的註冊帳號會出現在下方。密碼預設 <code>wanjun</code>。史績榜可投影，鼓勵堂上較量。</p>
 
     ${renderCloudSetup(state)}
+    ${renderLetterGuide()}
     ${renderLiveClassBoard(state)}
 
     <h3 class="section-title"><span>本機史績榜</span></h3>

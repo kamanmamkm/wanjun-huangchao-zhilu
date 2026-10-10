@@ -3010,9 +3010,30 @@ button:active:not(:disabled):not(.locked),
   outline-offset: 2px;
 }
 .case-view button:focus-visible,
-.case-entry button:focus-visible {
+.case-entry button:focus-visible,
+.museum-view button:focus-visible {
   outline: 2px solid var(--gold-deep, #8a7340);
   outline-offset: 2px;
+}
+.museum-order,
+.museum-slot {
+  margin: 0.65rem 0;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid rgba(138, 90, 43, 0.35);
+  border-radius: 10px;
+}
+.museum-slot.is-qing { background: #e7f0ea; }
+.museum-slot.is-zhu { background: #f8e8e4; }
+.museum-slot.is-mo { background: #eceae6; }
+.museum-view .case-actions,
+.museum-card .case-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.museum-view button,
+.museum-card button {
+  max-width: 100%;
 }
 @media (max-width: 640px) {
   .case-entry,

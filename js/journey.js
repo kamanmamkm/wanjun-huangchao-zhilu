@@ -41,7 +41,7 @@ import {
   arenaStandings,
   levelBandLines,
   stageIdForUser,
-} from "./progress.js?v=rad83";
+} from "./progress.js?v=rad92";
 import { getCloudUrl } from "./data/cloud.js?v=rad80";
 import { getUnit } from "./data/units.js?v=rad67";
 import { updateUser, addXp, pushRecent } from "./storage.js?v=rad80";

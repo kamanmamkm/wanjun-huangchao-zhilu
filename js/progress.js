@@ -394,11 +394,17 @@ export function settleStage(user, chapterId, stageId, info = {}) {
     at: Date.now(),
   };
   const prevRaw = ch.stages[stageId] && typeof ch.stages[stageId] === "object" ? ch.stages[stageId] : {};
+  const wrongQids = Array.isArray(info.wrongQids)
+    ? info.wrongQids.filter(Boolean)
+    : Array.isArray(prevRaw.wrongQids)
+      ? prevRaw.wrongQids
+      : [];
   ch.stages[stageId] = {
     ...rec,
     drawN: prevRaw.drawN,
     lastQids: prevRaw.currentQids || prevRaw.lastQids,
     currentQids: [],
+    wrongQids,
   };
   const meta = CHAPTERS[chapterId];
   if (meta?.stages?.every((s) => isStageCompleted(ch.stages[s.id]))) ch.done = true;

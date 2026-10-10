@@ -10,10 +10,34 @@ import {
   registerUser,
   setSession,
   migrateUser,
-} from "./storage.js?v=rad80";
+} from "./storage.js?v=rad95";
 
 let upsertTimer = null;
 let cloudFeatures = [];
+let syncState = { ok: null, error: "" };
+
+function markSync(ok, error) {
+  syncState = { ok: ok === true ? true : ok === false ? false : null, error: error || "" };
+  syncListener?.(cloudSyncStatus());
+}
+
+let syncListener = null;
+
+export function onCloudSync(fn) {
+  syncListener = fn;
+}
+
+/** 有同步程式、已設定後端、已成功同步，三件分開。未成功唔當已上傳。 */
+export function cloudSyncStatus() {
+  const configured = !!getCloudUrl();
+  return {
+    hasCode: true,
+    configured,
+    synced: !!(configured && syncState.ok === true),
+    failed: !!(configured && syncState.ok === false),
+    pending: !!(configured && syncState.ok == null),
+  };
+}
 
 function qs(params) {
   const p = new URLSearchParams();
@@ -382,8 +406,22 @@ export function scheduleCloudSync(user, { immediate } = {}) {
   const run = () => {
     const latest = findLocalUser(user.username) || user;
     pushCloudSave(latest)
-      .catch(() => upsertCloudUser(latest))
-      .catch(() => {});
+      .then((res) => {
+        if (res?.ok && res.saved) {
+          markSync(true, "");
+          return;
+        }
+        return upsertCloudUser(latest).then(
+          () => markSync(false, "save-unconfirmed"),
+          (ex) => markSync(false, ex?.message || "fail")
+        );
+      })
+      .catch((ex) => {
+        upsertCloudUser(latest).then(
+          () => markSync(false, ex?.message || "save-fail"),
+          () => markSync(false, ex?.message || "fail")
+        );
+      });
   };
   if (immediate) run();
   else upsertTimer = setTimeout(run, 1100);

@@ -32,7 +32,7 @@ import {
   updateUser,
   pushRecent,
   onUserWrite,
-} from "./storage.js?v=rad80";
+} from "./storage.js?v=rad95";
 import {
   userSnapshot,
   buildPromotionOrder,
@@ -52,8 +52,8 @@ import {
   charmCount,
   consumeCharm,
 } from "./progress.js?v=rad92";
-import { renderWheelPage, bindWheel } from "./wheel.js?v=rad92";
-import { renderCase, bindCase } from "./case.js?v=rad91";
+import { renderWheelPage, bindWheel } from "./wheel.js?v=rad95";
+import { renderCase, bindCase, rememberCaseOpen, recallCaseOpen, caseSaveNoteText } from "./case.js?v=rad95";
 import {
   renderJourneyHome,
   renderScroll,
@@ -64,7 +64,7 @@ import {
   renderGrowthScroll,
   bindJourney,
   renderLeaderboardPage,
-} from "./journey.js?v=rad93";
+} from "./journey.js?v=rad95";
 import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad83";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad79";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";
@@ -89,12 +89,18 @@ import {
   loginWithCloud,
   registerWithCloud,
   scheduleCloudSync,
-} from "./cloud.js?v=rad92";
+  onCloudSync,
+} from "./cloud.js?v=rad95";
 import { isTeacherPortal } from "./data/portal.js?v=rad78";
 
 captureCloudFromLocation();
 
 onUserWrite((u) => scheduleCloudSync(u));
+onCloudSync(() => {
+  document.querySelectorAll(".case-save-note").forEach((el) => {
+    el.textContent = caseSaveNoteText();
+  });
+});
 window.addEventListener("pagehide", () => {
   const u = getCurrentUser();
   if (u) scheduleCloudSync(u, { immediate: true });
@@ -433,7 +439,7 @@ function render() {
   if (!state.caseBooted) {
     state.caseBooted = true;
     try {
-      const back = sessionStorage.getItem("huangchao_case_open");
+      const back = recallCaseOpen(user.username);
       if (back && state.view === "home") {
         state.view = "case";
         state.caseId = back;
@@ -990,11 +996,7 @@ function bindShellNav() {
       state.view = "case";
       state.caseId = caseBtn.dataset.openCase || "";
       state.caseResumeLogged = false;
-      try {
-        sessionStorage.setItem("huangchao_case_open", state.caseId);
-      } catch {
-        /* ignore */
-      }
+      rememberCaseOpen(getCurrentUser()?.username, state.caseId);
       render();
       return;
     }
@@ -1343,6 +1345,15 @@ function bindShell(user) {
     levelUpTimer = null;
     state.levelUpReveal = null;
     clearSession();
+    try {
+      sessionStorage.removeItem("huangchao_case_open");
+    } catch {
+      /* ignore */
+    }
+    state.view = "home";
+    state.caseId = "";
+    state.caseResumeLogged = false;
+    state.caseBooted = false;
     render();
   });
   bindShellNav();

@@ -51,8 +51,8 @@ import {
   clearHomeRun,
   charmCount,
   consumeCharm,
-} from "./progress.js?v=rad83";
-import { renderWheelPage, bindWheel } from "./wheel.js?v=rad88";
+} from "./progress.js?v=rad92";
+import { renderWheelPage, bindWheel } from "./wheel.js?v=rad92";
 import { renderCase, bindCase } from "./case.js?v=rad91";
 import {
   renderJourneyHome,
@@ -64,7 +64,7 @@ import {
   renderGrowthScroll,
   bindJourney,
   renderLeaderboardPage,
-} from "./journey.js?v=rad91";
+} from "./journey.js?v=rad92";
 import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad83";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad79";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";
@@ -89,7 +89,7 @@ import {
   loginWithCloud,
   registerWithCloud,
   scheduleCloudSync,
-} from "./cloud.js?v=rad90";
+} from "./cloud.js?v=rad92";
 import { isTeacherPortal } from "./data/portal.js?v=rad78";
 
 captureCloudFromLocation();

@@ -245,7 +245,12 @@
   color: var(--ink-soft);
 }
 
-/* 成長長卷 */
+.growth-scroll-view .growth-rail {
+  margin-top: 0.4rem;
+}
+.growth-scroll-view .growth-focus {
+  margin-bottom: 1.4rem;
+}
 .growth-rail {
   display: grid;
   grid-auto-flow: column;

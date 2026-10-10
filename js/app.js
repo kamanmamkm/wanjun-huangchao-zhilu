@@ -65,7 +65,7 @@ import {
   renderGrowthScroll,
   bindJourney,
   renderLeaderboardPage,
-} from "./journey.js?v=rad97";
+} from "./journey.js?v=rad98";
 import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad97";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad79";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";

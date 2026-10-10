@@ -422,6 +422,12 @@ export function settleStage(user, chapterId, stageId, info = {}) {
 export function grantRelic(user, chapterId, stageId) {
   const spec = relicFor(chapterId, stageId);
   if (!spec) return null;
+  return grantNamedRelic(user, spec);
+}
+
+/** 學生自選的收藏目標。同一 id 只入帳一次。 */
+export function grantNamedRelic(user, spec) {
+  if (!spec?.id) return null;
   const p = ensureProgress(user);
   p.relics = p.relics || [];
   if (p.relics.some((r) => r.id === spec.id)) return null;

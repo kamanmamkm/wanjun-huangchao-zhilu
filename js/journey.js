@@ -162,10 +162,49 @@ function renderFlavorCard(user, ui) {
   </div>`;
 }
 
+function reviewQuestionIds(raw) {
+  if (!raw || typeof raw !== "object") return [];
+  const wrong = Array.isArray(raw.wrongQids) ? raw.wrongQids.filter(Boolean) : [];
+  if (wrong.length) return wrong;
+  return Array.isArray(raw.lastQids) ? raw.lastQids.filter(Boolean) : [];
+}
+
+/** 最早一關：已完成、未掌握、未做過錯題重答，而且仲搵到當次題目。 */
+function findReviewStage(user) {
+  const p = user.progress?.chapters || {};
+  for (const ch of chapterList()) {
+    const stages = ch.stages || [];
+    if (!stages.length || !isChapterEnterable(user, ch.id)) continue;
+    for (let i = 0; i < stages.length; i++) {
+      const stage = stages[i];
+      if (!(stage.questions || []).length) continue;
+      const raw = p[ch.id]?.stages?.[stage.id];
+      const rec = stageRecord(raw);
+      if (!rec?.completed || rec.mastered || rec.corrected) continue;
+      if (!reviewQuestionIds(raw).length) continue;
+      return { ch, stage, idx: i, raw };
+    }
+  }
+  return null;
+}
+
+function reviewTask(user) {
+  const hit = findReviewStage(user);
+  if (!hit) return null;
+  return {
+    kind: "review",
+    label: `${chapterShortTitle(hit.ch)}・第 ${hit.idx + 1} 關`,
+    detail: `${hit.stage.title}。首次未達八成，重答唔會改首次成績。`,
+    chapterId: hit.ch.id,
+    stageId: hit.stage.id,
+    retryStage: `${hit.ch.id}:${hit.stage.id}`,
+    primary: "錯題重答",
+  };
+}
+
 function tonightHook(user) {
   const enc = todayEncounter(user);
   const flavorDone = flavorDoneToday(user, enc.day);
-  const wheel = wheelStatus(user);
   const saved = getHomeRun(user);
   if (!flavorDone) {
     return {
@@ -175,15 +214,8 @@ function tonightHook(user) {
       hideQuestButton: true,
     };
   }
-  if (wheel.canSpin) {
-    return {
-      kind: "wheel",
-      label: `天機輪 · ${wheel.charges} 次未轉`,
-      detail: "堂上答對攞到嘅賞，今晚轉完先走。",
-      goto: "wheel",
-      primary: "去轉輪",
-    };
-  }
+  const review = reviewTask(user);
+  if (review) return review;
   if (saved) {
     const unit = getUnit(saved.unitId);
     return {
@@ -366,8 +398,10 @@ export function renderJourneyHome(user, char, ui = {}) {
     .join("");
 
   const isFinale = order.gate?.isFinale || order.gate?.trialId === "trial_ascension";
-  const questAction = task.resumeRun
-    ? `data-resume-run="1"`
+  const questAction = task.retryStage
+    ? `data-retry-stage="${task.retryStage}"`
+    : task.resumeRun
+      ? `data-resume-run="1"`
     : task.kind === "trial" && !isFinale
       ? `id="btn-trial"`
       : task.kind === "promote"
@@ -434,7 +468,7 @@ export function renderJourneyHome(user, char, ui = {}) {
           : ""
       }
       <div class="home-quest">
-        <p class="eyebrow">${task.kind === "flavor" || task.kind === "wheel" || task.kind === "run" ? "今晚未了" : "當前任務"}</p>
+        <p class="eyebrow">${task.kind === "flavor" || task.kind === "wheel" || task.kind === "run" || task.kind === "review" ? "今晚未了" : "當前任務"}</p>
         <h3>${task.label}</h3>
         <p>${task.detail || ""}</p>
         ${streak ? `<p class="visit-streak">連歸 ${streak} 日${streak % 3 === 2 ? " · 聽日再開就有錦囊" : ""}</p>` : `<p class="visit-streak">今日已記一筆歸程</p>`}
@@ -944,6 +978,55 @@ export function bindJourney(user, ctx) {
     render();
   });
 
+  appClick("[data-retry-stage]", (btn) => {
+    const [cid, sid] = btn.dataset.retryStage.split(":");
+    if (!isChapterEnterable(user, cid)) {
+      toast("先完成上一章，再入本章。");
+      return;
+    }
+    const fresh = ctx.getUser?.() || user;
+    const ch = CHAPTERS[cid];
+    const stage = ch?.stages?.find((s) => s.id === sid);
+    const raw = fresh.progress?.chapters?.[cid]?.stages?.[sid];
+    const ids = reviewQuestionIds(raw);
+    const drawN = Number(raw?.drawN) || 1;
+    const qs = hydrateStageQuestions(fresh, stage, cid, ids, drawN);
+    if (!stage || !qs.length) {
+      toast("呢關搵唔到可重答嘅題");
+      return;
+    }
+    updateUser((u) => {
+      const p = u.progress || {};
+      p.chapters = p.chapters || {};
+      const chp = p.chapters[cid] || { stages: {} };
+      chp.stages = chp.stages || {};
+      const prev = chp.stages[sid];
+      const rec = prev && typeof prev === "object" ? { ...prev } : {};
+      rec.currentQids = qs.map((q) => q.id);
+      chp.stages[sid] = rec;
+      p.chapters[cid] = chp;
+      u.progress = p;
+    });
+    state.scrollChapter = cid;
+    state.scrollStage = sid;
+    state.view = "chapter";
+    state.bossStep = 0;
+    state.bossPlay = null;
+    const rec = stageRecord(raw);
+    state.stageQuiz = {
+      ...blankStageQuiz(),
+      phase: "retry",
+      wrong: qs,
+      index: 0,
+      retryCorrect: 0,
+      retryTotal: qs.length,
+      firstCorrect: rec?.firstCorrect || 0,
+      firstTotal: rec?.firstTotal || qs.length,
+      qidKey: qs.map((q) => q.id).join(","),
+    };
+    render();
+  });
+
   appClick("[data-enter-stage]", (btn) => {
     const [cid, sid] = btn.dataset.enterStage.split(":");
     if (!isChapterEnterable(user, cid)) {
@@ -1210,7 +1293,8 @@ function bindStageRuntime(user, ctx) {
     const stage = ch.stages.find((s) => s.id === quizRoot.dataset.stage);
     const qs = questionsOfStage(ctx.getUser?.() || user, ch, stage);
     const qidKey = qs.map((q) => q.id).join(",");
-    if (!state.stageQuiz || state.stageQuiz.qidKey !== qidKey) {
+    const keepRetry = state.stageQuiz?.phase === "retry" && state.stageQuiz.qidKey === qidKey;
+    if (!keepRetry && (!state.stageQuiz || state.stageQuiz.qidKey !== qidKey)) {
       state.stageQuiz = { ...blankStageQuiz(), qidKey };
     }
     paintQuiz(qs, state, ch, stage, ctx);
@@ -1345,6 +1429,7 @@ function advanceAfterNext(qs, state, ch, stage, ctx) {
       firstTotal: qs.length,
       correct: quiz.correct,
       total: qs.length,
+      wrongQids: (quiz.wrong || []).map((q) => q.id).filter(Boolean),
     });
   });
   ctx.queueRelic?.(dropped);

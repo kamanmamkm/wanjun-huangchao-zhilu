@@ -2788,7 +2788,7 @@ button:active:not(:disabled):not(.locked),
 .wheel-stage {
   position: relative;
   width: min(340px, 90vw);
-  margin: 1.1rem auto 1.15rem;
+  margin: 0.35rem auto 0.75rem;
 }
 .wheel-pointer {
   position: absolute;

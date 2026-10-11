@@ -666,7 +666,14 @@ export function renderScroll(user) {
 
 export function renderChapterDetail(user, chapterId, stageId) {
   const ch = CHAPTERS[chapterId];
-  if (!ch) return `<section class="panel-paper"><p>找不到章節</p></section>`;
+  if (!ch) {
+    return `<section class="play-sheet">
+      <header class="play-bar">
+        <button type="button" class="play-back" data-nav="scroll">返回長卷</button>
+      </header>
+      <div class="play-state is-error" role="status"><p>找不到這個章節。</p></div>
+    </section>`;
+  }
   if (!isChapterEnterable(user, chapterId)) {
     return `
     <section class="panel-paper">
@@ -798,15 +805,37 @@ function renderStagePlay(user, ch, stage) {
     </section>`;
   }
   const qs = questionsOfStage(user, ch, stage);
+  const bar = playBar(
+    `${escArena(ch.title)} · ${escArena(stage.title)}`,
+    qs.length ? "sq-progress" : "",
+    qs.length ? `進度 1 / ${qs.length}` : ""
+  );
+  if (!qs.length) {
+    return `
+    <section class="play-sheet stage-play study-mode" id="stage-quiz" data-chapter="${ch.id}" data-stage="${stage.id}">
+      ${bar}
+      <div class="play-state is-error" role="status">
+        <p>這一關暫時沒有可答的題目。</p>
+        <button type="button" class="play-back" data-leave-quiz="1">返回關卡</button>
+      </div>
+    </section>`;
+  }
   return `
-  <section class="panel-paper stage-play study-mode" id="stage-quiz" data-chapter="${ch.id}" data-stage="${stage.id}">
+  <section class="play-sheet stage-play study-mode" id="stage-quiz" data-chapter="${ch.id}" data-stage="${stage.id}">
+    ${bar}
     ${companionSlot}
-    <div class="q-top">
-      <span>${ch.title} · ${stage.title} · 本局新題</span>
-      <span id="sq-progress">進度 1 / ${qs.length}</span>
-    </div>
     <div id="sq-body"></div>
   </section>`;
+}
+
+function playBar(title, progressId, progressText) {
+  return `<header class="play-bar">
+    <button type="button" class="play-back" data-leave-quiz="1">返回關卡</button>
+    <div class="play-bar-copy">
+      <p class="play-kicker">${title}</p>
+      ${progressId ? `<p class="play-progress" id="${progressId}">${progressText}</p>` : ""}
+    </div>
+  </header>`;
 }
 
 export function renderGrowthScroll(user, char, growthFocus) {
@@ -1096,6 +1125,13 @@ export function bindJourney(user, ctx) {
       firstTotal: rec?.firstTotal || qs.length,
       qidKey: qs.map((q) => q.id).join(","),
     };
+    render();
+  });
+
+  appClick("[data-leave-quiz]", () => {
+    state.scrollStage = null;
+    state.stageQuiz = blankStageQuiz();
+    state.view = "chapter";
     render();
   });
 
@@ -1396,6 +1432,7 @@ function paintQuizSettle(qs, state, ch, stage, ctx) {
   const status = quiz.mastered ? "已掌握" : quiz.corrected || quiz.retried ? "已完成修正" : "已完成";
   const need = Math.ceil(qs.length * STAGE_MASTERY_RATE);
   const nxt = nextStageAfter(ch.id, stage.id);
+  const canRetry = !quiz.mastered && !quiz.corrected && !quiz.retried && (quiz.wrong || []).length;
   const retryLine =
     quiz.corrected || quiz.retried
       ? `<p class="settle-line ok"><strong>錯題修正</strong>：${retryC}／${retryT}</p>`
@@ -1404,28 +1441,28 @@ function paintQuizSettle(qs, state, ch, stage, ctx) {
         : `<p class="settle-line wait"><strong>已掌握</strong>：首次 ${firstC}／${firstT}，未達八成</p>`;
   body.innerHTML = `
     <div class="stage-settle">
-      <h3>本關結算</h3>
+      <h2>本關結算</h2>
+      <p class="play-tag ${quiz.mastered ? "is-ok" : "is-wait"}">${status}</p>
       <p class="settle-line ok"><strong>首次作答</strong>：${firstC}／${firstT}</p>
       ${
         quiz.mastered
           ? `<p class="settle-line ok"><strong>已掌握</strong>：準確率已達八成</p>`
           : retryLine
       }
-      <p class="settle-line ok"><strong>關卡狀態</strong>：${status}</p>
       <p class="next-hook">${nextHook(ch.id, stage.id)}</p>
       <p class="muted">做過同識咗係兩件事。錯題重答唔會覆蓋首次成績。</p>
       <div class="row-actions">
         ${
-          !quiz.mastered && !quiz.corrected && !quiz.retried && (quiz.wrong || []).length
-            ? `<button type="button" class="btn" id="sq-retry">開始錯題重答</button>`
+          canRetry
+            ? `<button type="button" class="btn play-go" id="sq-retry">開始錯題重答</button>`
             : ""
         }
         ${
           nxt
-            ? `<button type="button" class="btn" data-enter-stage="${nxt.chapterId}:${nxt.stageId}">繼續前路</button>`
+            ? `<button type="button" class="btn ${canRetry ? "play-quiet" : "play-go"}" data-enter-stage="${nxt.chapterId}:${nxt.stageId}">繼續前路</button>`
             : ""
         }
-        <button type="button" class="btn ${quiz.mastered || quiz.corrected ? "" : "ghost"}" id="sq-back">返回關卡</button>
+        <button type="button" class="btn ${canRetry || nxt ? "play-quiet" : "play-go"}" id="sq-back">返回關卡</button>
       </div>
     </div>`;
   document.getElementById("sq-retry")?.addEventListener("click", () => {
@@ -1461,6 +1498,11 @@ function paintQuizSettle(qs, state, ch, stage, ctx) {
     if (stageNext?.questions?.length) bumpStageDraw(chNext, stageNext);
     render();
   });
+  const heading = body.querySelector(".stage-settle h2");
+  if (heading) {
+    heading.tabIndex = -1;
+    heading.focus({ preventScroll: true });
+  }
 }
 
 function advanceAfterNext(qs, state, ch, stage, ctx) {
@@ -1523,7 +1565,11 @@ function paintQuiz(qs, state, ch, stage, ctx) {
   const q = pool[i];
   const body = document.getElementById("sq-body");
   const prog = document.getElementById("sq-progress");
-  if (!body || !q) return;
+  if (!body) return;
+  if (!q) {
+    body.innerHTML = `<div class="play-state is-error" role="status"><p>題目未能載入。</p></div>`;
+    return;
+  }
   if (prog) {
     prog.textContent =
       quiz.phase === "retry" ? `錯題重答 ${i + 1} / ${pool.length}` : `進度 ${i + 1} / ${qs.length}`;
@@ -1541,7 +1587,7 @@ function paintQuiz(qs, state, ch, stage, ctx) {
     </div>
     <div class="feedback hidden" id="sq-fb"></div>
     <div class="row-actions">
-      <button type="button" class="btn ghost" id="sq-hint">查看提示</button>
+      <button type="button" class="btn play-quiet" id="sq-hint">查看提示</button>
     </div>`;
     document.getElementById("sq-hint")?.addEventListener("click", () => {
       ctx.toast(q.misconception || q.explain || "先排除明顯不合理的選項");
@@ -1568,6 +1614,11 @@ function paintQuiz(qs, state, ch, stage, ctx) {
           quiz.locked = false;
           return;
         }
+        if (recorded && recorded.ok === false) {
+          quiz.locked = false;
+          ctx.toast?.("這次作答未寫入，請再選一次。");
+          return;
+        }
         const fb = document.getElementById("sq-fb");
         fb.classList.remove("hidden");
         fb.innerHTML = ok
@@ -1589,7 +1640,7 @@ function paintQuiz(qs, state, ch, stage, ctx) {
         if (quiz.phase === "retry" && !ok) {
           actions.insertAdjacentHTML(
             "beforeend",
-            `<button type="button" class="btn" id="sq-again">再試一次</button>`
+            `<button type="button" class="btn play-go" id="sq-again">再試一次</button>`
           );
           document.getElementById("sq-again")?.addEventListener("click", () => {
             quiz.locked = false;
@@ -1599,7 +1650,7 @@ function paintQuiz(qs, state, ch, stage, ctx) {
         } else {
           actions.insertAdjacentHTML(
             "beforeend",
-            `<button type="button" class="btn" id="sq-next">${nextLabel}</button>`
+            `<button type="button" class="btn play-go" id="sq-next">${nextLabel}</button>`
           );
           document.getElementById("sq-next")?.addEventListener("click", () => {
             advanceAfterNext(qs, state, ch, stage, ctx);
@@ -1607,6 +1658,11 @@ function paintQuiz(qs, state, ch, stage, ctx) {
         }
       });
     });
+    const qText = body.querySelector(".q-text");
+    if (qText) {
+      qText.tabIndex = -1;
+      qText.focus({ preventScroll: true });
+    }
   };
 
   paintQuestion();

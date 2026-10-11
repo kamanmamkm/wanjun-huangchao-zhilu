@@ -295,3 +295,125 @@ body:has(.play-sheet)::before {
     transition: none !important;
   }
 }
+
+.inquiry {
+  max-width: 40rem;
+}
+
+.inquiry-title {
+  margin: 0.15rem 0 0;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--sheet-ink);
+}
+
+.inquiry-fiction,
+.inquiry-line,
+.inquiry-say,
+.inquiry-goal,
+.inquiry-note,
+.inquiry-ask,
+.inquiry-miss,
+.inquiry p {
+  font-family: var(--font-ui);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  color: var(--sheet-ink);
+}
+
+.inquiry-fiction,
+.inquiry-note {
+  color: var(--sheet-muted);
+  font-size: 0.9375rem;
+}
+
+.inquiry-say {
+  margin: 0.75rem 0;
+  padding-left: 0.75rem;
+  border-left: 3px solid var(--sheet-ink);
+}
+
+.inquiry-k {
+  margin: 1rem 0 0.25rem;
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--sheet-muted);
+}
+
+.inquiry-actions {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.inquiry-option,
+.inquiry .play-go,
+.inquiry .play-quiet,
+.inquiry .play-back {
+  min-height: 48px;
+}
+
+.inquiry-option {
+  width: 100%;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--sheet-radius);
+  border: 1px solid rgba(37, 42, 45, 0.22);
+  background: var(--sheet-rice);
+  color: var(--sheet-ink);
+  font-family: var(--font-ui);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: left;
+}
+
+.inquiry-miss {
+  color: var(--sheet-wait);
+}
+
+.inquiry-clue {
+  margin-top: 0.75rem;
+  font-family: var(--font-ui);
+  font-size: 1rem;
+  color: var(--sheet-ink);
+}
+
+.inquiry-clue summary {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.inquiry-beat {
+  animation: inquiry-in 0.35s ease;
+}
+
+@keyframes inquiry-in {
+  from { opacity: 0.4; }
+  to { opacity: 1; }
+}
+
+@media (min-width: 768px) {
+  .inquiry-actions {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .inquiry-actions .btn,
+  .inquiry-actions .inquiry-option {
+    width: auto;
+    min-width: 12rem;
+    flex: 1 1 12rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inquiry-beat {
+    animation: none;
+  }
+}

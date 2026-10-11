@@ -499,11 +499,18 @@ export function renderJourneyHome(user, char, ui = {}) {
 
   return `
   <section class="home-stage">
-    <header class="home-id">
-      <div class="avatar-ring">${renderAvatar(char, stageId, "sm", { gender: user.gender })}</div>
-      <div class="home-id-copy">
-        <p class="home-brand">任平生</p>
-        <h2 class="home-rank">${escArena(snap.identityName)}</h2>
+    <section class="home-hero">
+      <div class="home-figure">
+        ${renderHeroStage(char, stageId, "hero", {
+          gender: user.gender,
+          poster: true,
+          hideQuote: true,
+          showRelic: false,
+          priorityBoost: true,
+        })}
+      </div>
+      <div class="home-hero-copy">
+        <p class="home-identity">${escArena(snap.identityName)}</p>
         <p class="home-who">
           <span>${escArena(heroName)}</span>
           <button type="button" class="name-pencil" id="toggle-hero-name" aria-label="改名" title="改名" aria-expanded="${ui.heroNameEdit ? "true" : "false"}">✎</button>
@@ -512,12 +519,7 @@ export function renderJourneyHome(user, char, ui = {}) {
         <div class="home-meter" role="progressbar" aria-valuenow="${levelPct}" aria-valuemin="0" aria-valuemax="100" aria-label="距離下一級的進度">
           <span style="width:${levelPct}%"></span>
         </div>
-      </div>
-    </header>
-    ${nameEdit}
-    <article class="home-quest">
-      <div class="home-scene">${homeSceneSvg()}</div>
-      <div class="home-quest-copy">
+        ${nameEdit}
         <p class="home-kicker">${escArena(heroKicker)}</p>
         <h2>${escArena(heroTitle)}</h2>
         ${heroHook ? `<p class="home-hook">${escArena(heroHook)}</p>` : ""}
@@ -525,7 +527,7 @@ export function renderJourneyHome(user, char, ui = {}) {
         ${heroTime ? `<p class="home-time">${escArena(heroTime)}</p>` : ""}
         ${heroButton}
       </div>
-    </article>
+    </section>
     <section class="home-challenge" id="home-challenge" tabindex="-1" aria-label="今日小挑戰">
       <h3>今日小挑戰</h3>
       ${renderFlavorCard(user, ui)}
@@ -546,6 +548,10 @@ export function renderJourneyHome(user, char, ui = {}) {
       ${renderRelicTray(user)}
       <button type="button" class="home-link" data-nav="chronicle">打開史冊</button>
     </section>
+    <section class="home-unlock" aria-label="已解鎖身份">
+      <h3>已解鎖身份</h3>
+      <div class="growth-avatars">${avatars}</div>
+    </section>
     <details class="home-more">
       <summary>行囊與說明</summary>
       <div class="home-more-body">
@@ -556,7 +562,6 @@ export function renderJourneyHome(user, char, ui = {}) {
         ${streak ? `<p>連歸 ${streak} 日${streak % 3 === 2 ? " · 聽日再開就有錦囊" : ""}</p>` : `<p>今日已記一筆歸程</p>`}
         ${lastHookLine(user) && task?.kind !== "flavor" ? `<p>${escArena(lastHookLine(user))}</p>` : ""}
         <div class="poster-skills">${skillBars}</div>
-        <div class="growth-avatars" aria-label="已解鎖造型">${avatars}</div>
         <div class="growth-ladder">${ladder}</div>
         ${promoteBlock}
         ${renderFinaleBoard(user, order)}
@@ -578,18 +583,6 @@ export function renderJourneyHome(user, char, ui = {}) {
       <button type="button" data-nav="growth"><span class="ico ico-growth" aria-hidden="true"></span>行囊</button>
     </nav>
   </section>`;
-}
-
-function homeSceneSvg() {
-  return `<svg class="home-scene-svg" viewBox="0 0 640 360" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-    <rect width="640" height="360" fill="#E4EBE6"/>
-    <path d="M0 228 L150 118 L250 188 L390 78 L520 176 L640 96 L640 360 L0 360 Z" fill="#5C6A64"/>
-    <path d="M0 268 L180 176 L300 230 L460 150 L640 214 L640 360 L0 360 Z" fill="#2E3834"/>
-    <path d="M238 196 L292 150 L346 196 Z" fill="#A93226"/>
-    <rect x="252" y="196" width="80" height="92" fill="#252A2D"/>
-    <rect x="278" y="228" width="28" height="60" fill="#F6F1E7"/>
-    <path d="M48 330 C150 286 230 300 320 248 C410 198 500 250 600 214" fill="none" stroke="#8A7340" stroke-width="4" stroke-linecap="round"/>
-  </svg>`;
 }
 
 function isChapterFullyDone(user, ch) {

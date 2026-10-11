@@ -261,13 +261,30 @@ export function flavorDoneToday(user, day = isoDay()) {
   return flavorHitsToday(user, day) >= DAILY_FLAVOR_HITS;
 }
 
-/** 按年級每日最多三題，避開最近做過；刷新唔會換同一題。 */
+/** 這個帳號做過的題目 id：長卷答題、今日機緣最近做過、以及機緣累積。 */
+function doneQuestionIds(user) {
+  const ids = new Set();
+  const answered = user?.answered || {};
+  Object.keys(answered).forEach((id) => {
+    if (answered[id]) ids.add(id);
+  });
+  const flavor = user?.progress?.flavor || {};
+  (flavor.doneIds || []).forEach((id) => id && ids.add(id));
+  (flavor.seen || []).forEach((id) => id && ids.add(id));
+  return ids;
+}
+
+function takeShuffled(list, seed) {
+  return list.length ? seededShuffle(list, hashStr(seed)) : [];
+}
+
+/** 按年級每日最多三題。這個帳號做過的先換走；刷新唔會換未做過的同一題。 */
 export function todayEncounter(user, day = isoDay()) {
   const pool = dailyEncounterPool(user);
   const year = user?.formYear || "中一";
-  const seen = user?.progress?.flavor?.seen || [];
+  const done = doneQuestionIds(user);
   const hits = flavorHitsToday(user, day);
-  const unseen = pool.filter((e) => !seen.includes(e.id));
+  const unseen = pool.filter((e) => e.id && !done.has(e.id));
   const src = unseen.length ? unseen : pool;
   let idx = hashStr(`${day}|${year}|${hits}`) % Math.max(src.length, 1);
   if (src.length > 1) {
@@ -337,21 +354,30 @@ export function hydrateStageQuestions(user, stage, chapterId, ids, drawN) {
   return out;
 }
 
-/** 長卷答題關：每次抽一組新題（約 8 題），避開剛做過同已答過嘅。 */
+/**
+ * 長卷答題關：每次約 8 題。
+ * 這個帳號未做過的先出；做過的只在新題不夠時補尾。
+ * 上一組未用盡題庫之前不會原封再出。
+ */
 export function dailyStageQuestions(user, stage, chapterId, opts = {}) {
   const baked = (stage.questions || []).map(mcToStageQuestion).filter((q) => q.q && q.options?.length);
   if (!baked.length) return baked;
   const pool = stageQuestionPool(user, stage);
   const n = Math.min(STAGE_QUIZ_COUNT, Math.max(baked.length, pool.length));
   const exclude = new Set(opts.excludeIds || []);
-  const answered = user?.answered || {};
-  const fresh = pool.filter((q) => !exclude.has(q.id) && !answered[q.id]);
-  const unused = pool.filter((q) => !exclude.has(q.id));
-  const src = fresh.length >= n ? fresh : unused.length >= n ? unused : pool;
+  const done = doneQuestionIds(user);
+  const fresh = pool.filter((q) => q.id && !done.has(q.id) && !exclude.has(q.id));
+  const freshLast = pool.filter((q) => q.id && !done.has(q.id) && exclude.has(q.id));
+  const doneRest = pool.filter((q) => q.id && done.has(q.id) && !exclude.has(q.id));
+  const doneLast = pool.filter((q) => q.id && done.has(q.id) && exclude.has(q.id));
   const drawN = Number(opts.drawN) || 1;
   const year = user?.formYear || "中一";
-  const order = seededShuffle(src, hashStr(`${year}|${chapterId}|${stage.id}|${drawN}`));
-  return order.slice(0, n).map((q, i) =>
-    shuffleStageQuestion(q, hashStr(`${chapterId}|${stage.id}|${drawN}|${q.id}|${i}`))
-  );
+  const seed = `${year}|${chapterId}|${stage.id}|${drawN}`;
+  const order = [
+    ...takeShuffled(fresh, `${seed}|fresh`),
+    ...takeShuffled(freshLast, `${seed}|fresh-last`),
+    ...takeShuffled(doneRest, `${seed}|done`),
+    ...takeShuffled(doneLast, `${seed}|done-last`),
+  ].slice(0, n);
+  return order.map((q, i) => shuffleStageQuestion(q, hashStr(`${chapterId}|${stage.id}|${drawN}|${q.id}|${i}`)));
 }

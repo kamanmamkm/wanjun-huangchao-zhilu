@@ -433,6 +433,23 @@ export function renderJourneyHome(user, char, ui = {}) {
   const questIsTrial = task.kind === "trial";
   const questIsPromote = task.kind === "promote";
 
+  const serialLead = serialLeadsFlavor(user);
+  const serialNote = serialLead ? serialHookDetail(user) : "";
+  let heroKicker = "當前任務";
+  let heroTitle = task?.label || "今日";
+  let heroHook = task?.detail || "";
+  if (serialLead) {
+    heroKicker = `第${serialLead.no}章`;
+    heroTitle = serialLead.title || heroTitle;
+    heroHook = serialLead.suspense || heroHook;
+  } else if (task?.kind === "flavor" || task?.kind === "wheel" || task?.kind === "run" || task?.kind === "review") {
+    heroKicker = "今晚未了";
+  }
+  const heroTime = serialLead && Number(serialLead.minutes) > 0 ? `約${serialLead.minutes}分鐘` : "";
+  const heroButton = task?.hideQuestButton
+    ? `<a class="home-go" href="#home-challenge">${serialNote === "第一章已完成" ? "去收尾" : "開始"}</a>`
+    : `<button type="button" class="home-go" ${questAction}>${escArena(task?.primary || task?.label || "繼續")}</button>`;
+
   let promoteBlock = "";
   if (order.next) {
     if (gaps.length) {
@@ -462,74 +479,117 @@ export function renderJourneyHome(user, char, ui = {}) {
     }
   }
 
-  return `
-  <section class="poster-home scene-poster-${vis.sceneKey}">
-    <div class="poster-copy">
-      <p class="realm-kicker">${realm}${taskCh?.arc ? ` · ${taskCh.arc}` : ""}</p>
-      <h2 class="realm-title">${snap.identityName}</h2>
-      <hr class="realm-rule" />
-      <p class="realm-quote">${vis.quote}</p>
-      <p class="poster-char">
-        <span>${heroName}</span>
-        <button type="button" class="name-pencil" id="toggle-hero-name" aria-label="改名" title="改名" aria-expanded="${ui.heroNameEdit ? "true" : "false"}">✎</button>
-        <span class="muted">Lv.${snap.level.level}</span>
-      </p>
-      ${
-        ui.heroNameEdit
-          ? `<div class="hero-name-edit" id="hero-name-edit">
+  const levelPct = Math.round(Number(snap.level.progress) || 0);
+  const nameEdit = ui.heroNameEdit
+    ? `<div class="hero-name-edit" id="hero-name-edit">
         <input id="ingame-hero-name" maxlength="8" value="${String(heroName).replace(/"/g, "&quot;")}" aria-label="角色名" />
         <button type="button" class="btn ghost" id="reroll-hero-name">換一個</button>
         <button type="button" class="btn ghost" id="save-hero-name">確認改名</button>
         <button type="button" class="btn ghost" id="cancel-hero-name">取消</button>
-        <p class="muted" style="font-size:.8rem;margin:.15rem 0 0;flex-basis:100%">古風姓＋名共 ${HERO_NAME_COUNT} 組，亦可自訂。</p>
+        <p class="muted">古風姓＋名共 ${HERO_NAME_COUNT} 組，亦可自訂。</p>
       </div>`
-          : ""
-      }
-      <div class="home-quest">
-        <p class="eyebrow">${task.kind === "flavor" || task.kind === "wheel" || task.kind === "run" || task.kind === "review" ? "今晚未了" : "當前任務"}</p>
-        <h3>${task.label}</h3>
-        <p>${task.detail || ""}</p>
-        ${streak ? `<p class="visit-streak">連歸 ${streak} 日${streak % 3 === 2 ? " · 聽日再開就有錦囊" : ""}</p>` : `<p class="visit-streak">今日已記一筆歸程</p>`}
-        ${lastHookLine(user) && task.kind !== "flavor" ? `<p class="next-hook">${lastHookLine(user)}</p>` : ""}
-        <div class="poster-actions">
-          ${task.hideQuestButton ? "" : `<button type="button" class="btn" ${questAction}>${task.primary || task.label}</button>`}
-          <button type="button" class="btn ghost" data-goto="games">趣味關卡</button>
-          <button type="button" class="btn ghost" data-goto="scroll">歷史長卷</button>
-        </div>
-      </div>
-      ${flavorFirst ? renderFlavorCard(user, ui) : ""}
-      ${
-        !flavorFirst && wheel.canSpin && task.kind !== "wheel"
-          ? `<div class="wheel-teaser edict">
-        <p class="eyebrow">天機輪</p>
-        <p>尚有 ${wheel.charges} 次可轉——堂上攞到嘅賞。</p>
+    : "";
+  const wheelBlock =
+    !flavorFirst && wheel.canSpin && task?.kind !== "wheel"
+      ? `<div class="wheel-teaser">
+        <p>天機輪尚有 ${wheel.charges} 次可轉。這是堂上得到的次數。</p>
         <button type="button" class="btn" data-goto="wheel">前往天機輪</button>
       </div>`
-          : ""
-      }
-      ${flavorFirst ? "" : renderFlavorCard(user, ui)}
-      ${renderMuseumCard(user)}
-      ${renderCaseEntry(user)}
-      ${renderArenaBoard(user, ui)}
-      ${promoteBlock}
-      ${renderFinaleBoard(user, order)}
-      <div id="trial-panel" class="hidden"></div>
-      <div class="poster-skills">${skillBars}</div>
-    </div>
-    <div class="poster-art" aria-label="${heroName} 立繪">
-      ${renderHeroStage(char, stageId, "hero", {
-        gender: user.gender,
-        priorityBoost: true,
-        poster: true,
-      })}
-    </div>
-    <footer class="poster-rail">
-      <div class="growth-avatars" aria-label="已解鎖造型">${avatars}</div>
-      <div class="growth-ladder">${ladder}</div>
+      : "";
+
+  return `
+  <section class="home-stage">
+    <header class="home-id">
+      <div class="avatar-ring">${renderAvatar(char, stageId, "sm", { gender: user.gender })}</div>
+      <div class="home-id-copy">
+        <p class="home-brand">任平生</p>
+        <h2 class="home-rank">${escArena(snap.identityName)}</h2>
+        <p class="home-who">
+          <span>${escArena(heroName)}</span>
+          <button type="button" class="name-pencil" id="toggle-hero-name" aria-label="改名" title="改名" aria-expanded="${ui.heroNameEdit ? "true" : "false"}">✎</button>
+          <span class="home-lv">Lv.${snap.level.level}</span>
+        </p>
+        <div class="home-meter" role="progressbar" aria-valuenow="${levelPct}" aria-valuemin="0" aria-valuemax="100" aria-label="距離下一級的進度">
+          <span style="width:${levelPct}%"></span>
+        </div>
+      </div>
+    </header>
+    ${nameEdit}
+    <article class="home-quest">
+      <div class="home-scene">${homeSceneSvg()}</div>
+      <div class="home-quest-copy">
+        <p class="home-kicker">${escArena(heroKicker)}</p>
+        <h2>${escArena(heroTitle)}</h2>
+        ${heroHook ? `<p class="home-hook">${escArena(heroHook)}</p>` : ""}
+        ${serialNote === "第一章已完成" ? `<p class="home-status">${escArena(serialNote)}</p>` : ""}
+        ${heroTime ? `<p class="home-time">${escArena(heroTime)}</p>` : ""}
+        ${heroButton}
+      </div>
+    </article>
+    <section class="home-challenge" id="home-challenge" tabindex="-1" aria-label="今日小挑戰">
+      <h3>今日小挑戰</h3>
+      ${renderFlavorCard(user, ui)}
+    </section>
+    <section class="home-explore" aria-label="探索">
+      <h3>探索</h3>
+      <div class="home-links">
+        <button type="button" class="home-link" data-goto="scroll">歷史長卷</button>
+        <button type="button" class="home-link" data-goto="games">趣味關卡</button>
+      </div>
+      <div class="home-compact">
+        ${renderMuseumCard(user)}
+        ${renderCaseEntry(user)}
+      </div>
+    </section>
+    <section class="home-keep" aria-label="收藏">
+      <h3>收藏</h3>
       ${renderRelicTray(user)}
-      <button type="button" class="btn ghost" data-nav="growth">成長長卷</button>
-    </footer>
+      <button type="button" class="home-link" data-nav="chronicle">打開史冊</button>
+    </section>
+    <details class="home-more">
+      <summary>行囊與說明</summary>
+      <div class="home-more-body">
+        <p>${escArena(realm)}${taskCh?.arc ? ` · ${escArena(taskCh.arc)}` : ""}</p>
+        <p>${escArena(vis.quote || "")}</p>
+        <p>Lv.${snap.level.level} · 經驗 ${user.xp} · 史績 ${snap.score}</p>
+        <p>${escArena(user.username)} · ${escArena(user.formYear || "")}</p>
+        ${streak ? `<p>連歸 ${streak} 日${streak % 3 === 2 ? " · 聽日再開就有錦囊" : ""}</p>` : `<p>今日已記一筆歸程</p>`}
+        ${lastHookLine(user) && task?.kind !== "flavor" ? `<p>${escArena(lastHookLine(user))}</p>` : ""}
+        <div class="poster-skills">${skillBars}</div>
+        <div class="growth-avatars" aria-label="已解鎖造型">${avatars}</div>
+        <div class="growth-ladder">${ladder}</div>
+        ${promoteBlock}
+        ${renderFinaleBoard(user, order)}
+        <div id="trial-panel" class="hidden"></div>
+        ${wheelBlock}
+        ${renderArenaBoard(user, ui)}
+        <div class="home-links">
+          <button type="button" class="home-link" data-nav="board">排行</button>
+          <button type="button" class="home-link" data-nav="growth">成長長卷</button>
+          <button type="button" class="home-link" data-nav="wheel">天機輪</button>
+          <button type="button" class="btn ghost" id="logout-btn">登出</button>
+        </div>
+      </div>
+    </details>
+    <nav class="nav home-dock" aria-label="主要">
+      <button type="button" data-nav="home" class="active"><span class="ico ico-home" aria-hidden="true"></span>行旅</button>
+      <button type="button" data-nav="scroll"><span class="ico ico-scroll" aria-hidden="true"></span>長卷</button>
+      <button type="button" data-nav="chronicle"><span class="ico ico-book" aria-hidden="true"></span>史冊</button>
+      <button type="button" data-nav="growth"><span class="ico ico-growth" aria-hidden="true"></span>行囊</button>
+    </nav>
   </section>`;
+}
+
+function homeSceneSvg() {
+  return `<svg class="home-scene-svg" viewBox="0 0 640 360" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+    <rect width="640" height="360" fill="#E4EBE6"/>
+    <path d="M0 228 L150 118 L250 188 L390 78 L520 176 L640 96 L640 360 L0 360 Z" fill="#5C6A64"/>
+    <path d="M0 268 L180 176 L300 230 L460 150 L640 214 L640 360 L0 360 Z" fill="#2E3834"/>
+    <path d="M238 196 L292 150 L346 196 Z" fill="#A93226"/>
+    <rect x="252" y="196" width="80" height="92" fill="#252A2D"/>
+    <rect x="278" y="228" width="28" height="60" fill="#F6F1E7"/>
+    <path d="M48 330 C150 286 230 300 320 248 C410 198 500 250 600 214" fill="none" stroke="#8A7340" stroke-width="4" stroke-linecap="round"/>
+  </svg>`;
 }
 
 function isChapterFullyDone(user, ch) {

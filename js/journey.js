@@ -10,8 +10,8 @@ import { heroDisplayName, normalizeHeroName } from "./data/characters.js";
 import { pickRandomHeroName, HERO_NAME_COUNT } from "./data/heroNames.js";
 import { renderAvatar } from "./avatar.js?v=rad79";
 import { renderHeroStage, renderStudyCompanion, renderPromoteReveal } from "./heroStage.js?v=rad79";
-import { nextHook, nextStageAfter, todayEncounter, dailyStageQuestions, hydrateStageQuestions, flavorDoneToday, flavorHitsToday, DAILY_FLAVOR_HITS } from "./data/flavor.js?v=rad83";
-import { renderFlavorSerial, renderSerialAside, bindFlavorSerial, serialLeadsFlavor, serialHookDetail, serialGoalChip } from "./flavorSerial.js?v=rad98";
+import { nextHook, nextStageAfter, todayEncounter, dailyStageQuestions, hydrateStageQuestions, flavorDoneToday, flavorHitsToday, DAILY_FLAVOR_HITS } from "./data/flavor.js?v=rad102";
+import { renderFlavorSerial, renderSerialAside, bindFlavorSerial, serialLeadsFlavor, serialHookDetail, serialGoalChip } from "./flavorSerial.js?v=rad102";
 import {
   userSnapshot,
   wheelStatus,
@@ -1015,6 +1015,7 @@ function bindFlavor(user, ctx) {
     const nextHits = flavorHitsToday(fresh, enc.day) + 1;
     updateUser((u) => {
       const p = u.progress || {};
+      const prevDone = [...(p.flavor?.doneIds || []), ...(p.flavor?.seen || [])];
       p.flavor = {
         day: enc.day,
         hits: nextHits,
@@ -1022,6 +1023,7 @@ function bindFlavor(user, ctx) {
         good: !!opt.good,
         reply: opt.reply,
         seen: [...(p.flavor?.seen || []).filter((id) => id !== enc.id), enc.id].slice(-48),
+        doneIds: [...new Set([...prevDone, enc.id])].slice(-800),
       };
       u.progress = p;
     });

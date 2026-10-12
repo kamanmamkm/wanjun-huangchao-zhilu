@@ -2,7 +2,7 @@
  * 歷史查案介面。題目內容見 js/data/cases.js。
  * 研究紀錄只在這部裝置，而且要學生自己開啟。
  */
-import { CASES, getCase } from "./data/cases.js?v=rad90";
+import { CASES, getCase } from "./data/cases.js?v=rad105";
 import { XP_REWARDS } from "./data/levels.js?v=rad90";
 import { updateUser, addXp } from "./storage.js?v=rad95";
 import { cloudSyncStatus } from "./cloud.js?v=rad97";
@@ -218,6 +218,10 @@ function blankRun(task, prev) {
     rewarded: !!prev?.rewarded,
     completedOnce: !!prev?.completedOnce,
     reason: "",
+    marks: {},
+    notes: [],
+    hypothesis: "",
+    conduct: "",
   };
 }
 
@@ -267,7 +271,7 @@ export function renderCaseEntry(user) {
 }
 
 function stepNo(run) {
-  return Math.min(6, Math.max(1, Number(run?.step) || 1));
+  return Math.min(5, Math.max(1, Number(run?.step) || 1));
 }
 
 function progressLine(task, run) {
@@ -276,7 +280,11 @@ function progressLine(task, run) {
 }
 
 function saveNote() {
-  return `<p class="muted case-save-note">${esc(caseSaveNoteText())}</p>`;
+  return `<details class="case-settings">
+    <summary>保存狀態</summary>
+    <p class="case-save-note">進度在這個學號的存檔裡。寫入失敗會另外提示，不會顯示成已保存。</p>
+    <p class="muted">${esc(caseSaveNoteText())}</p>
+  </details>`;
 }
 
 export function caseSaveNoteText() {
@@ -309,10 +317,70 @@ function researchTools() {
     </div>`;
 }
 
-function feedbackHtml(ok, text) {
+function feedbackHtml(ok, text, review) {
   if (!text) return "";
-  const mark = ok ? "答對" : "未中";
-  return `<p class="case-fb ${ok ? "is-ok" : "is-no"}" role="status"><strong>${mark}。</strong> ${esc(text)}</p>`;
+  const mark = ok ? "這條對得上" : "這條對不上";
+  const back = !ok && review ? ` 可返回查看${esc(review)}。` : "";
+  return `<p class="case-fb ${ok ? "is-ok" : "is-no"}" role="status"><strong>${mark}。</strong> ${esc(text)}${back}</p>`;
+}
+
+function addNote(run, text) {
+  const notes = Array.isArray(run.notes) ? run.notes : [];
+  if (!text || notes.includes(text)) return notes;
+  return [...notes, text];
+}
+
+function notesHtml(run) {
+  const notes = Array.isArray(run.notes) ? run.notes : [];
+  if (!notes.length) return "";
+  return `<div class="case-notes"><p class="case-k">調查筆記</p><ul>${notes.map((n) => `<li>${esc(n)}</li>`).join("")}</ul></div>`;
+}
+
+function hypothesisHtml(run) {
+  if (!run.hypothesis) return "";
+  return `<p class="case-hypo"><span>目前的假設</span> ${esc(run.hypothesis)}</p>`;
+}
+
+function clerkLine(task, text) {
+  if (!text) return "";
+  return `<p class="case-say"><strong>${esc(task.clerk.name)}</strong>（${esc(task.clerk.role)}）：${esc(text)}</p>`;
+}
+
+function clueTray(task, run) {
+  return `<div class="clue-list">${task.clues
+    .map((c, i) => {
+      const read = !!run.read?.[c.id];
+      const shown = run.openClue === c.id;
+      return `<article class="clue-card ${read ? "is-read" : ""}">
+        <button type="button" class="clue-toggle" data-clue="${esc(c.id)}" aria-expanded="${shown ? "true" : "false"}">
+          <span class="clue-status">${read ? "已看" : "未看"}</span>
+          <strong>線索${i + 1}　${esc(c.title)}</strong>
+        </button>
+        ${
+          shown
+            ? `<div class="clue-body"><p>${esc(c.text)}</p><details class="clue-source"><summary>資料來源說明</summary><p>${esc(c.source)}</p></details></div>`
+            : ""
+        }
+      </article>`;
+    })
+    .join("")}</div>`;
+}
+
+function settingsBlock(user, task, run) {
+  const on = researchOn(user);
+  const reason = on
+    ? `<fieldset class="case-reason">
+        <legend>今次你點解開啟呢個任務？（可不答。未選會記為未回答，不會當成自己想試）</legend>
+        <div class="case-choices">${optionButtons("reason", task.reasons, run.reason)}</div>
+      </fieldset>`
+    : "";
+  return `${saveNote()}
+    <details class="case-settings" ${on ? "open" : ""}>
+      <summary>研究紀錄（預設關閉）</summary>
+      <label class="case-optin"><input type="checkbox" id="case-research" ${on ? "checked" : ""}/> 允許在這部裝置記錄學習過程（研究用途）。正式收集前，由老師確認學校要求同同意程序。記錄不含姓名，亦不儲存自由文字。不勾選就不會記錄。</label>
+      ${reason}
+      ${researchTools()}
+    </details>`;
 }
 
 function optionButtons(name, options, picked) {
@@ -324,164 +392,137 @@ function optionButtons(name, options, picked) {
     .join("");
 }
 
+function pairReady(task, run) {
+  const picked = task.evidence.options.find((o) => o.id === run.evidenceClue);
+  return !!picked?.ok;
+}
+
 export function renderCase(user, caseId) {
   const task = getCase(caseId);
-  const run = readRun(user, task) || { step: 1, read: {}, slots: {}, rewarded: false };
+  const run = readRun(user, task) || { step: 1, read: {}, slots: {}, marks: {}, notes: [], rewarded: false };
   const n = stepNo(run);
-  const head = `
-    <p class="case-tags">${task.tags.map((t) => esc(t)).join("｜")}</p>
-    <h2>${esc(task.title)}</h2>
-    <p class="lead">${esc(task.objective)}</p>
-    ${progressLine(task, run)}`;
+  const head =
+    n === 1
+      ? `<p class="case-tags">${task.tags.map((t) => esc(t)).join("｜")}</p><h2>${esc(task.title)}</h2>`
+      : `<p class="case-tags">${task.tags.map((t) => esc(t)).join("｜")}</p><h2>${esc(task.title)}</h2>${progressLine(task, run)}`;
   let body = "";
   if (n === 1) body = renderStep1(user, task, run);
-  else if (n === 2) body = renderStep2(task, run);
-  else if (n === 3) body = renderStep3(task, run);
-  else if (n === 4) body = renderStep4(task, run);
-  else if (n === 5) body = renderStep5(task, run);
-  else body = renderStep6(task, run);
+  else if (n === 2) body = renderInspect(user, task, run);
+  else if (n === 3) body = renderPair(user, task, run);
+  else if (n === 4) body = pairReady(task, run) ? renderConduct(user, task, run) : renderPair(user, task, run);
+  else body = renderSettle(user, task, run);
   return `<section class="panel-paper case-view" data-case="${esc(task.id)}">${head}${body}</section>`;
 }
 
 function renderStep1(user, task, run) {
-  const on = researchOn(user);
-  const reason = on
-    ? `<fieldset class="case-reason">
-        <legend>今次你點解開啟呢個任務？（可不答。未選會記為未回答，不會當成自己想試）</legend>
-        <div class="case-choices">${optionButtons("reason", task.reasons, run.reason)}</div>
-      </fieldset>`
-    : "";
   return `
-    ${saveNote()}
-    <label class="case-optin"><input type="checkbox" id="case-research" ${on ? "checked" : ""}/> 允許在這部裝置記錄學習過程（研究用途）。正式收集前，由老師確認學校要求同同意程序。記錄不含姓名，亦不儲存自由文字。</label>
-    ${reason}
-    ${researchTools()}
-    <p class="case-fiction">${esc(task.scene.fictionLabel)}</p>
-    <p>${esc(task.scene.text)}</p>
-    <blockquote class="case-record"><p class="eyebrow">${esc(task.record.kind)}</p><p>${esc(task.record.text)}</p></blockquote>
-    <p class="muted">核心問題：${esc(task.question)}</p>
+    <p class="case-event">${esc(task.hook || task.scene.text)}</p>
+    <p>${esc(task.role || task.objective)}</p>
     <div class="case-actions">
-      <button type="button" class="btn" data-case-path="clues">先查線索</button>
-      <button type="button" class="btn ghost" data-case-path="direct">直接判斷</button>
-    </div>`;
+      <button type="button" class="btn case-go" data-case-path="clues">開始調查</button>
+    </div>
+    ${settingsBlock(user, task, run)}`;
 }
 
-function renderStep2(task, run) {
-  const open = run.openClue || "";
-  const cards = task.clues
-    .map((c, i) => {
-      const read = !!run.read?.[c.id];
-      const shown = open === c.id;
-      return `<article class="clue-card ${read ? "is-read" : ""}">
-        <button type="button" class="clue-toggle" data-clue="${esc(c.id)}" aria-expanded="${shown ? "true" : "false"}">
-          <span class="clue-status">${read ? "已讀" : "未讀"}</span>
-          <strong>${i + 1}. ${esc(c.title)}</strong>
-        </button>
-        ${
-          shown
-            ? `<div class="clue-body"><p>${esc(c.text)}</p><details class="clue-source"><summary>資料來源說明</summary><p>${esc(c.source)}</p></details></div>`
-            : ""
-        }
-      </article>`;
+function renderInspect(user, task, run) {
+  const sentences = (task.inspect?.sentences || [])
+    .map((s) => {
+      const on = !!run.marks?.[s.id];
+      return `<button type="button" class="case-sentence${on ? " is-mark" : ""}" data-mark="${esc(s.id)}" aria-pressed="${on ? "true" : "false"}">${esc(s.text)}</button>`;
     })
     .join("");
+  const marked = (task.inspect?.sentences || []).some((s) => s.suspect && run.marks?.[s.id]);
+  const last = (task.inspect?.sentences || []).find((s) => s.id === run.lastMark);
+  const miss = last && !last.suspect ? feedbackHtml(false, last.miss, last.review) : "";
   return `
-    <p>三張線索可以按任何次序睇。唔使等解鎖。</p>
-    <div class="clue-list">${cards}</div>
+    <p class="case-fiction">${esc(task.scene.fictionLabel)}。${esc(task.record.kind)}</p>
+    <p>${esc(task.inspect?.prompt || "")}</p>
+    <div class="case-doc">${sentences}</div>
+    ${miss}
+    ${marked ? clerkLine(task, "你標了這句。我不會代你選哪張線索。拿去對照就行。") : ""}
+    ${notesHtml(run)}
+    ${hypothesisHtml(run)}
+    <p class="case-k">三張線索，點開對照。看過的會留着。</p>
+    ${clueTray(task, run)}
     <div class="case-actions">
-      <button type="button" class="btn" data-case-goto="3">去作出判斷</button>
-      <button type="button" class="btn ghost" data-case-goto="1">返回接案</button>
-    </div>`;
+      ${marked ? `<button type="button" class="btn case-go" data-case-goto="3">拿標過的句子去對線索</button>` : ""}
+      <button type="button" class="btn ghost" data-case-goto="1">返回</button>
+    </div>
+    ${settingsBlock(user, task, run)}`;
 }
 
-function renderStep3(task, run) {
-  const picked = task.judgment.options.find((o) => o.id === run.judgment);
-  const show = run.judgment && !run.judgmentOk;
-  return `
-    <p>${esc(task.judgment.prompt)}</p>
-    <div class="case-choices">${optionButtons("judge", task.judgment.options, run.judgmentOk ? run.judgment : "")}</div>
-    ${show && picked ? feedbackHtml(false, picked.feedback) : ""}
-    ${run.judgmentOk ? feedbackHtml(true, task.judgment.options.find((o) => o.ok)?.feedback) : ""}
-    <div class="case-actions">
-      ${run.judgmentOk ? `<button type="button" class="btn" data-case-goto="4">去提出證據</button>` : ""}
-      <button type="button" class="btn ghost" data-case-goto="2">返回查看線索</button>
-    </div>`;
-}
-
-function renderStep4(task, run) {
+function renderPair(user, task, run) {
   const ev = task.evidence;
   const clue = ev.options.find((o) => o.id === run.evidenceClue);
-  const slots = ev.slots
-    .map((slot) => {
-      const picked = run.slots?.[slot.id] || "";
-      const opt = slot.options.find((o) => o.id === picked);
-      const bad = opt && !opt.ok;
-      return `<fieldset class="case-slot"><legend>${esc(slot.prompt)}</legend><div class="case-choices">${optionButtons(
-        `slot-${slot.id}`,
-        slot.options,
-        picked
-      )}</div>${bad ? feedbackHtml(false, opt.feedback) : ""}</fieldset>`;
-    })
-    .join("");
-  const clueBad = clue && !clue.ok;
-  const ready = clue?.ok && ev.slots.every((slot) => slot.options.find((o) => o.id === run.slots?.[slot.id])?.ok);
+  const bad = clue && !clue.ok;
+  const marked = (task.inspect?.sentences || []).filter((s) => s.suspect && run.marks?.[s.id]);
   return `
+    <p class="case-claim">你標過的句子：${esc(marked.map((s) => s.text).join("／") || task.record.text)}</p>
     <p>${esc(ev.prompt)}</p>
-    <div class="case-choices">${optionButtons("evidence", ev.options, run.evidenceClue)}</div>
-    ${clueBad ? feedbackHtml(false, clue.feedback) : ""}
+    <div class="case-choices">${optionButtons("pair", ev.options, clue?.ok ? run.evidenceClue : "")}</div>
+    ${bad ? feedbackHtml(false, clue.feedback, "線索①") : ""}
     ${clue?.ok ? feedbackHtml(true, clue.feedback) : ""}
-    <p class="case-build">完成這句：安史之亂不能只解釋為玄宗怠政，<strong>因為</strong>……，<strong>而且</strong>……。</p>
-    ${slots}
+    ${clue?.ok ? clerkLine(task, "邊鎮有自己的兵，所以「只因皇帝不勤」蓋不住。范陽起兵仍是史實，不是標完它就沒發生。") : ""}
+    ${bad ? clerkLine(task, "這張不是最直接的。回到你標過的那句，看它缺的是軍隊，不是另一個宮廷故事。") : ""}
+    ${notesHtml(run)}
+    ${hypothesisHtml(run)}
+    ${clueTray(task, run)}
     <div class="case-actions">
-      <button type="button" class="btn ghost" data-case-hint="1">${run.hintUsed ? "已看過提示" : "查看提示"}</button>
-      ${ready ? `<button type="button" class="btn" data-case-goto="5">去結案</button>` : ""}
-      <button type="button" class="btn ghost" data-case-goto="2">返回查看線索</button>
+      ${clue?.ok ? `<button type="button" class="btn case-go" data-case-goto="4">決定怎樣處理這則記錄</button>` : ""}
+      <button type="button" class="btn ghost" data-case-goto="2">返回查看記錄</button>
     </div>
-    ${run.hintOpen ? `<p class="case-hint" tabindex="-1" role="status">提示：${esc(ev.hint)}</p>` : ""}`;
+    ${settingsBlock(user, task, run)}`;
 }
 
-function renderStep5(task, run) {
-  const picked = task.check.options.find((o) => o.id === run.check);
-  const showBad = run.check && !run.checkOk;
-  const clue = task.clues.find((c) => c.id === run.evidenceClue);
+function renderConduct(user, task, run) {
+  const options = task.conduct?.options || [];
   return `
-    <h3>你的判斷同證據</h3>
-    <p><strong>判斷：</strong>${esc(task.judgment.options.find((o) => o.id === run.judgment)?.text || "")}</p>
-    <p><strong>證據：</strong>${esc(clue?.title || "")}</p>
-    <p>${esc(task.done.link)}</p>
-    <p class="muted">原記錄只把起兵收成「皇帝怠政」。線索顯示邊鎮已有兵力，中央的直接指揮又轉弱，所以單一原因不夠。</p>
-    <p>${esc(task.check.prompt)}</p>
-    <div class="case-choices">${optionButtons("check", task.check.options, run.checkOk ? run.check : "")}</div>
-    ${showBad && picked ? feedbackHtml(false, picked.feedback) : ""}
-    ${run.checkOk ? feedbackHtml(true, task.check.options.find((o) => o.ok)?.feedback) : ""}
-    ${
-      run.checkOk
-        ? `<div class="case-outcome">
-            <p><strong>${esc(task.done.learned)}</strong></p>
-            <p>${esc(task.done.limit)}</p>
-            <p class="muted">${run.rewarded ? "首次完成的經驗已經入帳，重玩不會再加。" : ""}</p>
-            <button type="button" class="btn" data-case-goto="6">去自主選擇</button>
-          </div>`
-        : ""
-    }
-    <div class="case-actions"><button type="button" class="btn ghost" data-case-goto="2">返回查看線索</button></div>`;
+    <p>${esc(task.conduct?.prompt || "")}</p>
+    <p class="muted">歷史判斷不變：不能只把安史之亂收成皇帝怠政。最直接的反證仍是邊鎮已有軍隊。</p>
+    <div class="case-actions">
+      ${options
+        .map((o) => `<button type="button" class="btn case-go" data-conduct="${esc(o.id)}">${esc(o.text)}</button>`)
+        .join("")}
+    </div>
+    ${notesHtml(run)}
+    ${settingsBlock(user, task, run)}`;
 }
 
-function renderStep6(task, run) {
-  const clue = task.clues.find((c) => c.id === run.evidenceClue);
-  return `
-    <p><strong>${esc(task.done.learned)}</strong></p>
-    <p>${esc(task.done.limit)}</p>
-    <p><strong>你的判斷：</strong>${esc(task.judgment.options.find((o) => o.id === run.judgment)?.text || "")}</p>
-    <p><strong>你的證據：</strong>${esc(clue?.title || "尚未選擇")}</p>
+function renderSettle(user, task, run) {
+  const choice = (task.conduct?.options || []).find((o) => o.id === run.conduct);
+  const clue = task.clues.find((c) => c.id === run.evidenceClue) || task.clues[0];
+  const know = task.check.options.find((o) => o.ok);
+  const xp = run.rewarded
+    ? "首次完成的經驗已經入帳。重玩不會再加。"
+    : run.conduct
+      ? "這次經驗未寫入。請再試一次。"
+      : "";
+  const pick = !choice
+    ? `<p>這次還沒有記下你怎樣處理記錄。</p>
+    <p>${esc(task.conduct?.prompt || "")}</p>
+    <div class="case-actions">${(task.conduct?.options || [])
+      .map((o) => `<button type="button" class="btn case-go" data-conduct="${esc(o.id)}">${esc(o.text)}</button>`)
+      .join("")}</div>`
+    : `
+    <p class="case-k">事件怎樣結束</p>
+    <p>${esc(choice.ending)}</p>
+    <p class="case-say"><strong>${esc(task.clerk.name)}</strong>：${esc(choice.reply)}</p>
+    <p class="case-k">你的決定</p>
+    <p>${esc(choice.text)}</p>
+    <p class="case-k">最重要的一條證據</p>
+    <p>${esc(clue.title)}。${esc(clue.text)}</p>
+    <p class="case-k">這次用到的歷史知識</p>
     <p>${esc(task.done.link)}</p>
+    <p>${esc(know?.text || "")} ${esc(know?.feedback || "")}</p>
+    <p class="muted">以上知識點是教學整理，不是古籍引文。人物和「怎樣處理記錄」是虛構。</p>
+    <p class="case-k">經驗</p>
+    <p>${esc(xp)}</p>
+    ${run.conduct && !run.rewarded ? `<button type="button" class="btn ghost" data-case-grant="1">再試寫入經驗</button>` : ""}
     <div class="case-actions">
-      <button type="button" class="btn" data-case-leave="1">今天到這裏</button>
-      <button type="button" class="btn ghost" data-case-review="1">回看我的證據</button>
-      <button type="button" class="btn ghost" data-case-replay="1">再挑戰一次</button>
-    </div>
-    ${saveNote()}
-    ${researchTools()}`;
+      <button type="button" class="btn case-go" data-case-leave="1">今天到這裏</button>
+      <button type="button" class="btn ghost" data-case-replay="1">再查一次</button>
+    </div>`;
+  return `${pick}${settingsBlock(user, task, run)}`;
 }
 
 function taskOf(root) {
@@ -514,7 +555,7 @@ export function bindCase(user, ctx) {
       failSave(toast);
     }
     if (event) noteLog(logCaseEvent(ctx.getUser?.() || user, next, task, event, extra));
-    return next;
+    return ok;
   };
 
   const paint = (sel, keepClear) => {
@@ -539,7 +580,7 @@ export function bindCase(user, ctx) {
       const reason = btn.dataset.reason;
       const base = readRun(ctx.getUser?.() || user, task) || blankRun(task, null);
       const next = { ...base, reason };
-      if (!commit(next, "reason", { step: 1, itemId: reason })) return;
+      commit(next, "reason", { step: 1, itemId: reason });
       paint(`[data-reason="${reason}"]`);
     });
   });
@@ -551,7 +592,7 @@ export function bindCase(user, ctx) {
       const base = prev?.attemptId ? { ...blankRun(task, prev), ...prev } : blankRun(task, prev);
       const starting = !prev?.path;
       const next = { ...base, path, step: path === "direct" ? 3 : 2 };
-      if (!commit(next, starting ? "start" : "", { step: next.step, itemId: path })) return;
+      commit(next, starting ? "start" : "", { step: next.step, itemId: path });
       state.caseResumeLogged = true;
       paint("");
     });
@@ -562,7 +603,7 @@ export function bindCase(user, ctx) {
       const step = Number(btn.dataset.caseGoto);
       const cur = readRun(ctx.getUser?.() || user, task);
       if (!cur) return;
-      if (!commit({ ...cur, step, openClue: step === 2 ? cur.openClue : "" })) return;
+      commit({ ...cur, step, openClue: step === 2 ? cur.openClue : "" });
       paint("");
     });
   });
@@ -575,77 +616,101 @@ export function bindCase(user, ctx) {
       const read = { ...(cur.read || {}), [id]: true };
       const openClue = cur.openClue === id ? "" : id;
       const first = !cur.read?.[id];
-      if (!commit({ ...cur, read, openClue }, first ? "clue_open" : "", { step: 2, itemId: id })) return;
+      commit({ ...cur, read, openClue }, first ? "clue_open" : "", { step: cur.step || 2, itemId: id });
       paint(`[data-clue="${id}"]`);
     });
   });
 
-  root.querySelectorAll("[data-judge]").forEach((btn) => {
+  root.querySelectorAll("[data-mark]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const id = btn.dataset.judge;
-      const opt = task.judgment.options.find((o) => o.id === id);
+      const id = btn.dataset.mark;
+      const sentence = (task.inspect?.sentences || []).find((s) => s.id === id);
       const cur = readRun(ctx.getUser?.() || user, task);
-      if (!cur || !opt || cur.judgmentOk) return;
-      const next = { ...cur, judgment: id, judgmentOk: !!opt.ok };
-      if (!commit(next, "answer", { step: 3, itemId: task.judgment.id + ":" + id, ok: !!opt.ok })) return;
-      paint(`[data-judge="${id}"]`);
+      if (!cur || !sentence) return;
+      const marks = { ...(cur.marks || {}) };
+      if (sentence.suspect) marks[id] = true;
+      const notes = addNote(cur, sentence.suspect ? sentence.hit : sentence.miss);
+      const hypothesis = sentence.suspect
+        ? cur.hypothesis && String(cur.hypothesis).startsWith("推翻")
+          ? cur.hypothesis
+          : "保留：記錄把起兵收成皇帝怠政。還沒有用證據核對。"
+        : cur.hypothesis || "";
+      commit(
+        { ...cur, marks, notes, hypothesis, lastMark: id },
+        sentence.suspect ? "mark" : "",
+        { step: 2, itemId: id }
+      );
+      paint(`[data-mark="${id}"]`);
     });
   });
 
-  root.querySelectorAll("[data-evidence]").forEach((btn) => {
+  root.querySelectorAll("[data-pair]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const id = btn.dataset.evidence;
+      const id = btn.dataset.pair;
       const opt = task.evidence.options.find((o) => o.id === id);
       const cur = readRun(ctx.getUser?.() || user, task);
-      if (!cur || !opt) return;
-      if (!commit({ ...cur, evidenceClue: id }, "answer", { step: 4, itemId: "clue:" + id, ok: !!opt.ok })) return;
-      paint(`[data-evidence="${id}"]`);
-    });
-  });
-
-  task.evidence.slots.forEach((slot) => {
-    root.querySelectorAll(`[data-slot-${slot.id}]`).forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const id = btn.getAttribute(`data-slot-${slot.id}`);
-        const opt = slot.options.find((o) => o.id === id);
-        const cur = readRun(ctx.getUser?.() || user, task);
-        if (!cur || !opt) return;
-        const slots = { ...(cur.slots || {}), [slot.id]: id };
-        if (!commit({ ...cur, slots }, "answer", { step: 4, itemId: slot.id + ":" + id, ok: !!opt.ok })) return;
-        paint(`[data-slot-${slot.id}="${id}"]`);
-      });
-    });
-  });
-
-  root.querySelector("[data-case-hint]")?.addEventListener("click", () => {
-    const cur = readRun(ctx.getUser?.() || user, task);
-    if (!cur) return;
-    const first = !cur.hintUsed;
-    if (!commit({ ...cur, hintUsed: true, hintOpen: !cur.hintOpen }, first ? "hint" : "", { step: 4, itemId: "evidence" })) return;
-    paint(cur.hintOpen ? "[data-case-hint]" : ".case-hint");
-  });
-
-  root.querySelectorAll("[data-check]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const id = btn.dataset.check;
-      const opt = task.check.options.find((o) => o.id === id);
-      const cur = readRun(ctx.getUser?.() || user, task);
-      if (!cur || !opt || cur.checkOk) return;
-      const next = { ...cur, check: id, checkOk: !!opt.ok };
+      if (!cur || !opt || pairReady(task, cur)) return;
+      const next = { ...cur, evidenceClue: id };
       if (opt.ok) {
-        next.done = true;
-        next.completedOnce = true;
-        next.step = 5;
-        if (!cur.rewarded) next.rewarded = true;
+        next.judgment = "b";
+        next.judgmentOk = true;
+        next.hypothesis = "推翻「只因怠政」。最直接的反證是邊鎮節度使已握軍隊。";
+        next.notes = addNote(next, "線索①反駁「主要因為皇帝不再勤政」。");
       }
-      if (!commit(next, "answer", { step: 5, itemId: task.check.id + ":" + id, ok: !!opt.ok })) return;
-      if (opt.ok && !cur.rewarded) {
-        addXp(XP_REWARDS.caseComplete || 12);
-        logCaseEvent(ctx.getUser?.() || user, next, task, "complete", { step: 5, itemId: task.id, ok: true });
-        toast(`首次完成，經驗 +${XP_REWARDS.caseComplete || 12}。重玩不會再加。`);
-      }
-      paint(`[data-check="${id}"]`);
+      commit(next, "answer", { step: 3, itemId: "clue:" + id, ok: !!opt.ok });
+      paint(`[data-pair="${id}"]`);
     });
+  });
+
+  const grantOnce = (cur, next) => {
+    if (cur.rewarded) return;
+    let xpOk = false;
+    try {
+      xpOk = !!addXp(XP_REWARDS.caseComplete || 12);
+    } catch {
+      xpOk = false;
+    }
+    if (!xpOk) {
+      toast("這次經驗未寫入。請再試一次。");
+      return;
+    }
+    const marked = { ...next, rewarded: true };
+    if (!commit(marked, "complete", { step: 5, itemId: task.id, ok: true })) {
+      toast("經驗已加上，完成標記未寫入。請再試一次，不會重複加經驗。");
+      return;
+    }
+    toast(`首次完成，經驗 +${XP_REWARDS.caseComplete || 12}。重玩不會再加。`);
+  };
+
+  root.querySelectorAll("[data-conduct]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.conduct;
+      const opt = (task.conduct?.options || []).find((o) => o.id === id);
+      const cur = readRun(ctx.getUser?.() || user, task);
+      if (!cur || !opt || cur.conduct) return;
+      const next = {
+        ...cur,
+        conduct: id,
+        done: true,
+        completedOnce: true,
+        step: 5,
+        check: cur.checkOk ? cur.check : "a",
+        checkOk: true,
+        judgment: cur.judgmentOk ? cur.judgment : "b",
+        judgmentOk: true,
+      };
+      const saved = commit(next, "choice", { step: 4, itemId: id });
+      if (saved) grantOnce(cur, next);
+      paint("");
+    });
+  });
+
+  root.querySelector("[data-case-grant]")?.addEventListener("click", () => {
+    const cur = readRun(ctx.getUser?.() || user, task);
+    if (!cur?.conduct || cur.rewarded) return;
+    const saved = commit(cur, "", { step: 5, itemId: cur.conduct });
+    if (saved) grantOnce(cur, cur);
+    paint("[data-case-grant]");
   });
 
   root.querySelector("[data-case-leave]")?.addEventListener("click", () => {
@@ -665,14 +730,14 @@ export function bindCase(user, ctx) {
   root.querySelector("[data-case-review]")?.addEventListener("click", () => {
     const cur = readRun(ctx.getUser?.() || user, task);
     if (!cur) return;
-    if (!commit({ ...cur, step: 5 })) return;
+    commit({ ...cur, step: 5 });
     paint("");
   });
 
   root.querySelector("[data-case-replay]")?.addEventListener("click", () => {
     const cur = readRun(ctx.getUser?.() || user, task);
     const next = blankRun(task, cur);
-    if (!commit(next, "replay", { step: 1, itemId: task.id })) return;
+    commit(next, "replay", { step: 1, itemId: task.id });
     state.caseResumeLogged = true;
     paint("");
   });

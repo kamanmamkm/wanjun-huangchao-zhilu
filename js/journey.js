@@ -46,10 +46,10 @@ import {
 import { getCloudUrl } from "./data/cloud.js?v=rad80";
 import { getUnit } from "./data/units.js?v=rad67";
 import { updateUser, addXp, pushRecent } from "./storage.js?v=rad95";
-import { renderCaseEntry } from "./case.js?v=rad105";
-import { renderInquiryEntry } from "./inquiry.js?v=rad103";
+import { renderCaseEntry } from "./case.js?v=rad113";
+import { renderInquiryEntry } from "./inquiry.js?v=rad113";
 import { renderLiteracyEntry } from "./literacy.js?v=rad110";
-import { renderMuseumCard } from "./museum.js?v=rad97";
+import { renderMuseumCard } from "./museum.js?v=rad113";
 import { getTrial } from "./data/trials.js";
 
 function chapterShortTitle(ch) {

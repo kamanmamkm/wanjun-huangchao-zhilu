@@ -222,10 +222,46 @@ body:has(.is-home)::before {
   box-shadow: none;
 }
 
-.home-compact .case-entry {
-  border-top: 1px solid rgba(37, 42, 45, 0.14);
+.home-compact {
+  display: grid;
+  gap: 0.85rem;
   margin-top: 0.85rem;
-  padding-top: 0.85rem;
+}
+
+.home-stage .home-compact .case-entry {
+  margin: 0;
+  padding: 1rem 1rem 0.95rem;
+  border: 1px solid rgba(138, 90, 43, 0.45);
+  border-left: 4px solid #a93226;
+  border-radius: 12px;
+  background: #fffaf2;
+  box-shadow: 0 1px 0 rgba(37, 42, 45, 0.05);
+}
+
+.home-stage .home-compact .case-entry h3 {
+  margin: 0.15rem 0 0.4rem;
+  font-size: 1.2rem;
+}
+
+.home-stage .home-compact .case-entry > .btn,
+.home-stage .home-compact .case-actions .btn:not(.ghost) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  margin-top: 0.7rem;
+  border: 0;
+  background: #a93226;
+  color: #f6f1e7;
+  text-align: center;
+  font-weight: 700;
+}
+
+.home-stage .home-compact .case-actions {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.35rem;
 }
 
 .home-stage .serial-row {

@@ -256,7 +256,10 @@ function failSave(toast) {
 }
 
 export function renderCaseEntry(user) {
-  return CASES.map((task) => {
+  return CASES.filter((task) => {
+    const run = readRun(user, task);
+    return !(run?.done || run?.completedOnce);
+  }).map((task) => {
     const run = readRun(user, task);
     const ongoing = run && !run.done && (run.step > 1 || run.path);
     const label = ongoing ? "繼續查案" : run?.done || run?.completedOnce ? "回看查案" : "開始查案";

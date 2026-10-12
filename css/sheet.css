@@ -417,3 +417,104 @@ body:has(.play-sheet)::before {
     animation: none;
   }
 }
+
+.case-view .case-event {
+  margin: 0.35rem 0 0.75rem;
+  font-size: 1.125rem;
+  line-height: 1.65;
+  color: var(--sheet-ink);
+}
+
+.case-view .case-go {
+  min-height: 48px;
+  white-space: normal;
+  background: var(--sheet-cinnabar);
+  color: var(--sheet-on-cinnabar);
+  border: 1px solid var(--sheet-cinnabar);
+  box-shadow: none;
+  text-shadow: none;
+  letter-spacing: 0.04em;
+}
+
+.case-doc {
+  margin: 0.75rem 0;
+}
+
+.case-sentence {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  margin: 0 0 0.5rem;
+  padding: 0.75rem 0.85rem;
+  text-align: left;
+  font: inherit;
+  line-height: 1.55;
+  color: var(--sheet-ink);
+  background: var(--sheet-rice);
+  border: 1px solid #cfc6b8;
+  border-radius: var(--sheet-radius);
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.case-sentence.is-mark {
+  background: #f8e8e4;
+  border-color: var(--sheet-cinnabar);
+  box-shadow: inset 3px 0 0 var(--sheet-cinnabar);
+}
+
+.case-say {
+  margin: 0.75rem 0;
+  padding: 0.65rem 0.8rem;
+  border-left: 3px solid var(--sheet-ink);
+  background: var(--sheet-rice);
+}
+
+.case-notes,
+.case-hypo,
+.case-claim {
+  margin: 0.75rem 0;
+}
+
+.case-k {
+  margin: 1rem 0 0.25rem;
+  font-weight: 700;
+}
+
+.case-view .case-settings {
+  margin: 0.75rem 0;
+}
+
+.case-view .case-settings summary {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.case-view .case-fb.is-no {
+  color: #6b2418;
+  background: #f8e8e4;
+  border-color: var(--sheet-cinnabar);
+}
+
+.case-view .case-fb.is-ok {
+  color: #143d2c;
+  background: #e5f2eb;
+  border-color: var(--sheet-ok);
+}
+
+.case-view .case-choice,
+.case-view .clue-toggle,
+.case-view .case-actions .btn {
+  min-height: 48px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .case-sentence,
+  .case-view .case-go {
+    transition: none;
+  }
+}

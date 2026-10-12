@@ -238,6 +238,7 @@ export function packSave(user) {
       wheel: p.wheel || {},
       cases: p.cases || {},
       museum: p.museum || {},
+      inquiry: p.inquiry || null,
     },
   };
 }

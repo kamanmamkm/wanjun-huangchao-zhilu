@@ -239,6 +239,7 @@ export function packSave(user) {
       cases: p.cases || {},
       museum: p.museum || {},
       inquiry: p.inquiry || null,
+      literacy: p.literacy || null,
     },
   };
 }

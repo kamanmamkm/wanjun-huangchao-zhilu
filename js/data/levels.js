@@ -22,6 +22,7 @@ export const XP_REWARDS = {
   caseComplete: 12,
   museumChapter: 8,
   inquiryOnce: 8,
+  literacyOnce: 8,
 };
 
 /** Lv.1–20 維持舊門檻，免打亂現有進度；其後延伸至 Lv.60 */

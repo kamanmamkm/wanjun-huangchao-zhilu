@@ -179,6 +179,7 @@ export function museumCard(user, day = letterDay()) {
 
 export function renderMuseumCard(user) {
   const card = museumCard(user);
+  if (card.mode === "replay") return "";
   const alt = card.altId
     ? `<button type="button" class="btn ghost" data-open-museum="${esc(card.altId)}">今日這一章</button>`
     : "";

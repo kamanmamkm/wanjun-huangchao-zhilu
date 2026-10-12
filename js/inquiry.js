@@ -276,6 +276,7 @@ function renderEnd(row, granted) {
 
 export function renderInquiryEntry(user) {
   const row = readInquiry(user);
+  if (row?.phase === "end") return "";
   const ongoing = row && row.phase && row.phase !== "open" && row.phase !== "end";
   const label = ongoing ? "繼續這張榜" : row?.phase === "end" ? "再看這張榜" : "開始調查";
   return `<article class="case-entry">

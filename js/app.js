@@ -55,7 +55,7 @@ import {
 import { renderWheelPage, bindWheel } from "./wheel.js?v=rad95";
 import { renderCase, bindCase, rememberCaseOpen, recallCaseOpen, caseSaveNoteText } from "./case.js?v=rad105";
 import { renderInquiry, bindInquiry, recallInquiryOpen, rememberInquiryOpen } from "./inquiry.js?v=rad103";
-import { renderLiteracy, bindLiteracy, recallLiteracyOpen, rememberLiteracyOpen } from "./literacy.js?v=rad107";
+import { renderLiteracy, bindLiteracy, recallLiteracyOpen, rememberLiteracyOpen, prepareLiteracyOpen } from "./literacy.js?v=rad109";
 import { renderMuseum, bindMuseum, recallMuseumOpen, rememberMuseumOpen } from "./museum.js?v=rad97";
 import {
   renderJourneyHome,
@@ -66,7 +66,7 @@ import {
   renderCuoshi,
   bindJourney,
   renderLeaderboardPage,
-} from "./journey.js?v=rad107";
+} from "./journey.js?v=rad109";
 import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad97";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad79";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";
@@ -1050,6 +1050,11 @@ function bindShellNav() {
     }
     const literacyBtn = e.target.closest("[data-open-literacy]");
     if (literacyBtn) {
+      const prep = prepareLiteracyOpen(getCurrentUser());
+      if (!prep?.ok) {
+        toast("進度未儲存，下一題未開始。請再試一次。");
+        return;
+      }
       state.view = "literacy";
       state.literacyId = literacyBtn.dataset.openLiteracy || "";
       state.literacyGranted = false;

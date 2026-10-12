@@ -2,7 +2,7 @@
  * 人工智能素養三步。經驗只在第一次完成時發一次，不加史績。
  * 保存失敗不顯示成功。
  */
-import { LITERACY } from "./data/literacy.js?v=rad107";
+import { LITERACY, LITERACY_TASKS } from "./data/literacy.js?v=rad108";
 import { XP_REWARDS } from "./data/levels.js?v=rad107";
 import { updateUser } from "./storage.js?v=rad95";
 
@@ -16,10 +16,43 @@ function esc(s) {
     .replace(/"/g, "&quot;");
 }
 
+function taskById(id) {
+  return LITERACY_TASKS.find((t) => t.id === id) || LITERACY_TASKS[0];
+}
+
+function finishedTaskId(prev) {
+  if (prev?.taskId && taskById(prev.taskId).id === prev.taskId) return prev.taskId;
+  if (prev?.phase === "end") return LITERACY_TASKS[0].id;
+  return prev?.taskId || "";
+}
+
+function doneIds(prev) {
+  const done = Array.isArray(prev?.doneTaskIds) ? prev.doneTaskIds.slice() : [];
+  const finished = prev?.phase === "end" ? finishedTaskId(prev) : "";
+  if (finished && !done.includes(finished)) done.push(finished);
+  return done;
+}
+
+function pickTaskId(done, avoid) {
+  const skip = new Set(done);
+  let pool = LITERACY_TASKS.filter((t) => !skip.has(t.id));
+  if (!pool.length) pool = LITERACY_TASKS.filter((t) => t.id !== avoid);
+  if (!pool.length) pool = LITERACY_TASKS;
+  return pool[0].id;
+}
+
+export function taskOf(row) {
+  return taskById(row?.taskId || LITERACY_TASKS[0].id);
+}
+
 export function blankLiteracy(prev) {
+  const done = doneIds(prev);
+  const avoid = prev?.phase === "end" ? finishedTaskId(prev) : "";
   return {
     id: LITERACY.id,
     version: LITERACY.version,
+    taskId: pickTaskId(done, avoid),
+    doneTaskIds: done,
     phase: "principle",
     principleOk: false,
     promptOk: false,
@@ -31,6 +64,12 @@ export function blankLiteracy(prev) {
     rewarded: !!prev?.rewarded,
     completedOnce: !!prev?.completedOnce,
   };
+}
+
+export function prepareLiteracyOpen(user) {
+  const row = readLiteracy(user);
+  if (row && row.phase && row.phase !== "end") return { ok: true };
+  return commit(user, blankLiteracy(row));
 }
 
 export function readLiteracy(user) {
@@ -93,13 +132,13 @@ function commit(user, next) {
   }
 }
 
-function shell(title, body) {
+function shell(title, body, task) {
   return `<section class="inquiry play-sheet literacy-view" id="literacy-root">
     <div class="inquiry-top">
       <button type="button" class="play-back" data-literacy-home="1">返回首頁</button>
     </div>
     <header class="inquiry-head">
-      <p class="inquiry-k">人工智能素養 · ${esc(title)}</p>
+      <p class="inquiry-k">人工智能素養 · ${esc(title)} · ${esc(task.topic)}</p>
       <h1 class="inquiry-title">${esc(LITERACY.title)}</h1>
     </header>
     <div class="inquiry-beat">${body}</div>
@@ -119,8 +158,92 @@ function options(list, attr) {
     .join("");
 }
 
+function principleOptions(task) {
+  return [
+    {
+      id: "text",
+      text: "它查了正史原文，所以這句是史實",
+      ok: false,
+      why: task.sourceWhy,
+    },
+    {
+      id: "pattern",
+      text: "它跟着例子裡重複出現的說法，接出下一句",
+      ok: true,
+      why: "",
+    },
+    {
+      id: "moral",
+      text: "它自己判斷誰對誰錯，所以這樣寫",
+      ok: false,
+      why: "人工智能沒有道德意識。它是在例子裡找重複的說法，不是在責備誰。",
+    },
+  ];
+}
+
+function homeworkOptions(task) {
+  return [
+    {
+      id: "paste",
+      text: "三段原句照交，當作自己的答案",
+      ok: false,
+      why: "這三段是示範回答的原句，而且有兩句史實不對。不能把人工智能的文字當成自己寫的。",
+    },
+    { id: "own", text: task.ownText, ok: true, why: "" },
+  ];
+}
+
+function risksOf(task) {
+  return [
+    {
+      id: "hallucination",
+      ask: task.halluAsk,
+      options: [
+        { id: "hallucination", text: "幻覺：生成的內容可以很順，卻不符事實", ok: true },
+        {
+          id: "power",
+          text: "算力不夠，所以它少寫了出處",
+          ok: false,
+          why: task.halluWhy,
+        },
+      ],
+    },
+    {
+      id: "bias",
+      ask: task.biasAsk,
+      options: [
+        { id: "bias", text: "數據偏見：例子一面倒，輸出就跟着偏", ok: true },
+        {
+          id: "feel",
+          text: "它自己有立場，所以這樣寫",
+          ok: false,
+          why: "它沒有道德意識，也不會覺得誰該被責備。它是跟着例子裡重複的說法。",
+        },
+      ],
+    },
+    {
+      id: "duty",
+      ask: "用完這段回答，你要守住的是什麼？",
+      options: [
+        {
+          id: "copy",
+          text: "原句抄下當自己的功課，省得再查",
+          ok: false,
+          why: "這違反學術誠信，而且有兩句史實不對。最終答案要由你負責。",
+        },
+        {
+          id: "own",
+          text: "不交姓名班號，剔走錯句，用自己核對過的句子作答",
+          ok: true,
+        },
+      ],
+    },
+  ];
+}
+
 function principleHtml(row) {
-  const slips = LITERACY.slips
+  const task = taskOf(row);
+  const slips = task.slips
     .map((text, i) => `<p class="lit-slip"><span>例子 ${i + 1}</span>${esc(text)}</p>`)
     .join("");
   const after = row.principleOk
@@ -131,34 +254,38 @@ function principleHtml(row) {
        <div class="inquiry-actions">
          <button type="button" class="btn play-go" data-literacy-next="prompt">帶着這三樣去做功課</button>
        </div>`
-    : `<p class="inquiry-ask">${esc(LITERACY.principleAsk)}</p>
+    : `<p class="inquiry-ask">這句輸出跟的是什麼？</p>
        ${missLine(row)}
-       <div class="inquiry-actions">${options(LITERACY.principleOptions, "literacy-principle")}</div>`;
+       <div class="inquiry-actions">${options(principleOptions(task), "literacy-principle")}</div>`;
   return shell(
     "運作原理",
     `<p class="inquiry-fiction">${esc(LITERACY.fiction)}</p>
      <p>下面三張是模擬訓練例子，不是史料。這個工具只看過這三張。</p>
      <div class="lit-slips">${slips}</div>
-     <p class="inquiry-ask">有人問：安史之亂主要因為什麼？</p>
-     <p class="lit-output">${esc(LITERACY.output)}</p>
-     ${after}`
+     <p class="inquiry-ask">有人問：${esc(task.ask)}</p>
+     <p class="lit-output">${esc(task.output)}</p>
+     ${after}`,
+    task
   );
 }
 
 function promptHtml(row) {
+  const task = taskOf(row);
   return shell(
     "一起做功課",
     `<p class="inquiry-fiction">${esc(LITERACY.fiction)}</p>
-     <p>你的功課是用自己的句子，說明安史之亂不能只歸因於皇帝怠政。</p>
+     <p>你的功課是用自己的句子，${esc(task.homework)}</p>
      <p class="inquiry-ask">${esc(LITERACY.promptAsk)}</p>
      ${missLine(row)}
-     <div class="inquiry-actions">${options(LITERACY.promptOptions, "literacy-prompt")}</div>`
+     <div class="inquiry-actions">${options(LITERACY.promptOptions, "literacy-prompt")}</div>`,
+    task
   );
 }
 
 function draftHtml(row) {
+  const task = taskOf(row);
   const marks = Array.isArray(row.marks) ? row.marks : [];
-  const sentences = LITERACY.sentences
+  const sentences = task.sentences
     .map((s) => {
       const on = marks.includes(s.id);
       return `<button type="button" class="lit-sentence${on ? " is-mark" : ""}" data-literacy-mark="${esc(s.id)}" aria-pressed="${on ? "true" : "false"}">${esc(s.text)}</button>`;
@@ -167,7 +294,7 @@ function draftHtml(row) {
   const choose = row.draftOk
     ? `<p class="inquiry-ask">${esc(LITERACY.homeworkAsk)}</p>
        ${missLine(row)}
-       <div class="inquiry-actions">${options(LITERACY.homeworkOptions, "literacy-homework")}</div>`
+       <div class="inquiry-actions">${options(homeworkOptions(task), "literacy-homework")}</div>`
     : `${missLine(row)}
        <div class="inquiry-actions">
          <button type="button" class="btn play-go" data-literacy-draft="1">用標好的句子去作答</button>
@@ -177,22 +304,27 @@ function draftHtml(row) {
     `<p>${esc(LITERACY.draftLead)}</p>
      <p class="inquiry-note">點句子會標上記號。標錯可以再點一次。</p>
      <div class="lit-doc">${sentences}</div>
-     ${choose}`
+     ${choose}`,
+    task
   );
 }
 
 function riskHtml(row) {
-  const item = LITERACY.risks[row.riskAt] || LITERACY.risks[0];
+  const task = taskOf(row);
+  const risks = risksOf(task);
+  const item = risks[row.riskAt] || risks[0];
   return shell(
     "反思風險",
     `<p class="inquiry-fiction">你已經交了自己核對過的句子。再把剛才看見的限制說清楚。</p>
      <p class="inquiry-ask">${esc(item.ask)}</p>
      ${missLine(row)}
-     <div class="inquiry-actions">${options(item.options, "literacy-risk")}</div>`
+     <div class="inquiry-actions">${options(item.options, "literacy-risk")}</div>`,
+    task
   );
 }
 
 function endHtml(row, granted) {
+  const task = taskOf(row);
   const xp = granted
     ? `經驗 +${XP_REWARDS.literacyOnce || 8}。史績沒有加。`
     : row.rewarded
@@ -201,36 +333,46 @@ function endHtml(row, granted) {
   const retry = !row.rewarded && row.conduct === "own"
     ? `<button type="button" class="btn play-go" data-literacy-grant="1">再試寫入經驗</button>`
     : "";
+  const next = taskById(pickTaskId(doneIds(row), finishedTaskId(row)));
   return shell(
     "三步都做了",
     `<p class="inquiry-k">這次功課怎樣完</p>
-     <p>你沒有抄示範回答，交了自己核對過的句子。</p>
+     <p>這一題是${esc(task.topic)}。你沒有抄示範回答，交了自己核對過的句子。</p>
      <p class="inquiry-k">你的決定</p>
-     <p>問法裡不寫姓名和班號。兩句說錯原因的都剔走了。</p>
+     <p>問法裡不寫姓名和班號。兩句說錯的都剔走了。</p>
      <p class="inquiry-k">最要核對的一句</p>
-     <p>${esc(LITERACY.knowledge)}</p>
+     <p>${esc(task.knowledge)}</p>
      <p class="inquiry-k">學到的三部分</p>
      <p>運作原理：輸出跟着數據裡的重複說法，靠算法去找，算力讓它看得快。這是機器學習，不是讀懂歷史。</p>
      <p>一起做功課：你決定問法，你核對內容，最終答案由你負責。</p>
      <p>反思風險：幻覺會把錯的史實寫得很順；數據偏見讓一面倒的例子變成答案；不要交出個人資料；不要把人工智能的句子當成自己的功課。它沒有道德意識，不會自己停下來。</p>
      <p class="inquiry-note">${esc(xp)}</p>
+     <p class="inquiry-note">下一題：${esc(next.topic)}。做完才換，未做完不會換。</p>
      <details class="inquiry-clue"><summary>給老師的對照</summary><p>${esc(LITERACY.teacher)}</p></details>
      <div class="inquiry-actions">
        ${retry}
-       <button type="button" class="btn play-quiet" data-literacy-replay="1">再做一次</button>
+       <button type="button" class="btn play-quiet" data-literacy-replay="1">下一題</button>
        <button type="button" class="btn play-go" data-literacy-home="1">返回首頁</button>
-     </div>`
+     </div>`,
+    task
   );
 }
 
 export function renderLiteracyEntry(user) {
   const row = readLiteracy(user);
   const ongoing = row && row.phase && row.phase !== "end";
-  const label = ongoing ? "繼續這三步" : row?.phase === "end" ? "再看這三步" : "開始這三步";
+  const current = taskOf(row);
+  const next = taskById(pickTaskId(doneIds(row), row?.phase === "end" ? finishedTaskId(row) : ""));
+  const label = ongoing ? "繼續這三步" : row?.phase === "end" ? "下一題" : "開始這三步";
+  const hook = ongoing
+    ? `這一題未做完：${current.topic}。做完才換下一題。`
+    : row?.phase === "end"
+      ? `下一題：${next.topic}。${next.card}`
+      : `用一題中史功課，學運作原理、一起做功課，以及用完要反思的風險。這一題：${current.topic}。`;
   return `<article class="case-entry">
     <p class="case-tags">約${LITERACY.minutes}分鐘｜人工智能素養｜中史功課</p>
     <h3>${esc(LITERACY.title)}</h3>
-    <p>${esc(LITERACY.hook)}</p>
+    <p>${esc(hook)}</p>
     <button type="button" class="btn" data-open-literacy="${esc(LITERACY.id)}">${label}</button>
   </article>`;
 }
@@ -275,9 +417,8 @@ export function bindLiteracy(user, ctx) {
 
   root.querySelectorAll("[data-literacy-principle]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const opt = LITERACY.principleOptions.find((o) => o.id === btn.dataset.literacyPrinciple);
-      if (!opt) return;
       const cur = row();
+      const opt = principleOptions(taskOf(cur)).find((o) => o.id === btn.dataset.literacyPrinciple);
       const next = opt.ok
         ? { ...cur, principleOk: true, miss: "" }
         : { ...cur, principleOk: false, miss: opt.why };
@@ -312,8 +453,8 @@ export function bindLiteracy(user, ctx) {
       const i = marks.indexOf(id);
       if (i >= 0) marks.splice(i, 1);
       else marks.push(id);
-      const sentence = LITERACY.sentences.find((s) => s.id === id);
-      const miss = sentence && !sentence.bad && marks.includes(id) ? LITERACY.sentenceMiss.fact : "";
+      const sentence = taskOf(cur).sentences.find((s) => s.id === id);
+      const miss = sentence && !sentence.bad && marks.includes(id) ? taskOf(cur).sentenceMiss.fact : "";
       paint(ctx, user, cur, commit(user, { ...cur, marks, miss }));
     });
   });
@@ -321,13 +462,14 @@ export function bindLiteracy(user, ctx) {
   root.querySelector("[data-literacy-draft]")?.addEventListener("click", () => {
     const cur = row();
     const marks = Array.isArray(cur.marks) ? cur.marks : [];
+    const task = taskOf(cur);
     if (marks.includes("fact")) {
-      paint(ctx, user, cur, commit(user, { ...cur, miss: LITERACY.sentenceMiss.fact }));
+      paint(ctx, user, cur, commit(user, { ...cur, miss: task.sentenceMiss.fact }));
       return;
     }
-    const bad = LITERACY.sentences.filter((s) => s.bad).map((s) => s.id);
+    const bad = task.sentences.filter((s) => s.bad).map((s) => s.id);
     if (!bad.every((id) => marks.includes(id))) {
-      paint(ctx, user, cur, commit(user, { ...cur, miss: LITERACY.sentenceMiss.need }));
+      paint(ctx, user, cur, commit(user, { ...cur, miss: task.sentenceMiss.need }));
       return;
     }
     paint(ctx, user, cur, commit(user, { ...cur, draftOk: true, miss: "" }));
@@ -335,9 +477,8 @@ export function bindLiteracy(user, ctx) {
 
   root.querySelectorAll("[data-literacy-homework]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const opt = LITERACY.homeworkOptions.find((o) => o.id === btn.dataset.literacyHomework);
-      if (!opt) return;
       const cur = row();
+      const opt = homeworkOptions(taskOf(cur)).find((o) => o.id === btn.dataset.literacyHomework);
       const next = opt.ok
         ? { ...cur, phase: "risk", conduct: "own", draftOk: true, riskAt: 0, miss: "" }
         : { ...cur, conduct: "", miss: opt.why };
@@ -348,16 +489,20 @@ export function bindLiteracy(user, ctx) {
   root.querySelectorAll("[data-literacy-risk]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const cur = row();
-      const item = LITERACY.risks[cur.riskAt] || LITERACY.risks[0];
+      const risks = risksOf(taskOf(cur));
+      const item = risks[cur.riskAt] || risks[0];
       const opt = item.options.find((o) => o.id === btn.dataset.literacyRisk);
       if (!opt) return;
       if (!opt.ok) {
         paint(ctx, user, cur, commit(user, { ...cur, miss: opt.why }));
         return;
       }
-      const last = cur.riskAt >= LITERACY.risks.length - 1;
+      const last = cur.riskAt >= risks.length - 1;
+      const done = Array.isArray(cur.doneTaskIds) ? cur.doneTaskIds.slice() : [];
+      const taskId = cur.taskId || taskOf(cur).id;
+      if (last && taskId && !done.includes(taskId)) done.push(taskId);
       const next = last
-        ? { ...cur, phase: "end", riskAt: LITERACY.risks.length, miss: "", conduct: "own" }
+        ? { ...cur, phase: "end", taskId, doneTaskIds: done, riskAt: risks.length, miss: "", conduct: "own" }
         : { ...cur, riskAt: cur.riskAt + 1, miss: "" };
       paint(ctx, user, next, commit(user, next));
     });

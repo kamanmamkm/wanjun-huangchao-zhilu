@@ -88,6 +88,7 @@ export const ENCOUNTERS = [
   },
   {
     id: "enc_ode",
+    grade: "中一",
     topic: "史料",
     setup: "攤販吹噓某官「愛民如子」，但講不出一件政事。你覺得？",
     options: [
@@ -243,7 +244,8 @@ export function dailyEncounterPool(user) {
   const debates = filterByFormYear(ENCOUNTERS, year);
   const quizzes = filterByFormYear(QUESTIONS.mc || [], year).map(mcToEncounter);
   const pool = [...debates, ...quizzes].filter((e) => e.id && e.setup && e.options?.length);
-  return pool.length ? pool : ENCOUNTERS;
+  if (pool.length) return pool;
+  return filterByFormYear(ENCOUNTERS, "中一").filter((e) => e.id && e.setup && e.options?.length);
 }
 
 export const DAILY_FLAVOR_HITS = 3;

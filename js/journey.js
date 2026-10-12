@@ -153,11 +153,15 @@ function renderFlavorCard(user, ui) {
   const hits = flavorHitsToday(user, enc.day);
   if (done) {
     const closed = user.progress?.flavor?.serialClosed;
+    const good = !!user.progress?.flavor?.good;
     const line = closed
       ? "今日連載已完成。沒有另一件新事件。"
-      : `今日 ${DAILY_FLAVOR_HITS} 題已齊，聽日再開。`;
+      : good
+        ? "今日小挑戰已完成，聽日再開。"
+        : "今日已試完，聽日再開。";
+    const eyebrow = good && !closed ? "已完成" : "今日機緣已遇";
     return `${aside}<div class="flavor-card done">
-      <p class="eyebrow">今日機緣已遇</p>
+      <p class="eyebrow">${eyebrow}</p>
       <p>${user.progress.flavor.reply || "今日已遇。"}</p>
       <p class="muted" style="margin:.35rem 0 0">${line}</p>
     </div>`;
@@ -1012,7 +1016,9 @@ function bindFlavor(user, ctx) {
     }
     const opt = enc.options[Number(btn.dataset.flavorPick)];
     if (!opt) return;
-    const nextHits = flavorHitsToday(fresh, enc.day) + 1;
+    const nextHits = opt.good
+      ? DAILY_FLAVOR_HITS
+      : Math.min(DAILY_FLAVOR_HITS, flavorHitsToday(fresh, enc.day) + 1);
     updateUser((u) => {
       const p = u.progress || {};
       const prevDone = [...(p.flavor?.doneIds || []), ...(p.flavor?.seen || [])];
@@ -1037,7 +1043,7 @@ function bindFlavor(user, ctx) {
       nudge: false,
     });
     const leftover = DAILY_FLAVOR_HITS - nextHits;
-    toast(leftover > 0 ? `${opt.reply}（仲有 ${leftover} 題）` : opt.reply);
+    toast(opt.good ? "今日小挑戰已完成" : leftover > 0 ? `${opt.reply}（仲有 ${leftover} 題）` : opt.reply);
     if (leftover <= 0) state.flavorOpen = false;
     render();
   });

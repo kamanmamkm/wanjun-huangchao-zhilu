@@ -5,7 +5,7 @@ import { CHAPTERS, chapterList } from "./data/chapters.js?v=rad56";
 import { XP_REWARDS } from "./data/levels.js?v=rad66";
 import { CUOSHI_BATTLES, CHAPTER_BOSS_PAGES, getCuoshi, wrongLineOf } from "./data/cuoshi.js?v=rad64";
 import { IDENTITIES } from "./data/identities.js?v=rad71";
-import { getStageVisual, SKILL_BARS, skillFill, STAGE_RELIC, realmLabel } from "./data/stageVisuals.js";
+import { getStageVisual, SKILL_BARS, skillFill, realmLabel } from "./data/stageVisuals.js";
 import { heroDisplayName, normalizeHeroName } from "./data/characters.js";
 import { pickRandomHeroName, HERO_NAME_COUNT } from "./data/heroNames.js";
 import { renderAvatar } from "./avatar.js?v=rad79";
@@ -404,7 +404,7 @@ export function renderJourneyHome(user, char, ui = {}) {
       return "";
     }
     if (next && !unlocked) {
-      return `<button type="button" class="growth-av next" data-nav="growth" title="下一階">
+      return `<button type="button" class="growth-av next" data-nav="chronicle" title="下一階">
         ${renderAvatar(char, idn.id, "sm")}
       </button>`;
     }
@@ -554,7 +554,7 @@ export function renderJourneyHome(user, char, ui = {}) {
       <h3>已解鎖身份</h3>
       <div class="growth-avatars">${avatars}</div>
     </section>
-    <details class="home-more">
+    <details class="home-more" ${ui.openBag ? "open" : ""}>
       <summary>行囊與說明</summary>
       <div class="home-more-body">
         <p>${escArena(realm)}${taskCh?.arc ? ` · ${escArena(taskCh.arc)}` : ""}</p>
@@ -572,7 +572,6 @@ export function renderJourneyHome(user, char, ui = {}) {
         ${renderArenaBoard(user, ui)}
         <div class="home-links">
           <button type="button" class="home-link" data-nav="board">排行</button>
-          <button type="button" class="home-link" data-nav="growth">成長長卷</button>
           <button type="button" class="home-link" data-nav="wheel">天機輪</button>
           <button type="button" class="btn ghost" id="logout-btn">登出</button>
         </div>
@@ -582,7 +581,7 @@ export function renderJourneyHome(user, char, ui = {}) {
       <button type="button" data-nav="home" class="active"><span class="ico ico-home" aria-hidden="true"></span>行旅</button>
       <button type="button" data-nav="scroll"><span class="ico ico-scroll" aria-hidden="true"></span>長卷</button>
       <button type="button" data-nav="chronicle"><span class="ico ico-book" aria-hidden="true"></span>史冊</button>
-      <button type="button" data-nav="growth"><span class="ico ico-growth" aria-hidden="true"></span>行囊</button>
+      <button type="button" data-open-bag="1"><span class="ico ico-growth" aria-hidden="true"></span>行囊</button>
     </nav>
   </section>`;
 }
@@ -840,7 +839,7 @@ function playBar(title, progressId, progressText) {
   </header>`;
 }
 
-export function renderGrowthScroll(user, char, growthFocus) {
+function growthScrollHtml(user, char, growthFocus) {
   const snap = userSnapshot(user);
   const cur = snap.stageId ?? stageIdForUser(user);
   const promotions = user.progress?.chronicle?.promotions || [];
@@ -898,23 +897,20 @@ export function renderGrowthScroll(user, char, growthFocus) {
   const focusBand = bands.find((b) => b.id === focusId);
 
   return `
-  <section class="panel-paper growth-scroll-view">
-    <p class="eyebrow ink-gold">人物成長長卷</p>
-    <h2>同一人物 · 達到等級帶即轉相轉頭像</h2>
-    <p class="lead">等級靠長卷與遊戲累積；稱謂同造型跟等級帶（試煉可提前解鎖更高階）。${STAGE_RELIC.note}</p>
-    <p class="muted">${IDENTITY_DISCLAIMER}</p>
-    <div class="growth-rail">${cards}</div>
-    <div class="growth-focus thin-card">
-      ${renderHeroStage(char, focusId, "hero", { gender: user.gender, priorityBoost: true, preferStageArt: true })}
-      <div class="growth-focus-meta">
-        <p class="realm-kicker">${realmLabel(focusId)} · ${focusBand?.range || ""} · ${focusVis.vibe}</p>
-        <h3>${identityDisplayName(focusIdn, user.gender)}</h3>
-        <p class="stage-quote">「${focusVis.quote}」</p>
-        <p class="muted">${focusPromo?.trialId && focusPromo.trialId !== "level_band" ? `晉升於 ${new Date(focusPromo.at).toLocaleString()}` : focusPromo?.byLevel ? `Lv.${focusPromo.byLevel} 晉升` : focusPromo ? `晉升於 ${new Date(focusPromo.at).toLocaleString()}` : focusId === 0 ? "旅程起點" : "已解鎖造型"}</p>
+    <div class="growth-scroll-view chronicle-growth">
+      <h3>人物成長</h3>
+      <p class="lead">等級靠長卷與遊戲累積；稱謂同造型跟等級帶。點已解鎖的身份可看這一階。</p>
+      <div class="growth-rail">${cards}</div>
+      <div class="growth-focus thin-card">
+        ${renderHeroStage(char, focusId, "hero", { gender: user.gender, priorityBoost: true, preferStageArt: true })}
+        <div class="growth-focus-meta">
+          <p class="realm-kicker">${realmLabel(focusId)} · ${focusBand?.range || ""} · ${focusVis.vibe}</p>
+          <h3>${identityDisplayName(focusIdn, user.gender)}</h3>
+          <p class="stage-quote">「${focusVis.quote}」</p>
+          <p class="muted">${focusPromo?.trialId && focusPromo.trialId !== "level_band" ? `晉升於 ${new Date(focusPromo.at).toLocaleString()}` : focusPromo?.byLevel ? `Lv.${focusPromo.byLevel} 晉升` : focusPromo ? `晉升於 ${new Date(focusPromo.at).toLocaleString()}` : focusId === 0 ? "旅程起點" : "已解鎖造型"}</p>
+        </div>
       </div>
-    </div>
-    <button type="button" class="btn ghost" data-nav="home">返回行旅</button>
-  </section>`;
+    </div>`;
 }
 
 export function renderCuoshi(user, opts = {}) {
@@ -1193,6 +1189,14 @@ export function bindJourney(user, ctx) {
   bindCuoshi(user, ctx);
   bindHeroNameEdit(ctx);
   bindGrowth(user, ctx);
+  if (ctx.state?.openBag) {
+    const bag = document.querySelector(".home-more");
+    if (bag) {
+      bag.open = true;
+      bag.scrollIntoView({ block: "nearest" });
+    }
+    ctx.state.openBag = false;
+  }
   bindFlavor(user, ctx);
   bindFlavorSerial(user, ctx);
 
@@ -1788,7 +1792,7 @@ function bindPromote(user, ctx) {
 export function bindGrowth(user, ctx) {
   appClick("[data-growth-pick]", (btn) => {
     ctx.state.growthFocus = Number(btn.dataset.growthPick);
-    ctx.state.view = "growth";
+    ctx.state.view = "chronicle";
     ctx.render();
   });
 }
@@ -1949,7 +1953,7 @@ function bindNotes(user, ctx) {
   });
 }
 
-export function renderChronicle(user, char) {
+export function renderChronicle(user, char, growthFocus) {
   const entries = chronicleEntries(user);
   const relics = user.progress?.relics || [];
   const name = heroDisplayName(user, char);
@@ -1977,7 +1981,9 @@ export function renderChronicle(user, char) {
   <section class="panel-paper chronicle">
     <p class="eyebrow ink-red">私人藏本</p>
     <h2>我的史冊</h2>
-    <p class="lead">呢度係你自己寫成嘅書：過關、錯史、晉升都會按時間入冊。</p>
+    <p class="lead">過關、錯史、晉升按時間入冊。人物成長亦記在這本冊裡。</p>
+    ${growthScrollHtml(user, char, growthFocus)}
+    <h3>入冊記錄</h3>
     <ol class="chronicle-ledger">${rows}</ol>
     ${stamps}
     <p class="chronicle-colophon">${name} 記</p>

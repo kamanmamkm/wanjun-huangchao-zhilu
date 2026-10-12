@@ -48,7 +48,7 @@ import { getUnit } from "./data/units.js?v=rad67";
 import { updateUser, addXp, pushRecent } from "./storage.js?v=rad95";
 import { renderCaseEntry } from "./case.js?v=rad105";
 import { renderInquiryEntry } from "./inquiry.js?v=rad103";
-import { renderLiteracyEntry } from "./literacy.js?v=rad107";
+import { renderLiteracyEntry } from "./literacy.js?v=rad109";
 import { renderMuseumCard } from "./museum.js?v=rad97";
 import { getTrial } from "./data/trials.js";
 

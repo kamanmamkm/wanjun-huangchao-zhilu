@@ -2,8 +2,9 @@
  * 人工智能素養三步。經驗只在第一次完成時發一次，不加史績。
  * 保存失敗不顯示成功。
  */
-import { LITERACY, LITERACY_TASKS } from "./data/literacy.js?v=rad108";
+import { LITERACY, LITERACY_TASKS } from "./data/literacy.js?v=rad110";
 import { XP_REWARDS } from "./data/levels.js?v=rad107";
+import { filterByFormYear } from "./data/formYear.js?v=rad50";
 import { updateUser } from "./storage.js?v=rad95";
 
 const OPEN_KEY = "huangchao_literacy_open";
@@ -33,11 +34,17 @@ function doneIds(prev) {
   return done;
 }
 
-function pickTaskId(done, avoid) {
+function tasksFor(user) {
+  const list = filterByFormYear(LITERACY_TASKS, user?.formYear);
+  return list.length ? list : LITERACY_TASKS.filter((t) => t.grade === "中一");
+}
+
+function pickTaskId(done, avoid, tasks) {
+  const list = tasks?.length ? tasks : LITERACY_TASKS.filter((t) => t.grade === "中一");
   const skip = new Set(done);
-  let pool = LITERACY_TASKS.filter((t) => !skip.has(t.id));
-  if (!pool.length) pool = LITERACY_TASKS.filter((t) => t.id !== avoid);
-  if (!pool.length) pool = LITERACY_TASKS;
+  let pool = list.filter((t) => !skip.has(t.id));
+  if (!pool.length) pool = list.filter((t) => t.id !== avoid);
+  if (!pool.length) pool = list;
   return pool[0].id;
 }
 
@@ -45,13 +52,14 @@ export function taskOf(row) {
   return taskById(row?.taskId || LITERACY_TASKS[0].id);
 }
 
-export function blankLiteracy(prev) {
+export function blankLiteracy(prev, user) {
   const done = doneIds(prev);
   const avoid = prev?.phase === "end" ? finishedTaskId(prev) : "";
+  const tasks = tasksFor(user);
   return {
     id: LITERACY.id,
     version: LITERACY.version,
-    taskId: pickTaskId(done, avoid),
+    taskId: pickTaskId(done, avoid, tasks),
     doneTaskIds: done,
     phase: "principle",
     principleOk: false,
@@ -68,8 +76,11 @@ export function blankLiteracy(prev) {
 
 export function prepareLiteracyOpen(user) {
   const row = readLiteracy(user);
-  if (row && row.phase && row.phase !== "end") return { ok: true };
-  return commit(user, blankLiteracy(row));
+  if (row && row.phase && row.phase !== "end") {
+    const allowed = tasksFor(user);
+    if (!row.taskId || allowed.some((t) => t.id === row.taskId)) return { ok: true };
+  }
+  return commit(user, blankLiteracy(row, user));
 }
 
 export function readLiteracy(user) {
@@ -323,7 +334,7 @@ function riskHtml(row) {
   );
 }
 
-function endHtml(row, granted) {
+function endHtml(row, granted, user) {
   const task = taskOf(row);
   const xp = granted
     ? `經驗 +${XP_REWARDS.literacyOnce || 8}。史績沒有加。`
@@ -333,7 +344,7 @@ function endHtml(row, granted) {
   const retry = !row.rewarded && row.conduct === "own"
     ? `<button type="button" class="btn play-go" data-literacy-grant="1">再試寫入經驗</button>`
     : "";
-  const next = taskById(pickTaskId(doneIds(row), finishedTaskId(row)));
+  const next = taskById(pickTaskId(doneIds(row), finishedTaskId(row), tasksFor(user)));
   return shell(
     "三步都做了",
     `<p class="inquiry-k">這次功課怎樣完</p>
@@ -360,9 +371,10 @@ function endHtml(row, granted) {
 
 export function renderLiteracyEntry(user) {
   const row = readLiteracy(user);
+  const tasks = tasksFor(user);
   const ongoing = row && row.phase && row.phase !== "end";
-  const current = taskOf(row);
-  const next = taskById(pickTaskId(doneIds(row), row?.phase === "end" ? finishedTaskId(row) : ""));
+  const current = ongoing || row?.taskId ? taskOf(row) : taskById(pickTaskId(doneIds(row), "", tasks));
+  const next = taskById(pickTaskId(doneIds(row), row?.phase === "end" ? finishedTaskId(row) : "", tasks));
   const label = ongoing ? "繼續這三步" : row?.phase === "end" ? "下一題" : "開始這三步";
   const hook = ongoing
     ? `這一題未做完：${current.topic}。做完才換下一題。`
@@ -378,11 +390,11 @@ export function renderLiteracyEntry(user) {
 }
 
 export function renderLiteracy(user, granted) {
-  const row = readLiteracy(user) || blankLiteracy(null);
+  const row = readLiteracy(user) || blankLiteracy(null, user);
   if (row.phase === "prompt") return promptHtml(row);
   if (row.phase === "draft") return draftHtml(row);
   if (row.phase === "risk") return riskHtml(row);
-  if (row.phase === "end") return endHtml(row, !!granted);
+  if (row.phase === "end") return endHtml(row, !!granted, user);
   return principleHtml(row);
 }
 
@@ -407,7 +419,7 @@ export function bindLiteracy(user, ctx) {
   }
   const live = readLiteracy(user);
   rememberLiteracyOpen(user.username, live?.phase !== "end");
-  const row = () => readLiteracy(ctx.getUser?.() || user) || blankLiteracy(readLiteracy(user));
+  const row = () => readLiteracy(ctx.getUser?.() || user) || blankLiteracy(readLiteracy(user), user);
 
   root.querySelector("[data-literacy-home]")?.addEventListener("click", () => {
     rememberLiteracyOpen(user.username, false);
@@ -510,7 +522,7 @@ export function bindLiteracy(user, ctx) {
 
   root.querySelector("[data-literacy-replay]")?.addEventListener("click", () => {
     const cur = row();
-    paint(ctx, user, cur, commit(user, blankLiteracy(cur)));
+    paint(ctx, user, cur, commit(user, blankLiteracy(cur, ctx.getUser?.() || user)));
   });
 
   root.querySelector("[data-literacy-grant]")?.addEventListener("click", () => {

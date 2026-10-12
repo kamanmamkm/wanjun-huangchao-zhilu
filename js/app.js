@@ -63,10 +63,9 @@ import {
   renderNotes,
   renderChronicle,
   renderCuoshi,
-  renderGrowthScroll,
   bindJourney,
   renderLeaderboardPage,
-} from "./journey.js?v=rad105";
+} from "./journey.js?v=rad106";
 import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad97";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad79";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";
@@ -856,6 +855,7 @@ function bindAuth() {
 
 /* ========== Shell ========== */
 function renderShell(user) {
+  if (state.view === "growth") state.view = "chronicle";
   if (state.view === "practice" || state.view === "promote") state.view = "home";
   if (!isTeacherPortal() && state.view === "teacher") state.view = "home";
   const char = getCharacter(user.gender, user.characterId);
@@ -873,12 +873,10 @@ function renderShell(user) {
           : state.view === "notes"
             ? renderNotes(user)
             : state.view === "chronicle"
-                ? renderChronicle(user, char)
+                ? renderChronicle(user, char, state.growthFocus)
                 : state.view === "cuoshi"
                   ? renderCuoshi(user, cuoshiHubOpts())
-                  : state.view === "growth"
-                    ? renderGrowthScroll(user, char, state.growthFocus)
-                    : state.view === "wheel"
+                  : state.view === "wheel"
                       ? renderWheelPage(user)
                       : state.view === "teacher"
                         ? renderTeacherPage(state)
@@ -909,7 +907,6 @@ function renderShell(user) {
   const navItems = [
     ["home", "行旅", "ico-home"],
     ["board", "排行", "ico-board"],
-    ["growth", "成長", "ico-growth"],
     ["scroll", "長卷", "ico-scroll"],
     ["chronicle", "史冊", "ico-book"],
     ["wheel", "天機輪", "ico-wheel"],
@@ -958,10 +955,17 @@ function bindShellNav() {
   if (app.dataset.shellNav === "1") return;
   app.dataset.shellNav = "1";
   app.addEventListener("click", (e) => {
+    const bag = e.target.closest("[data-open-bag]");
+    if (bag) {
+      state.view = "home";
+      state.openBag = true;
+      render();
+      return;
+    }
     const nav = e.target.closest("[data-nav]");
     if (nav) {
       if (nav.dataset.nav === "teacher" && !isTeacherPortal()) return;
-      state.view = nav.dataset.nav;
+      state.view = nav.dataset.nav === "growth" ? "chronicle" : nav.dataset.nav;
       if (state.view === "scroll") state.scrollStage = null;
       if (state.view === "games") {
         persistHomeRun();

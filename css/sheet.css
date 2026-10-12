@@ -518,3 +518,61 @@ body:has(.play-sheet)::before {
     transition: none;
   }
 }
+
+.literacy-view .lit-slips,
+.literacy-view .lit-doc,
+.literacy-view .lit-factors {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+
+.literacy-view .lit-slip,
+.literacy-view .lit-output,
+.literacy-view .lit-sentence {
+  margin: 0;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--sheet-radius);
+  border: 1px solid rgba(37, 42, 45, 0.18);
+  background: var(--sheet-rice);
+  color: var(--sheet-ink);
+  font-family: var(--font-ui);
+  font-size: 1.0625rem;
+  line-height: 1.5;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.literacy-view .lit-slip span {
+  display: block;
+  margin-bottom: 0.2rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--sheet-muted);
+}
+
+.literacy-view .lit-output {
+  border-color: var(--sheet-cinnabar);
+}
+
+.literacy-view .lit-sentence {
+  width: 100%;
+  min-height: 48px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.literacy-view .lit-sentence.is-mark {
+  border-color: var(--sheet-cinnabar);
+  background: #f8e8e4;
+}
+
+.literacy-view .lit-factors {
+  padding-left: 1.2rem;
+}
+
+.literacy-view .lit-factors li {
+  font-family: var(--font-ui);
+  font-size: 1.0625rem;
+  line-height: 1.5;
+}

@@ -11,7 +11,7 @@ import { pickRandomHeroName, HERO_NAME_COUNT } from "./data/heroNames.js";
 import { renderAvatar } from "./avatar.js?v=rad79";
 import { renderHeroStage, renderStudyCompanion, renderPromoteReveal } from "./heroStage.js?v=rad79";
 import { nextHook, nextStageAfter, todayEncounter, dailyStageQuestions, hydrateStageQuestions, flavorDoneToday, flavorHitsToday, DAILY_FLAVOR_HITS } from "./data/flavor.js?v=rad114";
-import { renderFlavorSerial, renderSerialAside, bindFlavorSerial, serialLeadsFlavor, serialHookDetail, serialGoalChip } from "./flavorSerial.js?v=rad114";
+import { renderFlavorSerial, renderSerialAside, bindFlavorSerial, serialLeadsFlavor, serialHookDetail, serialGoalChip } from "./flavorSerial.js?v=rad118";
 import {
   userSnapshot,
   wheelStatus,
@@ -46,10 +46,10 @@ import {
 import { getCloudUrl } from "./data/cloud.js?v=rad80";
 import { getUnit } from "./data/units.js?v=rad67";
 import { updateUser, addXp, pushRecent } from "./storage.js?v=rad114";
-import { renderCaseEntry } from "./case.js?v=rad114";
-import { renderInquiryEntry } from "./inquiry.js?v=rad114";
-import { renderLiteracyEntry } from "./literacy.js?v=rad117";
-import { renderMuseumCard } from "./museum.js?v=rad117";
+import { renderCaseEntry } from "./case.js?v=rad118";
+import { renderInquiryEntry } from "./inquiry.js?v=rad118";
+import { renderLiteracyEntry } from "./literacy.js?v=rad118";
+import { renderMuseumCard } from "./museum.js?v=rad118";
 import { getTrial } from "./data/trials.js";
 
 function chapterShortTitle(ch) {
@@ -155,19 +155,16 @@ function renderFlavorCard(user, ui) {
     const closed = user.progress?.flavor?.serialClosed;
     const good = !!user.progress?.flavor?.good;
     const line = closed
-      ? "今日連載已完成。沒有另一件新事件。"
+      ? "聽日再來。"
       : good
-        ? "今晚這句拆穿了，聽日再遇。"
-        : "今日已試完，聽日再開。";
-    const eyebrow = good && !closed ? "已完成" : "今日機緣已遇";
+        ? "拆穿了。聽日再來。"
+        : "聽日再來。";
     return `${aside}<div class="flavor-card done">
-      <p class="eyebrow">${eyebrow}</p>
-      <p>${user.progress.flavor.reply || "今日已遇。"}</p>
-      <p class="muted" style="margin:.35rem 0 0">${line}</p>
+      <p>${user.progress.flavor.reply || line}</p>
     </div>`;
   }
   return `${aside}<div class="flavor-card open">
-    <p class="eyebrow">今日機緣 · ${enc.topic || "換題"} · ${hits + 1}／${DAILY_FLAVOR_HITS}</p>
+    <p class="eyebrow">${hits + 1}／${DAILY_FLAVOR_HITS}</p>
     <p>${enc.setup}</p>
     <div class="options">
       ${enc.options
@@ -232,8 +229,9 @@ function tonightHook(user) {
   if (!flavorDone) {
     return {
       kind: "flavor",
-      label: "今日機緣",
-      detail: "有人講錯史，你去拆穿。",
+      label: "拆一句",
+      detail: "",
+      primary: "去答",
       hideQuestButton: true,
     };
   }
@@ -453,7 +451,7 @@ export function renderJourneyHome(user, char, ui = {}) {
   }
   const heroTime = serialLead && Number(serialLead.minutes) > 0 ? `約${serialLead.minutes}分鐘` : "";
   const heroButton = task?.hideQuestButton
-    ? `<a class="home-go" href="#home-challenge">${serialNote === "第一章已完成" ? "去收尾" : "開始"}</a>`
+    ? `<a class="home-go" href="#home-challenge">${serialNote === "第一章已完成" ? "去收尾" : escArena(task?.primary || "去答")}</a>`
     : `<button type="button" class="home-go" ${questAction}>${escArena(task?.primary || task?.label || "繼續")}</button>`;
 
   let promoteBlock = "";
@@ -534,21 +532,20 @@ export function renderJourneyHome(user, char, ui = {}) {
         ${heroButton}
       </div>
     </section>
-    <section class="home-explore" aria-label="今晚可玩">
-      <h3>今晚可玩</h3>
+    <section class="home-explore" aria-label="玩">
+      <h3>玩</h3>
       <button type="button" class="play-door" data-goto="games">
         <span class="play-door-kicker">趣味關卡</span>
         <span class="play-door-title">拖船、配對、捉錯史</span>
         <span class="play-door-go">去闖關</span>
       </button>
-      <button type="button" class="home-link play-scroll" data-goto="scroll">歷史長卷</button>
     </section>
-    <section class="home-challenge" id="home-challenge" tabindex="-1" aria-label="今晚一句">
-      <h3>今晚一句</h3>
+    <section class="home-challenge" id="home-challenge" tabindex="-1" aria-label="拆一句">
+      <h3>拆一句</h3>
       ${renderFlavorCard(user, ui)}
     </section>
-    <section class="home-explore" aria-label="支線">
-      <h3 class="home-side">支線</h3>
+    <section class="home-explore" aria-label="還可以">
+      <h3 class="home-side">還可以</h3>
       <div class="home-compact">
         ${renderInquiryEntry(user)}
         ${renderCaseEntry(user)}

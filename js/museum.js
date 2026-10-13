@@ -13,7 +13,7 @@ import {
 } from "./data/letters.js?v=rad97";
 import { XP_REWARDS } from "./data/levels.js?v=rad97";
 import { updateUser, addXp } from "./storage.js?v=rad114";
-import { logCaseEvent, researchOn } from "./case.js?v=rad114";
+import { logCaseEvent, researchOn } from "./case.js?v=rad118";
 
 const OPEN_KEY = "huangchao_museum_open";
 const drafts = new Map();
@@ -129,7 +129,7 @@ export function museumCard(user, day = letterDay()) {
       title: today ? today.chapter.title : first.title,
       detail: today ? today.chapter.suspense : first.suspense,
       meta: `${(today ? today.chapter : first).topic}｜${(today ? today.chapter : first).minutes}`,
-      primary: "由第一章開始",
+      primary: "開信",
       note: late
         ? "今日來信是較後的一章。你仍可由第一章開始，不必一天只玩一章。"
         : today
@@ -146,7 +146,7 @@ export function museumCard(user, day = letterDay()) {
       title: today.chapter.title,
       detail: today.chapter.suspense,
       meta: `${today.chapter.topic}｜${today.chapter.minutes}`,
-      primary: "看今日來信",
+      primary: "看信",
       note: "較早的章在檔案館，隨時可以補。",
       noNew: false,
     };
@@ -159,7 +159,7 @@ export function museumCard(user, day = letterDay()) {
       title: firstUndone.title,
       detail: firstUndone.suspense,
       meta: `${firstUndone.topic}｜${firstUndone.minutes}`,
-      primary: "拆開舊信",
+      primary: "拆舊信",
       note: today ? "今日這封已經看完。下面是還沒拆的舊信。" : "沒有新來信。檔案館裡還有一封舊信。",
       noNew: true,
     };
@@ -180,21 +180,10 @@ export function museumCard(user, day = letterDay()) {
 export function renderMuseumCard(user) {
   const card = museumCard(user);
   if (card.mode === "replay") return "";
-  const alt = card.altId
-    ? `<button type="button" class="btn ghost" data-open-museum="${esc(card.altId)}">今日這一章</button>`
-    : "";
   return `
     <article class="case-entry museum-card">
-      <p class="case-tags">${esc(card.eyebrow)}</p>
       <h3>${esc(card.title)}</h3>
-      <p>${esc(card.detail)}</p>
-      <p class="muted">${esc(card.meta)}</p>
-      ${card.note ? `<p class="muted">${esc(card.note)}</p>` : ""}
-      <div class="case-actions">
-        <button type="button" class="btn" data-open-museum="${esc(card.chapterId)}">${esc(card.primary)}</button>
-        ${alt}
-        <button type="button" class="btn ghost" data-open-museum="hall">史館</button>
-      </div>
+      <button type="button" class="btn" data-open-museum="${esc(card.chapterId)}">${esc(card.primary)}</button>
     </article>`;
 }
 

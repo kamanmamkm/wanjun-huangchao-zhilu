@@ -262,12 +262,10 @@ export function renderCaseEntry(user) {
   }).map((task) => {
     const run = readRun(user, task);
     const ongoing = run && !run.done && (run.step > 1 || run.path);
-    const label = ongoing ? "繼續查案" : run?.done || run?.completedOnce ? "回看查案" : "開始查案";
+    const label = ongoing ? "繼續" : "查案";
     return `
     <article class="case-entry">
-      <p class="case-tags">${task.tags.map((t) => esc(t)).join("｜")}</p>
       <h3>${esc(task.title)}</h3>
-      <p>${esc(task.subtitle)}</p>
       <button type="button" class="btn" data-open-case="${esc(task.id)}">${label}</button>
     </article>`;
   }).join("");

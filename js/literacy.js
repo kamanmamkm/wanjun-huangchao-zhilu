@@ -371,20 +371,10 @@ function endHtml(row, granted, user) {
 
 export function renderLiteracyEntry(user) {
   const row = readLiteracy(user);
-  const tasks = tasksFor(user);
   const ongoing = row && row.phase && row.phase !== "end";
-  const current = ongoing || row?.taskId ? taskOf(row) : taskById(pickTaskId(doneIds(row), "", tasks));
-  const next = taskById(pickTaskId(doneIds(row), row?.phase === "end" ? finishedTaskId(row) : "", tasks));
-  const label = ongoing ? "繼續捉錯" : row?.phase === "end" ? "下一則" : "開始捉錯";
-  const hook = ongoing
-    ? `這則未捉完：${current.topic}。捉完才換下一則。`
-    : row?.phase === "end"
-      ? `下一則：${next.topic}。${next.card}`
-      : `史官交來一段寫得很順的史。捉出機器跟着例子猜錯的句子。這一則：${current.topic}。`;
+  const label = ongoing ? "繼續" : row?.phase === "end" ? "下一則" : "捉錯";
   return `<article class="case-entry">
-    <p class="case-tags">約${LITERACY.minutes}分鐘｜捉錯一句｜人工智能</p>
     <h3>${esc(LITERACY.title)}</h3>
-    <p>${esc(hook)}</p>
     <button type="button" class="btn" data-open-literacy="${esc(LITERACY.id)}">${label}</button>
   </article>`;
 }

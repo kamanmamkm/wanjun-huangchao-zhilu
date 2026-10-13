@@ -2078,7 +2078,13 @@ function renderTimeline() {
     ${runHudHtml()}
     <h2>時光長河</h2>
     <p class="lead">${set.title}（${set.grade}）——${order.length} 隻船，由上至下係<strong>由早到晚</strong>。開船睇順唔順流。${inUnitRun() ? "" : formYearHint(year)}</p>
-    <p class="muted">${reduce ? "撳上下箭咀，或撳兩隻船交換。" : "拖船、撳上下，或撳兩隻船對調。"}全對先見年份。</p>
+    <p class="muted">${
+      reduce
+        ? "撳上下箭咀，或撳兩隻船交換。"
+        : window.matchMedia?.("(pointer: coarse)")?.matches
+          ? "用手指拖船排次序，亦可撳上下。"
+          : "拖船、撳上下，或撳兩隻船對調。"
+    }全對先見年份。</p>
     <div class="toolbar">
       ${
         !inUnitRun() && pool.length > 1
@@ -2100,9 +2106,7 @@ function renderTimeline() {
           const selected = pick === i ? " is-picked" : "";
           const clash = clashes.includes(i);
           return `
-          <div class="tl-card${selected}${mark === "ok" ? " is-ok" : ""}${mark === "bad" ? " is-bad" : ""}" role="button" aria-label="${item.label}" tabindex="0" data-tl-i="${i}" ${
-            reduce || sailing ? "" : 'draggable="true"'
-          }>
+          <div class="tl-card${selected}${mark === "ok" ? " is-ok" : ""}${mark === "bad" ? " is-bad" : ""}" role="button" aria-label="${item.label}" tabindex="0" data-tl-i="${i}">
             <span class="tl-ord" aria-hidden="true">${i + 1}</span>
             <span class="tl-label">${item.label}</span>
             ${revealed ? `<span class="tl-year">${formatEraYear(item.year)}</span>` : peeks[item.id] ? `<span class="tl-year tl-hint">${item.hint || formatEraYear(item.year)}</span>` : `<span class="tl-year tl-wait">${sailing ? "" : "？"}</span>`}
@@ -2156,8 +2160,8 @@ function bindTimeline() {
 
   const list = app.querySelector("#tl-list");
   const reduce = preferReduceMotion();
-  let dragFrom = null;
   let didDrag = false;
+  let pointerDrag = null;
 
   const onPick = (i) => {
     if (didDrag) {
@@ -2172,6 +2176,28 @@ function bindTimeline() {
     }
     swapTimelineCards(cur, i);
     render();
+  };
+
+  const timelineDropIndex = (from, clientY) => {
+    const nodes = [...(list?.querySelectorAll("[data-tl-i]") || [])];
+    let to = from;
+    for (const node of nodes) {
+      const i = Number(node.dataset.tlI);
+      if (i === from) continue;
+      const rect = node.getBoundingClientRect();
+      const mid = rect.top + rect.height / 2;
+      if (i > from && clientY > mid) to = i;
+      if (i < from && clientY < mid) to = Math.min(to, i);
+    }
+    return to;
+  };
+
+  const clearPointerDrag = () => {
+    if (!pointerDrag) return;
+    pointerDrag.card.classList.remove("is-dragging");
+    pointerDrag.card.style.transform = "";
+    list?.querySelectorAll(".is-drop").forEach((node) => node.classList.remove("is-drop"));
+    pointerDrag = null;
   };
 
   list?.querySelectorAll("[data-tl-up]").forEach((btn) => {
@@ -2200,30 +2226,55 @@ function bindTimeline() {
         onPick(i);
       }
     });
-    if (reduce) return;
-    card.addEventListener("dragstart", (e) => {
-      dragFrom = i;
-      didDrag = false;
-      card.classList.add("is-dragging");
-      e.dataTransfer.effectAllowed = "move";
-      e.dataTransfer.setData("text/plain", String(i));
+    if (reduce || state.timeline.cleared) return;
+    card.addEventListener("pointerdown", (e) => {
+      if (e.button != null && e.button !== 0) return;
+      if (e.target.closest("button")) return;
+      pointerDrag = {
+        pointerId: e.pointerId,
+        from: i,
+        card,
+        startY: e.clientY,
+        startX: e.clientX,
+        dragging: false,
+      };
+      try {
+        card.setPointerCapture(e.pointerId);
+      } catch {
+        /* 合成事件或未按下時，仍然可以用後續移動判斷 */
+      }
     });
-    card.addEventListener("dragend", () => {
-      card.classList.remove("is-dragging");
+    card.addEventListener("pointermove", (e) => {
+      if (!pointerDrag || e.pointerId !== pointerDrag.pointerId || pointerDrag.card !== card) return;
+      const dy = e.clientY - pointerDrag.startY;
+      const dx = e.clientX - pointerDrag.startX;
+      if (!pointerDrag.dragging) {
+        if (Math.hypot(dx, dy) < 8) return;
+        pointerDrag.dragging = true;
+        didDrag = true;
+        card.setPointerCapture?.(e.pointerId);
+        card.classList.add("is-dragging");
+      }
+      card.style.transform = `translateY(${dy}px)`;
+      const to = timelineDropIndex(pointerDrag.from, e.clientY);
+      list.querySelectorAll("[data-tl-i]").forEach((node) => {
+        node.classList.toggle("is-drop", Number(node.dataset.tlI) === to && to !== pointerDrag.from);
+      });
     });
-    card.addEventListener("dragover", (e) => {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = "move";
-    });
-    card.addEventListener("drop", (e) => {
-      e.preventDefault();
-      const from = dragFrom ?? Number(e.dataTransfer.getData("text/plain"));
-      const to = Number(card.dataset.tlI);
-      if (Number.isNaN(from) || from === to) return;
-      didDrag = true;
+    const finishPointer = (e) => {
+      if (!pointerDrag || e.pointerId !== pointerDrag.pointerId || pointerDrag.card !== card) return;
+      const dragging = pointerDrag.dragging;
+      const from = pointerDrag.from;
+      const to = dragging ? timelineDropIndex(from, e.clientY) : from;
+      clearPointerDrag();
+      if (!dragging || to === from) return;
       moveTimelineCard(from, to);
-      dragFrom = null;
       render();
+    };
+    card.addEventListener("pointerup", finishPointer);
+    card.addEventListener("pointercancel", (e) => {
+      if (!pointerDrag || e.pointerId !== pointerDrag.pointerId) return;
+      clearPointerDrag();
     });
   });
 

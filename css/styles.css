@@ -1792,6 +1792,7 @@ select {
   cursor: grab;
   user-select: none;
   -webkit-user-select: none;
+  touch-action: none;
   text-align: left;
   font: inherit;
   color: inherit;
@@ -1840,16 +1841,18 @@ select {
 }
 
 .tl-moves button {
-  width: 1.75rem;
-  height: 1.35rem;
+  width: 2.75rem;
+  height: 2.75rem;
   padding: 0;
-  border-radius: 7px;
+  border-radius: 8px;
   border: 1px solid rgba(110, 84, 48, 0.35);
   background: #fff;
   color: var(--ink, #2c261c);
   font: inherit;
+  font-size: 1.15rem;
   line-height: 1;
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 .tl-moves button:disabled {
@@ -1862,7 +1865,15 @@ select {
 }
 
 .tl-card.is-dragging {
-  opacity: 0.45;
+  opacity: 0.92;
+  z-index: 4;
+  cursor: grabbing;
+  box-shadow: 0 8px 16px rgba(44, 38, 28, 0.18);
+}
+
+.tl-card.is-drop {
+  outline: 2px solid #2f6f66;
+  outline-offset: 2px;
 }
 
 .tl-ord {

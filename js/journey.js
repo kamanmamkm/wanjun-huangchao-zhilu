@@ -10,8 +10,8 @@ import { heroDisplayName, normalizeHeroName } from "./data/characters.js";
 import { pickRandomHeroName, HERO_NAME_COUNT } from "./data/heroNames.js";
 import { renderAvatar } from "./avatar.js?v=rad79";
 import { renderHeroStage, renderStudyCompanion, renderPromoteReveal } from "./heroStage.js?v=rad79";
-import { nextHook, nextStageAfter, todayEncounter, dailyStageQuestions, hydrateStageQuestions, flavorDoneToday, flavorHitsToday, DAILY_FLAVOR_HITS } from "./data/flavor.js?v=rad111";
-import { renderFlavorSerial, renderSerialAside, bindFlavorSerial, serialLeadsFlavor, serialHookDetail, serialGoalChip } from "./flavorSerial.js?v=rad102";
+import { nextHook, nextStageAfter, todayEncounter, dailyStageQuestions, hydrateStageQuestions, flavorDoneToday, flavorHitsToday, DAILY_FLAVOR_HITS } from "./data/flavor.js?v=rad114";
+import { renderFlavorSerial, renderSerialAside, bindFlavorSerial, serialLeadsFlavor, serialHookDetail, serialGoalChip } from "./flavorSerial.js?v=rad114";
 import {
   userSnapshot,
   wheelStatus,
@@ -45,11 +45,11 @@ import {
 } from "./progress.js?v=rad98";
 import { getCloudUrl } from "./data/cloud.js?v=rad80";
 import { getUnit } from "./data/units.js?v=rad67";
-import { updateUser, addXp, pushRecent } from "./storage.js?v=rad95";
-import { renderCaseEntry } from "./case.js?v=rad113";
-import { renderInquiryEntry } from "./inquiry.js?v=rad113";
-import { renderLiteracyEntry } from "./literacy.js?v=rad110";
-import { renderMuseumCard } from "./museum.js?v=rad113";
+import { updateUser, addXp, pushRecent } from "./storage.js?v=rad114";
+import { renderCaseEntry } from "./case.js?v=rad114";
+import { renderInquiryEntry } from "./inquiry.js?v=rad114";
+import { renderLiteracyEntry } from "./literacy.js?v=rad114";
+import { renderMuseumCard } from "./museum.js?v=rad114";
 import { getTrial } from "./data/trials.js";
 
 function chapterShortTitle(ch) {

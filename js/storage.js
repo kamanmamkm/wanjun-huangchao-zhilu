@@ -4,7 +4,7 @@
 import { migrateIdentityId, STARTING_IDENTITY_ID } from "./data/identities.js?v=rad71";
 import { normalizeHeroName } from "./data/characters.js";
 import { syncIdentityToLevel } from "./data/levelStage.js?v=rad71";
-import { normalizeFormYear, normalizeClassId, formYearFromClassId } from "./data/formYear.js?v=rad31";
+import { normalizeFormYear, normalizeClassId, formYearFromClassId } from "./data/formYear.js?v=rad114";
 
 const USERS_KEY = "huangchao_users_v1";
 const SESSION_KEY = "huangchao_session_v1";
@@ -159,9 +159,9 @@ export function registerUser({ username, password, gender, characterId, heroName
   if (!password || String(password).length < 3) throw new Error("密碼至少三個字");
   const fromClass = formYearFromClassId(name);
   const year = normalizeFormYear(formYear) || fromClass;
-  if (!year) throw new Error("請選擇年級（中一／中二／中三）");
+  if (!year) throw new Error("請選擇年級（中一至中五）");
   if (fromClass && year !== fromClass) {
-    const d = { 中一: "1", 中二: "2", 中三: "3" }[year];
+    const d = { 中一: "1", 中二: "2", 中三: "3", 中四: "4", 中五: "5" }[year];
     throw new Error(`班別要同年級一致（${year}請用 ${d}A、${d}B…）`);
   }
   const hero = normalizeHeroName(heroName);

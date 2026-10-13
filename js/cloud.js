@@ -10,7 +10,7 @@ import {
   registerUser,
   setSession,
   migrateUser,
-} from "./storage.js?v=rad95";
+} from "./storage.js?v=rad114";
 
 let upsertTimer = null;
 let cloudFeatures = [];

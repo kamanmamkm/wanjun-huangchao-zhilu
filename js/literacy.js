@@ -4,8 +4,8 @@
  */
 import { LITERACY, LITERACY_TASKS } from "./data/literacy.js?v=rad110";
 import { XP_REWARDS } from "./data/levels.js?v=rad107";
-import { filterByFormYear } from "./data/formYear.js?v=rad50";
-import { updateUser } from "./storage.js?v=rad95";
+import { filterByFormYear } from "./data/formYear.js?v=rad114";
+import { updateUser } from "./storage.js?v=rad114";
 
 const OPEN_KEY = "huangchao_literacy_open";
 

@@ -24,7 +24,7 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=rad50";
+} from "./data/shizhan.js?v=rad114";
 import {
   getCurrentUser,
   clearSession,
@@ -32,7 +32,7 @@ import {
   updateUser,
   pushRecent,
   onUserWrite,
-} from "./storage.js?v=rad95";
+} from "./storage.js?v=rad114";
 import {
   userSnapshot,
   buildPromotionOrder,
@@ -52,11 +52,11 @@ import {
   charmCount,
   consumeCharm,
 } from "./progress.js?v=rad92";
-import { renderWheelPage, bindWheel } from "./wheel.js?v=rad95";
-import { renderCase, bindCase, rememberCaseOpen, recallCaseOpen, caseSaveNoteText } from "./case.js?v=rad113";
-import { renderInquiry, bindInquiry, recallInquiryOpen, rememberInquiryOpen } from "./inquiry.js?v=rad113";
-import { renderLiteracy, bindLiteracy, recallLiteracyOpen, rememberLiteracyOpen, prepareLiteracyOpen } from "./literacy.js?v=rad110";
-import { renderMuseum, bindMuseum, recallMuseumOpen, rememberMuseumOpen } from "./museum.js?v=rad113";
+import { renderWheelPage, bindWheel } from "./wheel.js?v=rad114";
+import { renderCase, bindCase, rememberCaseOpen, recallCaseOpen, caseSaveNoteText } from "./case.js?v=rad114";
+import { renderInquiry, bindInquiry, recallInquiryOpen, rememberInquiryOpen } from "./inquiry.js?v=rad114";
+import { renderLiteracy, bindLiteracy, recallLiteracyOpen, rememberLiteracyOpen, prepareLiteracyOpen } from "./literacy.js?v=rad114";
+import { renderMuseum, bindMuseum, recallMuseumOpen, rememberMuseumOpen } from "./museum.js?v=rad114";
 import {
   renderJourneyHome,
   renderScroll,
@@ -66,21 +66,23 @@ import {
   renderCuoshi,
   bindJourney,
   renderLeaderboardPage,
-} from "./journey.js?v=rad113";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad97";
+} from "./journey.js?v=rad114";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad114";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad79";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";
-import { flavorLine, isoDay } from "./data/flavor.js?v=rad102";
+import { flavorLine, isoDay } from "./data/flavor.js?v=rad114";
 import {
   FORM_YEARS,
+  CONTENT_YEARS,
   normalizeFormYear,
   formYearHint,
+  formYearOptionNote,
   filterByFormYear,
   allowedGradeKeys,
   normalizeClassId,
   formYearFromClassId,
   classIdHint,
-} from "./data/formYear.js?v=rad50";
+} from "./data/formYear.js?v=rad114";
 import { pickRandomHeroName, isPooledHeroName, HERO_NAME_COUNT } from "./data/heroNames.js?v=rad50";
 import { captureCloudFromLocation, getCloudUrl } from "./data/cloud.js?v=rad80";
 import {
@@ -92,7 +94,7 @@ import {
   registerWithCloud,
   scheduleCloudSync,
   onCloudSync,
-} from "./cloud.js?v=rad107";
+} from "./cloud.js?v=rad114";
 import { isTeacherPortal } from "./data/portal.js?v=rad78";
 
 captureCloudFromLocation();
@@ -629,9 +631,7 @@ function renderAuth() {
             <option value="" ${!state.formYear ? "selected" : ""}>— 請選擇 —</option>
             ${FORM_YEARS.map(
               (y) =>
-                `<option value="${y}" ${state.formYear === y ? "selected" : ""}>${y}${
-                  y === "中一" ? "（只做中一題）" : y === "中二" ? "（中一＋中二）" : "（中一＋中二＋中三）"
-                }</option>`
+                `<option value="${y}" ${state.formYear === y ? "selected" : ""}>${y}（${formYearOptionNote(y)}）</option>`
             ).join("")}
           </select>
         </label>
@@ -1531,7 +1531,7 @@ function renderGamesHub() {
   state.gamesYear = year;
   const allowed = allowedGradeKeys(user?.formYear);
   const unit = getUnit(state.gamesUnit);
-  const yearTabs = FORM_YEARS.map((g) => {
+  const yearTabs = CONTENT_YEARS.map((g) => {
     const open = allowed.includes(g);
     return `<button type="button" class="chip ${g === year ? "active" : ""}" data-games-year="${g}" ${open ? "" : "disabled"}>${g}${open ? "" : " · 未開放"}</button>`;
   }).join("");

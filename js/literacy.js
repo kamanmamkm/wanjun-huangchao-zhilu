@@ -2,7 +2,7 @@
  * 人工智能素養三步。經驗只在第一次完成時發一次，不加史績。
  * 保存失敗不顯示成功。
  */
-import { LITERACY, LITERACY_TASKS } from "./data/literacy.js?v=rad110";
+import { LITERACY, LITERACY_TASKS } from "./data/literacy.js?v=rad117";
 import { XP_REWARDS } from "./data/levels.js?v=rad107";
 import { filterByFormYear } from "./data/formYear.js?v=rad114";
 import { updateUser } from "./storage.js?v=rad114";
@@ -149,7 +149,7 @@ function shell(title, body, task) {
       <button type="button" class="play-back" data-literacy-home="1">返回首頁</button>
     </div>
     <header class="inquiry-head">
-      <p class="inquiry-k">人工智能素養 · ${esc(title)} · ${esc(task.topic)}</p>
+      <p class="inquiry-k">捉錯史官 · ${esc(title)} · ${esc(task.topic)}</p>
       <h1 class="inquiry-title">${esc(LITERACY.title)}</h1>
     </header>
     <div class="inquiry-beat">${body}</div>
@@ -263,7 +263,7 @@ function principleHtml(row) {
          ${LITERACY.factors.map((f) => `<li><strong>${esc(f.name)}</strong>　${esc(f.text)}</li>`).join("")}
        </ul>
        <div class="inquiry-actions">
-         <button type="button" class="btn play-go" data-literacy-next="prompt">帶着這三樣去做功課</button>
+         <button type="button" class="btn play-go" data-literacy-next="prompt">帶着這三樣去核對</button>
        </div>`
     : `<p class="inquiry-ask">這句輸出跟的是什麼？</p>
        ${missLine(row)}
@@ -283,9 +283,9 @@ function principleHtml(row) {
 function promptHtml(row) {
   const task = taskOf(row);
   return shell(
-    "一起做功課",
+    "你來核對",
     `<p class="inquiry-fiction">${esc(LITERACY.fiction)}</p>
-     <p>你的功課是用自己的句子，${esc(task.homework)}</p>
+     <p>要交的是你自己的句子，${esc(task.homework)}</p>
      <p class="inquiry-ask">${esc(LITERACY.promptAsk)}</p>
      ${missLine(row)}
      <div class="inquiry-actions">${options(LITERACY.promptOptions, "literacy-prompt")}</div>`,
@@ -311,7 +311,7 @@ function draftHtml(row) {
          <button type="button" class="btn play-go" data-literacy-draft="1">用標好的句子去作答</button>
        </div>`;
   return shell(
-    "一起做功課",
+    "你來核對",
     `<p>${esc(LITERACY.draftLead)}</p>
      <p class="inquiry-note">點句子會標上記號。標錯可以再點一次。</p>
      <div class="lit-doc">${sentences}</div>
@@ -347,7 +347,7 @@ function endHtml(row, granted, user) {
   const next = taskById(pickTaskId(doneIds(row), finishedTaskId(row), tasksFor(user)));
   return shell(
     "三步都做了",
-    `<p class="inquiry-k">這次功課怎樣完</p>
+    `<p class="inquiry-k">這趟捉到什麼</p>
      <p>這一題是${esc(task.topic)}。你沒有抄示範回答，交了自己核對過的句子。</p>
      <p class="inquiry-k">你的決定</p>
      <p>問法裡不寫姓名和班號。兩句說錯的都剔走了。</p>
@@ -355,10 +355,10 @@ function endHtml(row, granted, user) {
      <p>${esc(task.knowledge)}</p>
      <p class="inquiry-k">學到的三部分</p>
      <p>運作原理：輸出跟着數據裡的重複說法，靠算法去找，算力讓它看得快。這是機器學習，不是讀懂歷史。</p>
-     <p>一起做功課：你決定問法，你核對內容，最終答案由你負責。</p>
-     <p>反思風險：幻覺會把錯的史實寫得很順；數據偏見讓一面倒的例子變成答案；不要交出個人資料；不要把人工智能的句子當成自己的功課。它沒有道德意識，不會自己停下來。</p>
+     <p>你來核對：你決定問法，你核對內容，最終答案由你負責。</p>
+     <p>反思風險：幻覺會把錯的史實寫得很順；數據偏見讓一面倒的例子變成答案；不要交出個人資料；不要把人工智能的句子當成自己寫的。它沒有道德意識，不會自己停下來。</p>
      <p class="inquiry-note">${esc(xp)}</p>
-     <p class="inquiry-note">下一題：${esc(next.topic)}。做完才換，未做完不會換。</p>
+     <p class="inquiry-note">下一則：${esc(next.topic)}。做完才換，未做完不會換。</p>
      <details class="inquiry-clue"><summary>給老師的對照</summary><p>${esc(LITERACY.teacher)}</p></details>
      <div class="inquiry-actions">
        ${retry}
@@ -375,14 +375,14 @@ export function renderLiteracyEntry(user) {
   const ongoing = row && row.phase && row.phase !== "end";
   const current = ongoing || row?.taskId ? taskOf(row) : taskById(pickTaskId(doneIds(row), "", tasks));
   const next = taskById(pickTaskId(doneIds(row), row?.phase === "end" ? finishedTaskId(row) : "", tasks));
-  const label = ongoing ? "繼續這三步" : row?.phase === "end" ? "下一題" : "開始這三步";
+  const label = ongoing ? "繼續捉錯" : row?.phase === "end" ? "下一則" : "開始捉錯";
   const hook = ongoing
-    ? `這一題未做完：${current.topic}。做完才換下一題。`
+    ? `這則未捉完：${current.topic}。捉完才換下一則。`
     : row?.phase === "end"
-      ? `下一題：${next.topic}。${next.card}`
-      : `用一題中史功課，學運作原理、一起做功課，以及用完要反思的風險。這一題：${current.topic}。`;
+      ? `下一則：${next.topic}。${next.card}`
+      : `史官交來一段寫得很順的史。捉出機器跟着例子猜錯的句子。這一則：${current.topic}。`;
   return `<article class="case-entry">
-    <p class="case-tags">約${LITERACY.minutes}分鐘｜人工智能素養｜中史功課</p>
+    <p class="case-tags">約${LITERACY.minutes}分鐘｜捉錯一句｜人工智能</p>
     <h3>${esc(LITERACY.title)}</h3>
     <p>${esc(hook)}</p>
     <button type="button" class="btn" data-open-literacy="${esc(LITERACY.id)}">${label}</button>

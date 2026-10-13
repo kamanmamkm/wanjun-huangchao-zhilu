@@ -293,6 +293,63 @@ body:has(.is-home)::before {
   margin-top: 0.65rem;
 }
 
+.play-door {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "kicker go"
+    "title go";
+  gap: 0.2rem 0.85rem;
+  align-items: center;
+  width: 100%;
+  margin-top: 0.15rem;
+  padding: 1rem 1rem 1.05rem;
+  border: 0;
+  border-radius: 14px;
+  background: #24312e;
+  color: #f6f1e7;
+  text-align: left;
+  cursor: pointer;
+  min-height: 5.25rem;
+}
+
+.play-door-kicker {
+  grid-area: kicker;
+  color: #e2c27a;
+  font-size: 0.85rem;
+  letter-spacing: 0.12em;
+}
+
+.play-door-title {
+  grid-area: title;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.play-door-go {
+  grid-area: go;
+  align-self: center;
+  padding: 0.55rem 0.9rem;
+  border-radius: 999px;
+  background: #a93226;
+  color: #f6f1e7;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.home-stage .play-scroll {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin-top: 0.55rem;
+}
+
+.home-explore > h3.home-side {
+  margin-top: 0;
+  font-size: 1.05rem;
+}
+
 .home-stage .muted,
 .home-stage .eyebrow,
 .home-stage .case-tags {

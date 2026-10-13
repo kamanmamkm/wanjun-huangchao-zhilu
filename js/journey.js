@@ -48,8 +48,8 @@ import { getUnit } from "./data/units.js?v=rad67";
 import { updateUser, addXp, pushRecent } from "./storage.js?v=rad114";
 import { renderCaseEntry } from "./case.js?v=rad114";
 import { renderInquiryEntry } from "./inquiry.js?v=rad114";
-import { renderLiteracyEntry } from "./literacy.js?v=rad114";
-import { renderMuseumCard } from "./museum.js?v=rad114";
+import { renderLiteracyEntry } from "./literacy.js?v=rad117";
+import { renderMuseumCard } from "./museum.js?v=rad117";
 import { getTrial } from "./data/trials.js";
 
 function chapterShortTitle(ch) {
@@ -157,7 +157,7 @@ function renderFlavorCard(user, ui) {
     const line = closed
       ? "今日連載已完成。沒有另一件新事件。"
       : good
-        ? "今日小挑戰已完成，聽日再開。"
+        ? "今晚這句拆穿了，聽日再遇。"
         : "今日已試完，聽日再開。";
     const eyebrow = good && !closed ? "已完成" : "今日機緣已遇";
     return `${aside}<div class="flavor-card done">
@@ -233,7 +233,7 @@ function tonightHook(user) {
     return {
       kind: "flavor",
       label: "今日機緣",
-      detail: `今日仲有 ${enc.remain} 題`,
+      detail: "有人講錯史，你去拆穿。",
       hideQuestButton: true,
     };
   }
@@ -534,21 +534,26 @@ export function renderJourneyHome(user, char, ui = {}) {
         ${heroButton}
       </div>
     </section>
-    <section class="home-challenge" id="home-challenge" tabindex="-1" aria-label="今日小挑戰">
-      <h3>今日小挑戰</h3>
+    <section class="home-explore" aria-label="今晚可玩">
+      <h3>今晚可玩</h3>
+      <button type="button" class="play-door" data-goto="games">
+        <span class="play-door-kicker">趣味關卡</span>
+        <span class="play-door-title">拖船、配對、捉錯史</span>
+        <span class="play-door-go">去闖關</span>
+      </button>
+      <button type="button" class="home-link play-scroll" data-goto="scroll">歷史長卷</button>
+    </section>
+    <section class="home-challenge" id="home-challenge" tabindex="-1" aria-label="今晚一句">
+      <h3>今晚一句</h3>
       ${renderFlavorCard(user, ui)}
     </section>
-    <section class="home-explore" aria-label="探索">
-      <h3>探索</h3>
-      <div class="home-links">
-        <button type="button" class="home-link" data-goto="scroll">歷史長卷</button>
-        <button type="button" class="home-link" data-goto="games">趣味關卡</button>
-      </div>
+    <section class="home-explore" aria-label="支線">
+      <h3 class="home-side">支線</h3>
       <div class="home-compact">
-        ${renderLiteracyEntry(user)}
         ${renderInquiryEntry(user)}
-        ${renderMuseumCard(user)}
         ${renderCaseEntry(user)}
+        ${renderMuseumCard(user)}
+        ${renderLiteracyEntry(user)}
       </div>
     </section>
     <section class="home-keep" aria-label="收藏">
@@ -1043,7 +1048,7 @@ function bindFlavor(user, ctx) {
       nudge: false,
     });
     const leftover = DAILY_FLAVOR_HITS - nextHits;
-    toast(opt.good ? "今日小挑戰已完成" : leftover > 0 ? `${opt.reply}（仲有 ${leftover} 題）` : opt.reply);
+    toast(opt.good ? "今晚這句拆穿了" : leftover > 0 ? `${opt.reply}（仲有 ${leftover} 句）` : opt.reply);
     if (leftover <= 0) state.flavorOpen = false;
     render();
   });

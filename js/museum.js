@@ -159,8 +159,8 @@ export function museumCard(user, day = letterDay()) {
       title: firstUndone.title,
       detail: firstUndone.suspense,
       meta: `${firstUndone.topic}｜${firstUndone.minutes}`,
-      primary: "補玩未完成",
-      note: today ? "今日這封已經看完。下面是未完成的舊章，不是新任務。" : "沒有新來信。這是檔案館裡還沒做完的一章。",
+      primary: "拆開舊信",
+      note: today ? "今日這封已經看完。下面是還沒拆的舊信。" : "沒有新來信。檔案館裡還有一封舊信。",
       noNew: true,
     };
   }

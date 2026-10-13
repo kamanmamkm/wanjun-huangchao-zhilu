@@ -14,7 +14,7 @@ import { XP_REWARDS } from "./data/levels.js?v=rad98";
 import { isoDay, DAILY_FLAVOR_HITS } from "./data/flavor.js?v=rad102";
 import { updateUser, addXp } from "./storage.js?v=rad114";
 import { grantNamedRelic } from "./progress.js?v=rad98";
-import { logCaseEvent, researchOn } from "./case.js?v=rad114";
+import { logCaseEvent, researchOn } from "./case.js?v=rad118";
 
 function esc(s) {
   return String(s || "")
@@ -128,9 +128,8 @@ function goalHtml() {
       `<button type="button" class="option" data-serial-goal="${esc(goal.id)}">${esc(goal.name)}：${esc(goal.hint)}</button>`
   ).join("");
   return shell(`
-    <p class="eyebrow">今日機緣 · 連載第一章 · 約4分鐘</p>
-    <p>有人把分封和郡縣叠成同一件事。先選定一件想留下的信物，再選一條路線。</p>
-    <p class="muted">三件都在這裡，沒有抽獎。選了就作為收藏目標，首次完成才收入信物。重玩不會再發一次。</p>
+    <p class="eyebrow">第1章</p>
+    <p>先揀一件信物。</p>
     <div class="options">${buttons}</div>`);
 }
 
@@ -296,16 +295,12 @@ export function renderSerialAside(user, day = schoolDay()) {
   const pending = SERIAL_CHAPTERS.find((ch) => ch.playable && !chapterRow(user, ch.id)?.done);
   const done = SERIAL_CHAPTERS.find((ch) => ch.playable && chapterRow(user, ch.id)?.done);
   const action = pending
-    ? `<button type="button" class="option" data-serial-catchup="${esc(pending.id)}">補玩第${pending.no}章</button>
-       <p class="muted">漏玩沒有扣分，也沒有限時獎。這不是新的每日事件。</p>`
+    ? `<button type="button" class="home-quiet" data-serial-catchup="${esc(pending.id)}">玩第${pending.no}章</button>`
     : done
-      ? `<button type="button" class="option" data-serial-other="${esc(done.id)}">重看第${done.no}章</button>
-         <p class="muted">重看不加首次經驗，信物也不會再發一次。</p>`
+      ? `<button type="button" class="home-quiet" data-serial-other="${esc(done.id)}">重看第${done.no}章</button>`
       : "";
-  return `<div class="flavor-card serial-aside">
-    <p class="eyebrow">今日沒有新連載</p>
-    ${action}
-  </div>`;
+  if (!action) return "";
+  return `<p class="serial-quiet">${action}</p>`;
 }
 
 function commit(ctx, user, serial, row, event, extra, finish) {

@@ -278,11 +278,9 @@ export function renderInquiryEntry(user) {
   const row = readInquiry(user);
   if (row?.phase === "end") return "";
   const ongoing = row && row.phase && row.phase !== "open" && row.phase !== "end";
-  const label = ongoing ? "繼續這張榜" : row?.phase === "end" ? "再看這張榜" : "開始調查";
+  const label = ongoing ? "繼續" : "查榜";
   return `<article class="case-entry">
-    <p class="case-tags">約${INQUIRY.minutes}分鐘｜隋唐選官｜虛構案件</p>
     <h3>${esc(INQUIRY.title)}</h3>
-    <p>${esc(INQUIRY.hook)}</p>
     <button type="button" class="btn" data-open-inquiry="${esc(INQUIRY.id)}">${label}</button>
   </article>`;
 }

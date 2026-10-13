@@ -53,10 +53,10 @@ import {
   consumeCharm,
 } from "./progress.js?v=rad92";
 import { renderWheelPage, bindWheel } from "./wheel.js?v=rad114";
-import { renderCase, bindCase, rememberCaseOpen, recallCaseOpen, caseSaveNoteText } from "./case.js?v=rad114";
-import { renderInquiry, bindInquiry, recallInquiryOpen, rememberInquiryOpen } from "./inquiry.js?v=rad114";
-import { renderLiteracy, bindLiteracy, recallLiteracyOpen, rememberLiteracyOpen, prepareLiteracyOpen } from "./literacy.js?v=rad117";
-import { renderMuseum, bindMuseum, recallMuseumOpen, rememberMuseumOpen } from "./museum.js?v=rad117";
+import { renderCase, bindCase, rememberCaseOpen, recallCaseOpen, caseSaveNoteText } from "./case.js?v=rad118";
+import { renderInquiry, bindInquiry, recallInquiryOpen, rememberInquiryOpen } from "./inquiry.js?v=rad118";
+import { renderLiteracy, bindLiteracy, recallLiteracyOpen, rememberLiteracyOpen, prepareLiteracyOpen } from "./literacy.js?v=rad118";
+import { renderMuseum, bindMuseum, recallMuseumOpen, rememberMuseumOpen } from "./museum.js?v=rad118";
 import {
   renderJourneyHome,
   renderScroll,
@@ -66,7 +66,7 @@ import {
   renderCuoshi,
   bindJourney,
   renderLeaderboardPage,
-} from "./journey.js?v=rad117";
+} from "./journey.js?v=rad118";
 import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad114";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad79";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";
@@ -1621,10 +1621,10 @@ function renderGamesHub() {
   return `
   <section class="panel panel-paper">
     <h2>趣味關卡</h2>
-    <p class="lead">揀一個時代闖關：三盞燈火，連過長河同連線。${formYearHint(user?.formYear)}</p>
+    <p class="lead">揀一個時代，撳闖關。</p>
     <article class="quest-card tone-gold shizhan-feature" data-unit-play="shizhan">
       <div class="quest-icon"><span class="ico ico-seal" style="width:1.4em;height:1.4em"></span></div>
-      <div class="quest-body"><h3>史戰風雲</h3><p>體力、出牌、答題攻防——本年綜合對戰</p></div>
+      <div class="quest-body"><h3>史戰風雲</h3><p>出牌對戰</p></div>
       <span class="quest-xp">+${XP_REWARDS.shizhanWin}</span>
     </article>
     <div class="toolbar">${yearTabs}</div>

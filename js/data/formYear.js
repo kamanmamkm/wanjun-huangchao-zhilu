@@ -1,23 +1,25 @@
 /**
  * 學生年級：決定可見題目範圍
  * 中一 → 只中一｜中二 → 中一＋中二｜中三 → 中一＋中二＋中三
+ * 中四、中五沒有自己的題庫，玩中三範圍（中一＋中二＋中三）
  */
-export const FORM_YEARS = ["中一", "中二", "中三"];
+export const FORM_YEARS = ["中一", "中二", "中三", "中四", "中五"];
+export const CONTENT_YEARS = ["中一", "中二", "中三"];
 
-const RANK = { 中一: 1, 中二: 2, 中三: 3 };
+const RANK = { 中一: 1, 中二: 2, 中三: 3, 中四: 3, 中五: 3 };
 
 export function normalizeFormYear(v) {
-  if (v === "中二" || v === "中三" || v === "中一") return v;
+  if (v === "中一" || v === "中二" || v === "中三" || v === "中四" || v === "中五") return v;
   return null;
 }
 
-/** 班別＋學號：1A10（年級 1–3、英文字母班、兩位學號），自動轉大楷。 */
+/** 班別＋學號：1A10（年級 1–5、英文字母班、兩位學號），自動轉大楷。 */
 export function normalizeClassId(v) {
   const raw = String(v || "")
     .trim()
     .toUpperCase()
     .replace(/[\s_-]+/g, "");
-  const m = raw.match(/^([1-3])([A-Z])(\d{1,2})$/);
+  const m = raw.match(/^([1-5])([A-Z])(\d{1,2})$/);
   if (!m) return null;
   return `${m[1]}${m[2]}${m[3].padStart(2, "0")}`;
 }
@@ -25,11 +27,11 @@ export function normalizeClassId(v) {
 export function formYearFromClassId(classId) {
   const id = normalizeClassId(classId);
   if (!id) return null;
-  return { 1: "中一", 2: "中二", 3: "中三" }[id[0]] || null;
+  return { 1: "中一", 2: "中二", 3: "中三", 4: "中四", 5: "中五" }[id[0]] || null;
 }
 
 export function classIdHint() {
-  return "英文大楷，班別加兩位學號，例如 1A10。";
+  return "英文大楷，班別加兩位學號，例如 1A10、4A01。";
 }
 
 export function formYearLabel(v) {
@@ -38,13 +40,23 @@ export function formYearLabel(v) {
 
 export function allowedGradeKeys(formYear) {
   const y = normalizeFormYear(formYear) || "中一";
-  if (y === "中三") return ["中一", "中二", "中三"];
+  if (y === "中三" || y === "中四" || y === "中五") return ["中一", "中二", "中三"];
   if (y === "中二") return ["中一", "中二"];
   return ["中一"];
 }
 
+export function formYearOptionNote(v) {
+  const y = normalizeFormYear(v);
+  if (y === "中一") return "只做中一題";
+  if (y === "中二") return "中一＋中二";
+  if (y === "中四" || y === "中五") return "玩中三範圍";
+  if (y === "中三") return "中一＋中二＋中三";
+  return "";
+}
+
 export function formYearHint(formYear) {
   const y = normalizeFormYear(formYear) || "中一";
+  if (y === "中四" || y === "中五") return "本年級玩中三範圍：中一、中二、中三題目";
   if (y === "中三") return "本年級可見中一、中二、中三題目";
   if (y === "中二") return "本年級可見中一、中二題目";
   return "本年級只見中一題目";

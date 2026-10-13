@@ -3,7 +3,7 @@
  */
 import { CHAPTERS, chapterList } from "./chapters.js";
 import { QUESTIONS } from "./questions.js?v=rad83";
-import { filterByFormYear } from "./formYear.js";
+import { filterByFormYear } from "./formYear.js?v=rad114";
 
 const GOOD_LINES = [
   "善。這一點站得住。",

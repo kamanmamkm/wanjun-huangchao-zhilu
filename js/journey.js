@@ -534,11 +534,12 @@ export function renderJourneyHome(user, char, ui = {}) {
     </section>
     <section class="home-explore" aria-label="玩">
       <h3>玩</h3>
-      <button type="button" class="play-door" data-goto="games">
-        <span class="play-door-kicker">趣味關卡</span>
-        <span class="play-door-title">拖船、配對、捉錯史</span>
-        <span class="play-door-go">去闖關</span>
+      <button type="button" class="play-door" data-goto="voyage">
+        <span class="play-door-kicker">上路</span>
+        <span class="play-door-title">城門、市集、城樓</span>
+        <span class="play-door-go">前行</span>
       </button>
+      <button type="button" class="home-quiet" data-goto="games">趣味關卡</button>
     </section>
     <section class="home-challenge" id="home-challenge" tabindex="-1" aria-label="拆一句">
       <h3>拆一句</h3>

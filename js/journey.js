@@ -534,10 +534,28 @@ export function renderJourneyHome(user, char, ui = {}) {
     </section>
     <section class="home-explore" aria-label="玩">
       <h3>玩</h3>
+      <div class="land-strip" aria-label="你的地盤">
+        <span class="${
+          user?.progress?.voyage?.stop > 0 ||
+          user?.progress?.voyage?.line > 0 ||
+          user?.progress?.voyage?.land ||
+          user?.progress?.voyage?.camp
+            ? "is-on"
+            : ""
+        }">城門</span>
+        <span class="${user?.progress?.voyage?.land ? "is-on" : ""}">城樓</span>
+        <span class="${user?.progress?.voyage?.camp ? "is-on" : ""}">營帳</span>
+        <span class="${user?.progress?.voyage?.flag ? "is-on" : ""}">布旗</span>
+      </div>
+      ${
+        user?.progress?.voyage?.flag
+          ? `<p class="land-note">布旗下記住${escArena(user.progress.voyage.flagName || "同窗")}</p>`
+          : ""
+      }
       <button type="button" class="play-door" data-goto="voyage">
         <span class="play-door-kicker">上路</span>
         <span class="play-door-title">${
-          user?.progress?.voyage?.flag
+          user?.progress?.voyage?.flag && user?.progress?.voyage?.camp
             ? "城門到營帳，旗是你的"
             : user?.progress?.voyage?.camp
               ? "城門到營帳是你的地盤"

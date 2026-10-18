@@ -1,9 +1,9 @@
 /**
- * 上路：第三人稱自己行。城門、市集、城樓。
- * 史實只重用題庫已有判斷：孔子與秦始皇不同世。
+ * 上路：第三人稱自己行。城樓先有地盤，再到營帳，地盤變大。
+ * 史實只重用已有判斷：孔子與秦始皇不同世；西周是分封，全國置郡縣是秦統一之後。
  */
 import { addXp, updateUser } from "./storage.js?v=rad114";
-import { mountVoyageScene } from "./voyage3d.js?v=rad126";
+import { mountVoyageScene } from "./voyage3d.js?v=rad127";
 
 const XP_ONCE = 8;
 
@@ -36,7 +36,22 @@ const STOPS = [
   },
   {
     name: "城樓",
-    lines: [{ who: "", text: "你上了城樓。這一程走完。" }],
+    lines: [{ who: "步卒", text: "城門到城樓，可以是你的地盤。" }],
+  },
+  {
+    name: "營帳",
+    lines: [
+      { who: "步卒", text: "西周已經全國設郡縣。" },
+      {
+        who: "你",
+        text: "你點應？",
+        choice: [
+          { text: "西周是分封。", ok: true },
+          { text: "西周同秦一樣。", ok: false, miss: "西周是世襲分封。全國置郡縣、不封子弟，是秦統一之後。" },
+        ],
+      },
+      { who: "你", text: "營帳歸你。地盤大了。" },
+    ],
   },
 ];
 
@@ -61,6 +76,7 @@ function readRow(user) {
     weapon: !!raw?.weapon,
     soldier: !!raw?.soldier,
     land: !!raw?.land,
+    camp: !!raw?.camp,
   };
 }
 
@@ -89,12 +105,14 @@ function boxHtml(row, pathOpen, gender) {
   const speaker = line.who === "other" ? otherName(gender) : line.who;
   const who = speaker ? `<p class="voyage-who">${esc(speaker)}</p>` : "";
   const last = row.line >= stop.lines.length - 1;
-  const endStop = row.stop === STOPS.length - 1;
+  const atTower = row.stop === 2 && last;
+  const atCamp = row.stop === STOPS.length - 1 && last;
   let lineText = line.text || "";
-  if (endStop && last && row.done) lineText = "城門到城樓，是你的地盤。";
-  else if (endStop && last) lineText = "你上了城樓。走完，這條路就是你的地盤。";
+  if (atCamp && row.camp) lineText = "城門到營帳，是你的地盤。";
+  else if (atTower && row.land) lineText = "城門到城樓是你的。再向前，營帳也可以是你的。";
+  else if (atTower) lineText = "你上了城樓。這條路可以是你的地盤。";
   let controls = "";
-  if (row.done && endStop && last) {
+  if (atCamp && row.camp && row.done) {
     controls = `<div class="voyage-actions">
       <button type="button" class="voyage-go" data-voyage-replay="1">再走一程</button>
       <button type="button" class="voyage-go" data-voyage-home="1">回到行旅</button>
@@ -106,12 +124,20 @@ function boxHtml(row, pathOpen, gender) {
           `<button type="button" class="voyage-choice" data-voyage-pick="${i}">${esc(opt.text)}</button>`
       )
       .join("")}</div>${row.miss ? `<p class="voyage-miss">${esc(row.miss)}</p>` : ""}`;
-  } else if (last && !endStop && pathOpen) {
+  } else if (last && !atCamp && pathOpen) {
     controls = `<p class="voyage-hint">${
-      row.weapon ? "得到戈。步卒跟上。拖左下圓鈕向前。" : "拖左下圓鈕向前，或按鍵盤。"
+      atTower
+        ? "向前走到營帳。答對，地盤就再大。"
+        : row.weapon
+          ? "得到戈。步卒跟上。拖左下圓鈕向前。"
+          : "拖左下圓鈕向前，或按鍵盤。"
     }</p>`;
-  } else if (last && endStop) {
-    controls = `<button type="button" class="voyage-go" data-voyage-finish="1">走完</button>`;
+  } else if (atTower && row.land) {
+    controls = `<button type="button" class="voyage-go" data-voyage-next="1">向前</button>`;
+  } else if (atTower) {
+    controls = `<button type="button" class="voyage-go" data-voyage-claim="1">收下</button>`;
+  } else if (atCamp) {
+    controls = `<button type="button" class="voyage-go" data-voyage-finish="1">收下</button>`;
   } else {
     controls = `<button type="button" class="voyage-go" data-voyage-next="1">知道了</button>`;
   }
@@ -158,8 +184,8 @@ export function bindVoyage(user, ctx) {
     return true;
   };
 
-  const finish = (row) => {
-    const next = { ...row, done: true, miss: "", land: true, weapon: true, soldier: true };
+  const claimLand = (row) => {
+    const next = { ...row, land: true, weapon: true, soldier: true, done: false, miss: "" };
     let granted = false;
     if (!row.rewarded) {
       const saved = updateUser((u) => {
@@ -177,7 +203,19 @@ export function bindVoyage(user, ctx) {
       fail();
       return;
     }
+    pathOpen = true;
+    world?.setOpen(true);
     if (granted) ctx.toast?.(`城門到城樓是你的地盤。經驗 +${XP_ONCE}`);
+    paint();
+  };
+
+  const claimCamp = (row) => {
+    const next = { ...row, camp: true, done: true, miss: "", land: true, weapon: true, soldier: true };
+    if (!writeRow(name, next)) {
+      fail();
+      return;
+    }
+    if (!row.camp) ctx.toast?.("地盤大了。城門到營帳是你的。");
     paint();
   };
 
@@ -252,15 +290,19 @@ export function bindVoyage(user, ctx) {
       }
       return;
     }
+    if (e.target.closest("[data-voyage-claim]")) {
+      claimLand(row);
+      return;
+    }
     if (e.target.closest("[data-voyage-finish]")) {
-      finish(row);
+      claimCamp(row);
       return;
     }
     if (e.target.closest("[data-voyage-replay]")) {
       pathOpen = false;
       world?.place(0);
       world?.setOpen(false);
-      save({ stop: 0, line: 0, miss: "", done: false, rewarded: row.rewarded });
+      save({ ...row, stop: 0, line: 0, miss: "", done: false });
     }
   });
 }

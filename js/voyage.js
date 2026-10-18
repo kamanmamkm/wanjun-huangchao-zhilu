@@ -3,7 +3,7 @@
  * 史實只重用題庫已有判斷：孔子與秦始皇不同世。
  */
 import { addXp, updateUser } from "./storage.js?v=rad114";
-import { mountVoyageScene } from "./voyage3d.js?v=rad124";
+import { mountVoyageScene } from "./voyage3d.js?v=rad126";
 
 const XP_ONCE = 8;
 
@@ -58,6 +58,9 @@ function readRow(user) {
     miss: String(raw?.miss || ""),
     done: !!raw?.done,
     rewarded: !!raw?.rewarded,
+    weapon: !!raw?.weapon,
+    soldier: !!raw?.soldier,
+    land: !!raw?.land,
   };
 }
 
@@ -87,12 +90,15 @@ function boxHtml(row, pathOpen, gender) {
   const who = speaker ? `<p class="voyage-who">${esc(speaker)}</p>` : "";
   const last = row.line >= stop.lines.length - 1;
   const endStop = row.stop === STOPS.length - 1;
+  let lineText = line.text || "";
+  if (endStop && last && row.done) lineText = "城門到城樓，是你的地盤。";
+  else if (endStop && last) lineText = "你上了城樓。走完，這條路就是你的地盤。";
   let controls = "";
   if (row.done && endStop && last) {
     controls = `<div class="voyage-actions">
       <button type="button" class="voyage-go" data-voyage-replay="1">再走一程</button>
       <button type="button" class="voyage-go" data-voyage-home="1">回到行旅</button>
-    </div>`;
+    </div><p class="voyage-hint">戈一把，步卒一人。</p>`;
   } else if (Array.isArray(line.choice)) {
     controls = `<div class="voyage-choices">${line.choice
       .map(
@@ -101,13 +107,15 @@ function boxHtml(row, pathOpen, gender) {
       )
       .join("")}</div>${row.miss ? `<p class="voyage-miss">${esc(row.miss)}</p>` : ""}`;
   } else if (last && !endStop && pathOpen) {
-    controls = `<p class="voyage-hint">拖左下圓鈕向前，或按鍵盤。</p>`;
+    controls = `<p class="voyage-hint">${
+      row.weapon ? "得到戈。步卒跟上。拖左下圓鈕向前。" : "拖左下圓鈕向前，或按鍵盤。"
+    }</p>`;
   } else if (last && endStop) {
     controls = `<button type="button" class="voyage-go" data-voyage-finish="1">走完</button>`;
   } else {
     controls = `<button type="button" class="voyage-go" data-voyage-next="1">知道了</button>`;
   }
-  return `${who}<p class="voyage-line">${esc(line.text || "")}</p>${controls}`;
+  return `${who}<p class="voyage-line">${esc(lineText)}</p>${controls}`;
 }
 
 export function renderVoyage() {
@@ -151,7 +159,7 @@ export function bindVoyage(user, ctx) {
   };
 
   const finish = (row) => {
-    const next = { ...row, done: true, miss: "" };
+    const next = { ...row, done: true, miss: "", land: true, weapon: true, soldier: true };
     let granted = false;
     if (!row.rewarded) {
       const saved = updateUser((u) => {
@@ -169,7 +177,7 @@ export function bindVoyage(user, ctx) {
       fail();
       return;
     }
-    if (granted) ctx.toast?.(`這一程走完。經驗 +${XP_ONCE}`);
+    if (granted) ctx.toast?.(`城門到城樓是你的地盤。經驗 +${XP_ONCE}`);
     paint();
   };
 
@@ -187,6 +195,7 @@ export function bindVoyage(user, ctx) {
     knob: document.getElementById("voyage-knob"),
     gender: user?.gender,
     stop: readRow(user).stop,
+    follow: !!readRow(user).weapon,
     onProgress: (text) => {
       const el = document.getElementById("voyage-load");
       if (el) el.textContent = text;
@@ -237,7 +246,10 @@ export function bindVoyage(user, ctx) {
         save({ ...row, miss: opt.miss || "再揀一句。" });
         return;
       }
-      if (row.line < stop.lines.length - 1) save({ ...row, line: row.line + 1, miss: "" });
+      if (row.line < stop.lines.length - 1) {
+        const next = { ...row, line: row.line + 1, miss: "", weapon: true, soldier: true };
+        if (save(next)) world?.grant();
+      }
       return;
     }
     if (e.target.closest("[data-voyage-finish]")) {

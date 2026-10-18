@@ -536,8 +536,8 @@ export function renderJourneyHome(user, char, ui = {}) {
       <h3>玩</h3>
       <button type="button" class="play-door" data-goto="voyage">
         <span class="play-door-kicker">上路</span>
-        <span class="play-door-title">城門、市集、城樓</span>
-        <span class="play-door-go">自己行</span>
+        <span class="play-door-title">${user?.progress?.voyage?.land ? "城門到城樓是你的地盤" : "城門、市集、城樓"}</span>
+        <span class="play-door-go">${user?.progress?.voyage?.land ? "再走" : "自己行"}</span>
       </button>
       <button type="button" class="home-quiet" data-goto="games">趣味關卡</button>
     </section>

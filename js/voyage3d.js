@@ -29,7 +29,8 @@ const SPEED = 4.1;
 let active = null;
 
 function assetUrl(name) {
-  return new URL(`../assets/voyage/${name}`, import.meta.url).href;
+  const v = new URL(import.meta.url).search;
+  return new URL(`../assets/voyage/${name}${v}`, import.meta.url).href;
 }
 
 function fitLongest(root, span) {
@@ -353,19 +354,18 @@ export function mountVoyageScene(opts) {
     return sprite;
   }
 
-  function showName(label) {
-    plateLabel = String(label || "").slice(0, 8);
-    if (!nameSprite) return;
-    const canvas = nameSprite.userData.canvas;
+  function paintPlate(sprite, label) {
+    const text = String(label || "").slice(0, 8);
+    const canvas = sprite.userData.canvas;
     const g = canvas.getContext("2d");
     g.clearRect(0, 0, canvas.width, canvas.height);
-    if (!plateLabel) {
-      nameSprite.visible = false;
+    if (!text) {
+      sprite.visible = false;
       return;
     }
     g.font = "700 54px PingFang TC, Noto Sans TC, sans-serif";
     const pad = 28;
-    const tw = Math.min(canvas.width - pad * 2, g.measureText(plateLabel).width);
+    const tw = Math.min(canvas.width - pad * 2, g.measureText(text).width);
     const bw = Math.max(tw + pad * 2, 160);
     const bh = 86;
     const x = (canvas.width - bw) / 2;
@@ -378,9 +378,15 @@ export function mountVoyageScene(opts) {
     g.fillStyle = "#f6f1e7";
     g.textAlign = "center";
     g.textBaseline = "middle";
-    g.fillText(plateLabel, canvas.width / 2, y + bh / 2 + 2);
-    nameSprite.visible = true;
-    nameSprite.material.map.needsUpdate = true;
+    g.fillText(text, canvas.width / 2, y + bh / 2 + 2);
+    sprite.visible = true;
+    sprite.material.map.needsUpdate = true;
+  }
+
+  function showName(label) {
+    plateLabel = String(label || "").slice(0, 8);
+    if (!nameSprite) return;
+    paintPlate(nameSprite, plateLabel);
   }
 
   const api = {
@@ -470,6 +476,7 @@ export function mountVoyageScene(opts) {
     ["pine.glb", 7, "pine", "long"],
     ["crossbow.glb", 1.15, "crossbow", "long"],
     ["chariot.glb", 3.2, "chariot", "long"],
+    ["general.glb", 1.7, "general"],
   ];
   let done = 0;
 
@@ -568,6 +575,12 @@ export function mountVoyageScene(opts) {
           cart.position.set(11.2, 0, 54);
           cart.visible = chariotOn;
           scene.add(cart);
+        } else if (role === "general") {
+          const holder = stand(model, 4.2, 50.6);
+          const plate = makeNameSprite();
+          plate.position.set(0, 2.02, 0);
+          holder.add(plate);
+          paintPlate(plate, "將領");
         }
         done += 1;
         opts.onProgress?.(`載入中 ${done}／${jobs.length}`);

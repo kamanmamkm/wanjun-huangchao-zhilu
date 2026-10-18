@@ -3066,9 +3066,16 @@ button:active:not(:disabled):not(.locked),
 
 .app-shell.is-scene {
   max-width: none;
+  margin: 0;
   padding: 0;
   min-height: 100dvh;
   background: #1a242c;
+}
+
+.app-shell.paper-shell.is-scene {
+  max-width: none;
+  margin: 0;
+  padding: 0;
 }
 
 .app-shell.is-scene #main {
@@ -3079,7 +3086,9 @@ button:active:not(:disabled):not(.locked),
   position: relative;
   min-height: 100dvh;
   overflow: hidden;
+  background: #c3d5e2;
   color: #f6f1e7;
+  touch-action: none;
 }
 
 .voyage-sky,
@@ -3128,7 +3137,7 @@ button:active:not(:disabled):not(.locked),
   position: absolute;
   top: 0.7rem;
   left: 0.7rem;
-  z-index: 3;
+  z-index: 7;
   min-height: 44px;
   padding: 0.35rem 0.8rem;
   border: 0;
@@ -3142,7 +3151,7 @@ button:active:not(:disabled):not(.locked),
   position: absolute;
   top: 0.75rem;
   left: 50%;
-  z-index: 3;
+  z-index: 7;
   display: flex;
   gap: 0.35rem;
   transform: translateX(-50%);
@@ -3167,10 +3176,64 @@ button:active:not(:disabled):not(.locked),
   background: rgba(47, 111, 102, 0.85);
 }
 
+.voyage-view {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+
+.voyage-load {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  background: rgba(26, 36, 44, 0.72);
+  color: #f6f1e7;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.voyage-load[hidden] {
+  display: none;
+}
+
+.voyage-stick {
+  position: absolute;
+  z-index: 5;
+  left: max(0.7rem, env(safe-area-inset-left));
+  bottom: max(0.7rem, env(safe-area-inset-bottom));
+  width: 128px;
+  height: 128px;
+  border: 2px solid rgba(246, 241, 231, 0.7);
+  border-radius: 50%;
+  background: rgba(28, 22, 14, 0.28);
+  touch-action: none;
+}
+
+.voyage.is-loading .voyage-stick {
+  visibility: hidden;
+}
+
+.voyage-knob {
+  position: absolute;
+  left: 40px;
+  top: 40px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #f4e2c4;
+}
+
 .voyage-box {
   position: absolute;
-  left: 0.75rem;
-  right: 0.75rem;
+  left: 9.2rem;
+  right: auto;
+  width: min(28rem, calc(100% - 10rem));
   bottom: max(0.75rem, env(safe-area-inset-bottom));
   z-index: 3;
   padding: 0.85rem 0.95rem 0.95rem;
@@ -3231,4 +3294,10 @@ button:active:not(:disabled):not(.locked),
 .voyage-miss {
   margin: 0.45rem 0 0;
   color: #f0c7a0;
+}
+
+.voyage-hint {
+  margin: 0.55rem 0 0;
+  color: #f4e2c4;
+  font-weight: 700;
 }

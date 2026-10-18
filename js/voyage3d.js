@@ -5,12 +5,24 @@
 import * as THREE from "../vendor/three/three.module.js";
 import { GLTFLoader } from "../vendor/three/GLTFLoader.js";
 
-const SPAWN_Z = [0, 36, 46, 52];
-const BARRIER_Z = [16, 44, 50, 58];
-const ARRIVE_Z = [30, 46, 54];
-const MARK_Z = [34, 46, 54];
+const SPAWN = [
+  { x: 0, z: 0 },
+  { x: 0, z: 36 },
+  { x: 0, z: 46 },
+  { x: 0, z: 52 },
+  { x: -5.2, z: 55 },
+  { x: 6.0, z: 48 },
+];
+const BARRIER_Z = [16, 44, 50, 56, 60, 60];
+const MARK = [
+  { x: 0, z: 34 },
+  { x: 0, z: 46 },
+  { x: 0, z: 54 },
+  { x: -5.4, z: 55 },
+  { x: 6.2, z: 48 },
+];
 const Z_MIN = -8;
-const Z_MAX = 58;
+const Z_MAX = 60;
 const ROAD_HALF = 2.15;
 const SPEED = 4.1;
 
@@ -18,6 +30,20 @@ let active = null;
 
 function assetUrl(name) {
   return new URL(`../assets/voyage/${name}`, import.meta.url).href;
+}
+
+function fitLongest(root, span) {
+  root.updateMatrixWorld(true);
+  let box = new THREE.Box3().setFromObject(root);
+  const size = box.getSize(new THREE.Vector3());
+  const longest = Math.max(size.x, size.y, size.z) || 1;
+  root.scale.multiplyScalar(span / longest);
+  root.updateMatrixWorld(true);
+  box = new THREE.Box3().setFromObject(root);
+  root.position.x -= (box.min.x + box.max.x) / 2;
+  root.position.y -= box.min.y;
+  root.position.z -= (box.min.z + box.max.z) / 2;
+  root.updateMatrixWorld(true);
 }
 
 function normalize(root, height) {
@@ -54,16 +80,20 @@ export function mountVoyageScene(opts) {
   const knob = opts.knob;
   let disposed = false;
   let raf = 0;
-  let stopIndex = Math.max(0, Math.min(SPAWN_Z.length - 1, opts.stop || 0));
+  let stopIndex = Math.max(0, Math.min(SPAWN.length - 1, opts.stop || 0));
   let open = false;
   let follow = !!opts.follow;
   let bannerOn = !!opts.banner;
+  let crossbowOn = !!opts.crossbow;
+  let chariotOn = !!opts.chariot;
   let soldier = null;
   let grip = null;
+  let bow = null;
+  let cart = null;
   let prize = null;
   let yaw = 0;
-  const pos = new THREE.Vector3(0, 0, SPAWN_Z[stopIndex]);
-  const cam = new THREE.Vector3(0, 2.6, pos.z - 5.6);
+  const pos = new THREE.Vector3(SPAWN[stopIndex].x, 0, SPAWN[stopIndex].z);
+  const cam = new THREE.Vector3(pos.x, 2.6, pos.z - 5.6);
   const stickVec = { x: 0, z: 0 };
   const keys = new Set();
   const clock = new THREE.Clock();
@@ -113,9 +143,9 @@ export function mountVoyageScene(opts) {
   }
   mound(-10, 8, 7, 0.4, 0x6e8b78);
   mound(11, 18, 8, 0.2, 0x5f7f88);
-  mound(-12, 40, 9, 0.5, 0x6a7f68);
-  mound(13, 58, 8, 0.3, 0x7a6a52);
-  mound(-9, 72, 7, 0.2, 0x5d7468);
+  mound(-18, 28, 8, 0.5, 0x6a7f68);
+  mound(20, 78, 7, 0.3, 0x7a6a52);
+  mound(-16, 78, 6, 0.2, 0x5d7468);
 
   const npcs = [];
 
@@ -217,13 +247,29 @@ export function mountVoyageScene(opts) {
   }
 
   function placeMark() {
-    if (!open || stopIndex >= MARK_Z.length) {
+    if (!open || stopIndex >= MARK.length) {
       mark.visible = false;
       return;
     }
     mark.visible = true;
-    mark.position.x = 0;
-    mark.position.z = MARK_Z[stopIndex];
+    mark.position.x = MARK[stopIndex].x;
+    mark.position.z = MARK[stopIndex].z;
+  }
+
+  function halfLane() {
+    if (stopIndex >= 5) return 7.4;
+    if (stopIndex === 4) return open ? 7.4 : 6.2;
+    if (stopIndex === 3 && open) return 7.4;
+    return ROAD_HALF;
+  }
+
+  function reached() {
+    if (stopIndex === 0) return pos.z >= 30;
+    if (stopIndex === 1) return pos.z >= 46;
+    if (stopIndex === 2) return pos.z >= 54;
+    if (stopIndex === 3) return pos.z >= 52 && pos.x <= -4.2;
+    if (stopIndex === 4) return pos.x >= 4.6 && pos.z <= 52;
+    return false;
   }
 
   function frame() {
@@ -240,13 +286,14 @@ export function mountVoyageScene(opts) {
       while (dy > Math.PI) dy -= Math.PI * 2;
       while (dy < -Math.PI) dy += Math.PI * 2;
       yaw += dy * Math.min(1, dt * 8);
-      pos.x = Math.max(-ROAD_HALF, Math.min(ROAD_HALF, pos.x + mv.x * SPEED * dt));
+      const lane = halfLane();
+      pos.x = Math.max(-lane, Math.min(lane, pos.x + mv.x * SPEED * dt));
       let nz = pos.z + mv.z * SPEED * dt;
       const cap = open ? null : BARRIER_Z[stopIndex];
       if (cap != null && nz > cap) nz = cap;
       pos.z = Math.max(Z_MIN, Math.min(Z_MAX, nz));
       bob += dt * 10;
-      if (open && stopIndex < ARRIVE_Z.length && pos.z >= ARRIVE_Z[stopIndex]) {
+      if (open && stopIndex < MARK.length && reached()) {
         stopIndex += 1;
         open = false;
         placeMark();
@@ -290,11 +337,11 @@ export function mountVoyageScene(opts) {
 
   const api = {
     place(stop) {
-      stopIndex = Math.max(0, Math.min(SPAWN_Z.length - 1, stop || 0));
+      stopIndex = Math.max(0, Math.min(SPAWN.length - 1, stop || 0));
       open = false;
       yaw = 0;
-      pos.set(0, 0, SPAWN_Z[stopIndex]);
-      cam.set(0, 2.6, pos.z - 5.6);
+      pos.set(SPAWN[stopIndex].x, 0, SPAWN[stopIndex].z);
+      cam.set(pos.x, 2.6, pos.z - 5.6);
       placeMark();
     },
     setOpen(next) {
@@ -308,6 +355,14 @@ export function mountVoyageScene(opts) {
     raise() {
       bannerOn = true;
       if (prize) prize.visible = true;
+    },
+    arm() {
+      crossbowOn = true;
+      if (bow) bow.visible = true;
+    },
+    hitch() {
+      chariotOn = true;
+      if (cart) cart.visible = true;
     },
     dispose() {
       if (disposed) return;
@@ -346,6 +401,10 @@ export function mountVoyageScene(opts) {
     ["flag.glb", 3.5, "flag"],
     ["tower.glb", 8.2, "tower"],
     ["camp.glb", 2.8, "camp"],
+    ["river.glb", 8, "river", "long"],
+    ["pine.glb", 7, "pine", "long"],
+    ["crossbow.glb", 1.15, "crossbow", "long"],
+    ["chariot.glb", 3.2, "chariot", "long"],
   ];
   let done = 0;
 
@@ -371,12 +430,13 @@ export function mountVoyageScene(opts) {
       let flag = null;
       for (const job of jobs) {
         if (disposed) return;
-        const [name, height, role] = job;
+        const [name, size, role, mode] = job;
         opts.onProgress?.(`載入中 ${done}／${jobs.length}`);
         const gltf = await loader.loadAsync(assetUrl(name));
         const model = gltf.scene;
         prepare(model);
-        normalize(model, height);
+        if (mode === "long") fitLongest(model, size);
+        else normalize(model, size);
         if (role === "you") avatar.add(model);
         else if (role === "other") stand(model, -1.45, 37.5);
         else if (role === "soldier") soldier = stand(model, 1.55, 4.2);
@@ -409,6 +469,30 @@ export function mountVoyageScene(opts) {
           holder.add(model);
           holder.position.set(5.2, 0, 56);
           scene.add(holder);
+        } else if (role === "river") {
+          const holder = new THREE.Group();
+          holder.add(model);
+          holder.position.set(-9.2, 0.04, 55);
+          holder.rotation.y = Math.PI / 2;
+          scene.add(holder);
+        } else if (role === "pine") {
+          const holder = new THREE.Group();
+          holder.add(model);
+          holder.position.set(9.6, 0, 52);
+          scene.add(holder);
+        } else if (role === "crossbow") {
+          bow = new THREE.Group();
+          bow.add(model);
+          bow.position.set(-0.42, 0.48, -0.12);
+          bow.rotation.set(-0.5, 1.1, 0.2);
+          bow.visible = crossbowOn;
+          avatar.add(bow);
+        } else if (role === "chariot") {
+          cart = new THREE.Group();
+          cart.add(model);
+          cart.position.set(11.2, 0, 54);
+          cart.visible = chariotOn;
+          scene.add(cart);
         }
         done += 1;
         opts.onProgress?.(`載入中 ${done}／${jobs.length}`);

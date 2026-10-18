@@ -4,7 +4,7 @@
  * 史實只重用已有判斷，再走一程就換下一句：孔子與始皇不同世；西周是分封、受封的是諸侯；科舉不在秦代；夏商周有先後；百家爭鳴在春秋戰國；貞觀是唐太宗；《史記》是司馬遷。
  */
 import { addXp, updateUser } from "./storage.js?v=rad114";
-import { mountVoyageScene } from "./voyage3d.js?v=rad136";
+import { mountVoyageScene } from "./voyage3d.js?v=rad137";
 
 const XP_ONCE = 8;
 

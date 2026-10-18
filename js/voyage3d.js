@@ -83,6 +83,9 @@ export function mountVoyageScene(opts) {
   let stopIndex = Math.max(0, Math.min(SPAWN.length - 1, opts.stop || 0));
   let open = false;
   let follow = !!opts.follow;
+  let heldFollow = follow;
+  let rivalVisit = false;
+  let nameSprite = null;
   let bannerOn = !!opts.banner;
   let crossbowOn = !!opts.crossbow;
   let chariotOn = !!opts.chariot;
@@ -279,7 +282,7 @@ export function mountVoyageScene(opts) {
       return;
     }
     const dt = Math.min(0.05, clock.getDelta());
-    const mv = moveInput();
+    const mv = rivalVisit ? { moving: false, x: 0, z: 0 } : moveInput();
     if (mv.moving) {
       const aim = Math.atan2(mv.x, mv.z);
       let dy = aim - yaw;
@@ -335,6 +338,51 @@ export function mountVoyageScene(opts) {
     renderer.render(scene, camera);
   }
 
+  let plateLabel = "";
+
+  function makeNameSprite() {
+    const canvas = document.createElement("canvas");
+    canvas.width = 512;
+    canvas.height = 128;
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false });
+    const sprite = new THREE.Sprite(mat);
+    sprite.scale.set(1.8, 0.45, 1);
+    sprite.userData.canvas = canvas;
+    return sprite;
+  }
+
+  function showName(label) {
+    plateLabel = String(label || "").slice(0, 8);
+    if (!nameSprite) return;
+    const canvas = nameSprite.userData.canvas;
+    const g = canvas.getContext("2d");
+    g.clearRect(0, 0, canvas.width, canvas.height);
+    if (!plateLabel) {
+      nameSprite.visible = false;
+      return;
+    }
+    g.font = "700 54px PingFang TC, Noto Sans TC, sans-serif";
+    const pad = 28;
+    const tw = Math.min(canvas.width - pad * 2, g.measureText(plateLabel).width);
+    const bw = Math.max(tw + pad * 2, 160);
+    const bh = 86;
+    const x = (canvas.width - bw) / 2;
+    const y = 18;
+    g.fillStyle = "rgba(36, 49, 46, 0.92)";
+    g.beginPath();
+    if (typeof g.roundRect === "function") g.roundRect(x, y, bw, bh, 18);
+    else g.rect(x, y, bw, bh);
+    g.fill();
+    g.fillStyle = "#f6f1e7";
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    g.fillText(plateLabel, canvas.width / 2, y + bh / 2 + 2);
+    nameSprite.visible = true;
+    nameSprite.material.map.needsUpdate = true;
+  }
+
   const api = {
     place(stop) {
       stopIndex = Math.max(0, Math.min(SPAWN.length - 1, stop || 0));
@@ -363,6 +411,23 @@ export function mountVoyageScene(opts) {
     hitch() {
       chariotOn = true;
       if (cart) cart.visible = true;
+    },
+    meet(label) {
+      heldFollow = follow;
+      follow = false;
+      rivalVisit = true;
+      if (soldier) soldier.position.set(1.55, 0, 4.2);
+      showName(label);
+      yaw = 0;
+      pos.set(0, 0, 0.6);
+      cam.set(0, 2.6, 0.6 - 5.6);
+    },
+    leaveRival() {
+      if (!rivalVisit) return;
+      rivalVisit = false;
+      follow = heldFollow;
+      showName("");
+      api.place(stopIndex);
     },
     dispose() {
       if (disposed) return;
@@ -439,7 +504,17 @@ export function mountVoyageScene(opts) {
         else normalize(model, size);
         if (role === "you") avatar.add(model);
         else if (role === "other") stand(model, -1.45, 37.5);
-        else if (role === "soldier") soldier = stand(model, 1.55, 4.2);
+        else if (role === "soldier") {
+          soldier = stand(model, 1.55, 4.2);
+          nameSprite = makeNameSprite();
+          nameSprite.position.set(0, 2.02, 0);
+          nameSprite.visible = false;
+          soldier.add(nameSprite);
+          if (rivalVisit) {
+            soldier.position.set(1.55, 0, 4.2);
+            showName(plateLabel);
+          }
+        }
         else if (role === "ge") {
           grip = new THREE.Group();
           grip.add(model);

@@ -4,7 +4,7 @@
  * 史實只重用已有判斷，再走一程就換下一句：孔子與秦始皇不同世；西周是分封；科舉不在秦代；夏商周有先後。
  */
 import { addXp, updateUser } from "./storage.js?v=rad114";
-import { mountVoyageScene } from "./voyage3d.js?v=rad131";
+import { mountVoyageScene } from "./voyage3d.js?v=rad134";
 
 const XP_ONCE = 8;
 
@@ -290,7 +290,7 @@ function duelHtml(duel, mates, row) {
   return `<p class="voyage-who">步卒 · ${esc(duel.name)}的城門</p><p class="voyage-line">${esc(quiz.claim)}</p><div class="voyage-choices">
     <button type="button" class="voyage-choice" data-voyage-flag="1">${esc(quiz.ok)}</button>
     <button type="button" class="voyage-choice" data-voyage-flag="0">${esc(quiz.bad)}</button>
-  </div>${miss}`;
+  </div>${miss}<button type="button" class="voyage-go" data-voyage-repick="1">另揀一位</button>`;
 }
 
 export function renderVoyage() {
@@ -329,6 +329,7 @@ export function bindVoyage(user, ctx) {
     const box = document.getElementById("voyage-box");
     if (path) path.innerHTML = pathHtml(row);
     if (box) box.innerHTML = duel ? duelHtml(duel, mates, row) : boxHtml(row, pathOpen, current?.gender);
+    root.classList.toggle("is-rival", !!(duel && duel.phase !== "pick"));
     if (duel?.phase === "pick" && mates == null && boardTries < 8) {
       boardTries += 1;
       setTimeout(() => {
@@ -466,8 +467,18 @@ export function bindVoyage(user, ctx) {
       return;
     }
     const row = readRow(ctx.getUser?.() || user);
+    if (e.target.closest("[data-voyage-repick]")) {
+      duel = { phase: "pick" };
+      boardTries = 0;
+      world?.leaveRival();
+      if (pathOpen) world?.setOpen(true);
+      paint();
+      return;
+    }
     if (e.target.closest("[data-voyage-duel-back]")) {
       duel = null;
+      world?.leaveRival();
+      if (pathOpen) world?.setOpen(true);
       paint();
       return;
     }
@@ -486,6 +497,7 @@ export function bindVoyage(user, ctx) {
       const mate = mates.find((m) => m.username === id);
       if (!mate) return;
       duel = { phase: "ask", name: mate.name, miss: "" };
+      world?.meet(mate.name);
       paint();
       return;
     }

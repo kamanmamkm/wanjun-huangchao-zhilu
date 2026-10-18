@@ -3218,7 +3218,12 @@ button:active:not(:disabled):not(.locked),
   touch-action: none;
 }
 
-.voyage.is-loading .voyage-stick {
+.voyage.is-loading .voyage-stick,
+.voyage.is-rival .voyage-stick {
+  visibility: hidden;
+}
+
+.voyage.is-rival .voyage-path {
   visibility: hidden;
 }
 

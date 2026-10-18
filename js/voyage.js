@@ -1,10 +1,10 @@
 /**
  * 上路：第三人稱自己行。城樓先有地盤，再到營帳。
  * 有了營帳，可以去榜上同窗的城門答一句。答對就在自己這邊插布旗。
- * 史實只重用已有判斷：孔子與秦始皇不同世；西周是分封；科舉不在秦代。
+ * 史實只重用已有判斷，再走一程就換下一句：孔子與秦始皇不同世；西周是分封；科舉不在秦代；夏商周有先後。
  */
 import { addXp, updateUser } from "./storage.js?v=rad114";
-import { mountVoyageScene } from "./voyage3d.js?v=rad129";
+import { mountVoyageScene } from "./voyage3d.js?v=rad130";
 
 const XP_ONCE = 8;
 
@@ -56,6 +56,66 @@ const STOPS = [
   },
 ];
 
+const QUIZ = [
+  {
+    who: "other",
+    claim: "孔子幫秦始皇統一六國。",
+    ok: "兩人不同世。",
+    bad: "孔子做過秦相。",
+    miss: "孔子在春秋，始皇在其後。",
+    after: "識人先識其時。",
+  },
+  {
+    who: "步卒",
+    claim: "西周已經全國設郡縣。",
+    ok: "西周是分封。",
+    bad: "西周同秦一樣。",
+    miss: "西周是世襲分封。全國置郡縣、不封子弟，是秦統一之後。",
+    after: "這句記穩了。",
+  },
+  {
+    who: "步卒",
+    claim: "秦始皇用科舉揀官。",
+    ok: "科舉不在秦代。",
+    bad: "始皇開科取士。",
+    miss: "科舉不在秦代。秦與科舉，時代不同。",
+    after: "制度要對時代。",
+  },
+  {
+    who: "步卒",
+    claim: "三朝的次序是商周夏。",
+    ok: "夏、商、周。",
+    bad: "周最早。",
+    miss: "傳統史序是夏、商、周。",
+    after: "先後記穩，後面先疊得上。",
+  },
+];
+
+function quizAt(spin, offset) {
+  const n = QUIZ.length;
+  const i = (((Number(spin) || 0) + offset) % n + n) % n;
+  return QUIZ[i];
+}
+
+function shownLine(row) {
+  const stop = STOPS[row.stop];
+  const base = stop.lines[row.line];
+  if (row.stop !== 1 && row.stop !== 3) return base;
+  const quiz = quizAt(row.spin, row.stop === 1 ? 0 : 1);
+  if (row.line === 0) return { who: quiz.who, text: quiz.claim };
+  if (row.line === 1) {
+    return {
+      who: "你",
+      text: "你點應？",
+      choice: [
+        { text: quiz.ok, ok: true },
+        { text: quiz.bad, ok: false, miss: quiz.miss },
+      ],
+    };
+  }
+  return { who: "你", text: quiz.after };
+}
+
 function esc(s) {
   return String(s || "")
     .replace(/&/g, "&amp;")
@@ -79,6 +139,8 @@ function readRow(user) {
     land: !!raw?.land,
     camp: !!raw?.camp,
     flag: !!raw?.flag,
+    flagName: String(raw?.flagName || "").slice(0, 8),
+    spin: Math.max(0, Math.min(48, Number(raw?.spin) || 0)),
   };
 }
 
@@ -103,7 +165,7 @@ function pathHtml(row) {
 
 function boxHtml(row, pathOpen, gender) {
   const stop = STOPS[row.stop];
-  const line = stop.lines[row.line];
+  const line = shownLine(row);
   const speaker = line.who === "other" ? otherName(gender) : line.who;
   const who = speaker ? `<p class="voyage-who">${esc(speaker)}</p>` : "";
   const last = row.line >= stop.lines.length - 1;
@@ -120,7 +182,9 @@ function boxHtml(row, pathOpen, gender) {
       <button type="button" class="voyage-go" data-voyage-replay="1">再走一程</button>
       <button type="button" class="voyage-go" data-voyage-home="1">回到行旅</button>
     </div><p class="voyage-hint">${
-      row.flag ? "布旗已插上。同窗的城仍是他的。" : "戈一把，步卒一人。可以去同窗的城門。"
+      row.flag
+        ? `布旗下記住${esc(row.flagName || "同窗")}。他的城仍是他的。`
+        : "戈一把，步卒一人。可以去同窗的城門。"
     }</p>`;
   } else if (Array.isArray(line.choice)) {
     controls = `<div class="voyage-choices">${line.choice
@@ -164,7 +228,7 @@ function matesOf(user, board) {
     }));
 }
 
-function duelHtml(duel, mates) {
+function duelHtml(duel, mates, row) {
   if (!duel) return "";
   if (duel.phase === "pick") {
     if (mates == null) {
@@ -184,10 +248,11 @@ function duelHtml(duel, mates) {
   if (duel.phase === "won") {
     return `<p class="voyage-who">你</p><p class="voyage-line">布旗插上。${esc(duel.name)}的城仍是他的。</p><button type="button" class="voyage-go" data-voyage-duel-back="1">回到自己的路</button>`;
   }
+  const quiz = quizAt(row?.spin, 2);
   const miss = duel.miss ? `<p class="voyage-miss">${esc(duel.miss)}</p>` : "";
-  return `<p class="voyage-who">步卒 · ${esc(duel.name)}的城門</p><p class="voyage-line">秦始皇用科舉揀官。</p><div class="voyage-choices">
-    <button type="button" class="voyage-choice" data-voyage-flag="1">科舉不在秦代。</button>
-    <button type="button" class="voyage-choice" data-voyage-flag="0">始皇開科取士。</button>
+  return `<p class="voyage-who">步卒 · ${esc(duel.name)}的城門</p><p class="voyage-line">${esc(quiz.claim)}</p><div class="voyage-choices">
+    <button type="button" class="voyage-choice" data-voyage-flag="1">${esc(quiz.ok)}</button>
+    <button type="button" class="voyage-choice" data-voyage-flag="0">${esc(quiz.bad)}</button>
   </div>${miss}`;
 }
 
@@ -226,7 +291,7 @@ export function bindVoyage(user, ctx) {
     const path = document.getElementById("voyage-path");
     const box = document.getElementById("voyage-box");
     if (path) path.innerHTML = pathHtml(row);
-    if (box) box.innerHTML = duel ? duelHtml(duel, mates) : boxHtml(row, pathOpen, current?.gender);
+    if (box) box.innerHTML = duel ? duelHtml(duel, mates, row) : boxHtml(row, pathOpen, current?.gender);
     if (duel?.phase === "pick" && mates == null && boardTries < 8) {
       boardTries += 1;
       setTimeout(() => {
@@ -280,7 +345,7 @@ export function bindVoyage(user, ctx) {
   };
 
   const claimFlag = (row, rivalName) => {
-    const next = { ...row, flag: true, camp: true, done: true, miss: "", land: true, weapon: true, soldier: true };
+    const next = { ...row, flag: true, flagName: String(rivalName || "").slice(0, 8), miss: "" };
     if (!writeRow(name, next)) {
       fail();
       return;
@@ -363,7 +428,7 @@ export function bindVoyage(user, ctx) {
     if (flagBtn && duel?.phase === "ask") {
       if (flagBtn.dataset.voyageFlag === "1") claimFlag(row, duel.name);
       else {
-        duel = { ...duel, miss: "科舉不在秦代。秦與科舉，時代不同。" };
+        duel = { ...duel, miss: quizAt(row.spin, 2).miss };
         paint();
       }
       return;
@@ -383,7 +448,7 @@ export function bindVoyage(user, ctx) {
     }
     const pick = e.target.closest("[data-voyage-pick]");
     if (pick) {
-      const line = stop.lines[row.line];
+      const line = shownLine(row);
       const opt = line.choice?.[Number(pick.dataset.voyagePick)];
       if (!opt) return;
       if (!opt.ok) {
@@ -408,7 +473,7 @@ export function bindVoyage(user, ctx) {
       pathOpen = false;
       world?.place(0);
       world?.setOpen(false);
-      save({ ...row, stop: 0, line: 0, miss: "", done: false });
+      save({ ...row, stop: 0, line: 0, miss: "", done: false, spin: (Number(row.spin) || 0) + 1 });
     }
   });
 }

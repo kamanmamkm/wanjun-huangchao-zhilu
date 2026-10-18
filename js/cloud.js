@@ -258,6 +258,8 @@ function voyagePack(raw) {
     land: !!raw.land,
     camp: !!raw.camp,
     flag: !!raw.flag,
+    flagName: String(raw.flagName || "").slice(0, 8),
+    spin: Math.max(0, Math.min(48, Number(raw.spin) || 0)),
   };
 }
 

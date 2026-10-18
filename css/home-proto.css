@@ -358,6 +358,34 @@ body:has(.is-home)::before {
   margin-top: 0.55rem;
 }
 
+.land-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.15rem 0 0.35rem;
+}
+
+.land-strip span {
+  min-height: 32px;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(36, 49, 46, 0.12);
+  color: rgba(36, 49, 46, 0.4);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.land-strip span.is-on {
+  background: #24312e;
+  color: #f6f1e7;
+}
+
+.land-note {
+  margin: 0 0 0.45rem;
+  color: #8a5a2b;
+  font-weight: 700;
+}
+
 .play-door-go {
   grid-area: go;
   align-self: center;

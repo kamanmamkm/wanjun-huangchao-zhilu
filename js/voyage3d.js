@@ -1,5 +1,5 @@
 /**
- * 上路第一階段：第三人稱沿路走。城門、市集、城樓。
+ * 上路：第三人稱沿路走。城門有步卒，市集有另一位旅人。
  * 模型係課堂用的縮圖，原檔留在下載資料夾。
  */
 import * as THREE from "../vendor/three/three.module.js";
@@ -111,6 +111,8 @@ export function mountVoyageScene(opts) {
   mound(-12, 40, 9, 0.5, 0x6a7f68);
   mound(13, 58, 8, 0.3, 0x7a6a52);
   mound(-9, 72, 7, 0.2, 0x5d7468);
+
+  const npcs = [];
 
   const mark = new THREE.Mesh(
     new THREE.RingGeometry(0.85, 1.15, 28),
@@ -249,6 +251,16 @@ export function mountVoyageScene(opts) {
     player.position.set(pos.x, 0, pos.z);
     avatar.rotation.y = yaw;
     avatar.position.y = mv.moving ? Math.sin(bob) * 0.045 : 0;
+    npcs.forEach((npc) => {
+      const dx = pos.x - npc.position.x;
+      const dz = pos.z - npc.position.z;
+      const dist = Math.hypot(dx, dz);
+      const aim = dist < 7 ? Math.atan2(dx, dz) : Math.PI;
+      let turn = aim - npc.rotation.y;
+      while (turn > Math.PI) turn -= Math.PI * 2;
+      while (turn < -Math.PI) turn += Math.PI * 2;
+      npc.rotation.y += turn * Math.min(1, dt * 4);
+    });
     mark.rotation.z += dt * 0.8;
 
     const k = 1 - Math.exp(-dt * 4);
@@ -301,29 +313,63 @@ export function mountVoyageScene(opts) {
   active = api;
 
   const loader = new GLTFLoader();
+  const youFile = opts.gender === "female" ? "female.glb" : "male.glb";
+  const otherFile = opts.gender === "female" ? "male.glb" : "female.glb";
   const jobs = [
-    [opts.gender === "female" ? "female.glb" : "male.glb", 1.7, avatar],
-    ["gate.glb", 5.6, null, 0, 8],
-    ["flag.glb", 3.5, null, -4.4, 38],
-    ["tower.glb", 8.2, null, 0, 74],
+    [youFile, 1.7, "you"],
+    [otherFile, 1.7, "other"],
+    ["soldier.glb", 1.7, "soldier"],
+    ["gate.glb", 5.6, "gate"],
+    ["flag.glb", 3.5, "flag"],
+    ["tower.glb", 8.2, "tower"],
   ];
   let done = 0;
+
+  function stand(model, x, z) {
+    const holder = new THREE.Group();
+    holder.add(model);
+    const shade = new THREE.Mesh(
+      new THREE.CircleGeometry(0.42, 18),
+      new THREE.MeshBasicMaterial({ color: 0x1c140c, transparent: true, opacity: 0.28, depthWrite: false })
+    );
+    shade.rotation.x = -Math.PI / 2;
+    shade.position.y = 0.03;
+    holder.add(shade);
+    holder.position.set(x, 0, z);
+    holder.rotation.y = Math.PI;
+    scene.add(holder);
+    npcs.push(holder);
+  }
+
   (async () => {
     try {
       let flag = null;
       for (const job of jobs) {
         if (disposed) return;
-        const [name, height, parent, x, z] = job;
+        const [name, height, role] = job;
         opts.onProgress?.(`載入中 ${done}／${jobs.length}`);
         const gltf = await loader.loadAsync(assetUrl(name));
         const model = gltf.scene;
         prepare(model);
         normalize(model, height);
-        if (name === "flag.glb") flag = model;
-        const holder = parent || new THREE.Group();
-        holder.add(model);
-        if (!parent) {
-          holder.position.set(x, 0, z);
+        if (role === "you") avatar.add(model);
+        else if (role === "other") stand(model, -1.45, 37.5);
+        else if (role === "soldier") stand(model, 1.55, 4.2);
+        else if (role === "flag") {
+          flag = model;
+          const holder = new THREE.Group();
+          holder.add(model);
+          holder.position.set(-4.4, 0, 38);
+          scene.add(holder);
+        } else if (role === "gate") {
+          const holder = new THREE.Group();
+          holder.add(model);
+          holder.position.set(0, 0, 8);
+          scene.add(holder);
+        } else if (role === "tower") {
+          const holder = new THREE.Group();
+          holder.add(model);
+          holder.position.set(0, 0, 74);
           scene.add(holder);
         }
         done += 1;

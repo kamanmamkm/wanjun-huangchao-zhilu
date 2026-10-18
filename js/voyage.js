@@ -4,7 +4,7 @@
  * 史實只重用已有判斷：孔子與秦始皇不同世；西周是分封；科舉不在秦代。
  */
 import { addXp, updateUser } from "./storage.js?v=rad114";
-import { mountVoyageScene } from "./voyage3d.js?v=rad128";
+import { mountVoyageScene } from "./voyage3d.js?v=rad129";
 
 const XP_ONCE = 8;
 
@@ -213,7 +213,9 @@ export function bindVoyage(user, ctx) {
   let world = null;
   let boardTries = 0;
   const opening = readRow(user);
-  let duel = opening.camp && opening.done && !opening.flag ? { phase: "pick" } : null;
+  const openDuel = !!ctx.state?.voyageDuel || (opening.camp && opening.done && !opening.flag);
+  if (ctx.state) ctx.state.voyageDuel = false;
+  let duel = openDuel ? { phase: "pick" } : null;
 
   const fail = () => ctx.toast?.("這一步未寫入。請再試一次。");
 

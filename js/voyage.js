@@ -3,22 +3,26 @@
  * 史實只重用題庫已有判斷：孔子與秦始皇不同世。
  */
 import { addXp, updateUser } from "./storage.js?v=rad114";
-import { mountVoyageScene } from "./voyage3d.js?v=rad123";
+import { mountVoyageScene } from "./voyage3d.js?v=rad124";
 
 const XP_ONCE = 8;
+
+function otherName(gender) {
+  return gender === "female" ? "男旅人" : "女旅人";
+}
 
 const STOPS = [
   {
     name: "城門",
     lines: [
-      { who: "", text: "城門開了。路在前面。" },
+      { who: "步卒", text: "城門開了。路在前面。" },
       { who: "你", text: "我沿這條路走。" },
     ],
   },
   {
     name: "市集",
     lines: [
-      { who: "路人", text: "孔子幫秦始皇統一六國。" },
+      { who: "other", text: "孔子幫秦始皇統一六國。" },
       {
         who: "你",
         text: "你點應？",
@@ -76,10 +80,11 @@ function pathHtml(row) {
   ).join("");
 }
 
-function boxHtml(row, pathOpen) {
+function boxHtml(row, pathOpen, gender) {
   const stop = STOPS[row.stop];
   const line = stop.lines[row.line];
-  const who = line.who ? `<p class="voyage-who">${esc(line.who)}</p>` : "";
+  const speaker = line.who === "other" ? otherName(gender) : line.who;
+  const who = speaker ? `<p class="voyage-who">${esc(speaker)}</p>` : "";
   const last = row.line >= stop.lines.length - 1;
   const endStop = row.stop === STOPS.length - 1;
   let controls = "";
@@ -133,7 +138,7 @@ export function bindVoyage(user, ctx) {
     const path = document.getElementById("voyage-path");
     const box = document.getElementById("voyage-box");
     if (path) path.innerHTML = pathHtml(row);
-    if (box) box.innerHTML = boxHtml(row, pathOpen);
+    if (box) box.innerHTML = boxHtml(row, pathOpen, (ctx.getUser?.() || user)?.gender);
   };
 
   const save = (next) => {

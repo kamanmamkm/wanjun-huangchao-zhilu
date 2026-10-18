@@ -5,12 +5,12 @@
 import * as THREE from "../vendor/three/three.module.js";
 import { GLTFLoader } from "../vendor/three/GLTFLoader.js";
 
-const SPAWN_Z = [0, 36, 46];
-const BARRIER_Z = [16, 44, 48];
-const ARRIVE_Z = [30, 46];
-const MARK_Z = [34, 46];
+const SPAWN_Z = [0, 36, 46, 52];
+const BARRIER_Z = [16, 44, 50, 58];
+const ARRIVE_Z = [30, 46, 54];
+const MARK_Z = [34, 46, 54];
 const Z_MIN = -8;
-const Z_MAX = 48;
+const Z_MAX = 58;
 const ROAD_HALF = 2.15;
 const SPEED = 4.1;
 
@@ -54,7 +54,7 @@ export function mountVoyageScene(opts) {
   const knob = opts.knob;
   let disposed = false;
   let raf = 0;
-  let stopIndex = Math.max(0, Math.min(2, opts.stop || 0));
+  let stopIndex = Math.max(0, Math.min(SPAWN_Z.length - 1, opts.stop || 0));
   let open = false;
   let follow = !!opts.follow;
   let soldier = null;
@@ -215,7 +215,7 @@ export function mountVoyageScene(opts) {
   }
 
   function placeMark() {
-    if (!open || stopIndex > 1) {
+    if (!open || stopIndex >= MARK_Z.length) {
       mark.visible = false;
       return;
     }
@@ -244,7 +244,7 @@ export function mountVoyageScene(opts) {
       if (cap != null && nz > cap) nz = cap;
       pos.z = Math.max(Z_MIN, Math.min(Z_MAX, nz));
       bob += dt * 10;
-      if (open && stopIndex < 2 && pos.z >= ARRIVE_Z[stopIndex]) {
+      if (open && stopIndex < ARRIVE_Z.length && pos.z >= ARRIVE_Z[stopIndex]) {
         stopIndex += 1;
         open = false;
         placeMark();
@@ -288,7 +288,7 @@ export function mountVoyageScene(opts) {
 
   const api = {
     place(stop) {
-      stopIndex = Math.max(0, Math.min(2, stop || 0));
+      stopIndex = Math.max(0, Math.min(SPAWN_Z.length - 1, stop || 0));
       open = false;
       yaw = 0;
       pos.set(0, 0, SPAWN_Z[stopIndex]);
@@ -339,6 +339,7 @@ export function mountVoyageScene(opts) {
     ["gate.glb", 5.6, "gate"],
     ["flag.glb", 3.5, "flag"],
     ["tower.glb", 8.2, "tower"],
+    ["camp.glb", 2.8, "camp"],
   ];
   let done = 0;
 
@@ -396,6 +397,11 @@ export function mountVoyageScene(opts) {
           const holder = new THREE.Group();
           holder.add(model);
           holder.position.set(0, 0, 74);
+          scene.add(holder);
+        } else if (role === "camp") {
+          const holder = new THREE.Group();
+          holder.add(model);
+          holder.position.set(5.2, 0, 56);
           scene.add(holder);
         }
         done += 1;

@@ -354,6 +354,10 @@ body:has(.is-home)::before {
   line-height: 1.35;
 }
 
+.play-door + .play-door {
+  margin-top: 0.55rem;
+}
+
 .play-door-go {
   grid-area: go;
   align-self: center;

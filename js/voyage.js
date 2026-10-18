@@ -1,10 +1,10 @@
 /**
  * 上路：第三人稱自己行。城樓先有地盤，再到營帳。
  * 有了營帳，可以去榜上同窗的城門答一句。答對就在自己這邊插布旗。
- * 史實只重用已有判斷，再走一程就換下一句：孔子與秦始皇不同世；西周是分封；科舉不在秦代；夏商周有先後。
+ * 史實只重用已有判斷，再走一程就換下一句：孔子與始皇不同世；西周是分封、受封的是諸侯；科舉不在秦代；夏商周有先後；百家爭鳴在春秋戰國；貞觀是唐太宗；《史記》是司馬遷。
  */
 import { addXp, updateUser } from "./storage.js?v=rad114";
-import { mountVoyageScene } from "./voyage3d.js?v=rad135";
+import { mountVoyageScene } from "./voyage3d.js?v=rad136";
 
 const XP_ONCE = 8;
 
@@ -105,6 +105,38 @@ const QUIZ = [
     miss: "傳統史序是夏、商、周。",
     after: "先後記穩，後面先疊得上。",
   },
+  {
+    who: "步卒",
+    claim: "西周把土地分封給農民。",
+    ok: "分封給諸侯。",
+    bad: "農民可以建國。",
+    miss: "周王把土地和人民分封給親族與功臣。受封的是諸侯。",
+    after: "受封的是諸侯。",
+  },
+  {
+    who: "步卒",
+    claim: "百家爭鳴在秦朝。",
+    ok: "在春秋戰國。",
+    bad: "秦統一後才爭鳴。",
+    miss: "百家爭鳴主要在春秋戰國。",
+    after: "時代先對上。",
+  },
+  {
+    who: "步卒",
+    claim: "貞觀之治是唐玄宗。",
+    ok: "是唐太宗。",
+    bad: "是武則天。",
+    miss: "貞觀之治是唐太宗在位的時候。",
+    after: "皇帝要對上年號。",
+  },
+  {
+    who: "步卒",
+    claim: "《史記》是司馬光寫的。",
+    ok: "是司馬遷。",
+    bad: "兩人同一本。",
+    miss: "《史記》是西漢司馬遷寫的。《資治通鑑》才是北宋司馬光。",
+    after: "書同人，要分開。",
+  },
 ];
 
 function quizAt(spin, offset) {
@@ -113,13 +145,19 @@ function quizAt(spin, offset) {
   return QUIZ[i];
 }
 
+function placeWho(stop) {
+  if (stop === 1) return "other";
+  if (stop === 5) return "將領";
+  return "步卒";
+}
+
 function shownLine(row) {
   const stop = STOPS[row.stop];
   const base = stop.lines[row.line];
   const quizStop = { 1: 0, 3: 1, 4: 2, 5: 3 }[row.stop];
   if (quizStop == null) return base;
   const quiz = quizAt(row.spin, quizStop);
-  if (row.line === 0) return { who: row.stop === 5 ? "將領" : quiz.who, text: quiz.claim };
+  if (row.line === 0) return { who: placeWho(row.stop), text: quiz.claim };
   if (row.line === 1) {
     return {
       who: "你",
@@ -286,7 +324,7 @@ function duelHtml(duel, mates, row) {
   if (duel.phase === "won") {
     return `<p class="voyage-who">你</p><p class="voyage-line">布旗插上。${esc(duel.name)}的城仍是他的。</p><button type="button" class="voyage-go" data-voyage-duel-back="1">回到自己的路</button>`;
   }
-  const quiz = quizAt(row?.spin, 0);
+  const quiz = quizAt(row?.spin, 4);
   const miss = duel.miss ? `<p class="voyage-miss">${esc(duel.miss)}</p>` : "";
   return `<p class="voyage-who">步卒 · ${esc(duel.name)}的城門</p><p class="voyage-line">${esc(quiz.claim)}</p><div class="voyage-choices">
     <button type="button" class="voyage-choice" data-voyage-flag="1">${esc(quiz.ok)}</button>
@@ -506,7 +544,7 @@ export function bindVoyage(user, ctx) {
     if (flagBtn && duel?.phase === "ask") {
       if (flagBtn.dataset.voyageFlag === "1") claimFlag(row, duel.name);
       else {
-        duel = { ...duel, miss: quizAt(row.spin, 0).miss };
+        duel = { ...duel, miss: quizAt(row.spin, 4).miss };
         paint();
       }
       return;

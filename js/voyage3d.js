@@ -56,6 +56,9 @@ export function mountVoyageScene(opts) {
   let raf = 0;
   let stopIndex = Math.max(0, Math.min(2, opts.stop || 0));
   let open = false;
+  let follow = !!opts.follow;
+  let soldier = null;
+  let grip = null;
   let yaw = 0;
   const pos = new THREE.Vector3(0, 0, SPAWN_Z[stopIndex]);
   const cam = new THREE.Vector3(0, 2.6, pos.z - 5.6);
@@ -251,7 +254,16 @@ export function mountVoyageScene(opts) {
     player.position.set(pos.x, 0, pos.z);
     avatar.rotation.y = yaw;
     avatar.position.y = mv.moving ? Math.sin(bob) * 0.045 : 0;
+    if (follow && soldier) {
+      const tx = pos.x + Math.cos(yaw) * 0.95 - Math.sin(yaw) * 1.25;
+      const tz = pos.z - Math.sin(yaw) * 0.95 - Math.cos(yaw) * 1.25;
+      const catchUp = 1 - Math.exp(-dt * 2.4);
+      soldier.position.x += (tx - soldier.position.x) * catchUp;
+      soldier.position.z += (tz - soldier.position.z) * catchUp;
+      soldier.rotation.y = yaw;
+    }
     npcs.forEach((npc) => {
+      if (follow && npc === soldier) return;
       const dx = pos.x - npc.position.x;
       const dz = pos.z - npc.position.z;
       const dist = Math.hypot(dx, dz);
@@ -287,6 +299,10 @@ export function mountVoyageScene(opts) {
       open = !!next;
       placeMark();
     },
+    grant() {
+      follow = true;
+      if (grip) grip.visible = true;
+    },
     dispose() {
       if (disposed) return;
       disposed = true;
@@ -319,6 +335,7 @@ export function mountVoyageScene(opts) {
     [youFile, 1.7, "you"],
     [otherFile, 1.7, "other"],
     ["soldier.glb", 1.7, "soldier"],
+    ["ge.glb", 1.15, "ge"],
     ["gate.glb", 5.6, "gate"],
     ["flag.glb", 3.5, "flag"],
     ["tower.glb", 8.2, "tower"],
@@ -339,6 +356,7 @@ export function mountVoyageScene(opts) {
     holder.rotation.y = Math.PI;
     scene.add(holder);
     npcs.push(holder);
+    return holder;
   }
 
   (async () => {
@@ -354,7 +372,15 @@ export function mountVoyageScene(opts) {
         normalize(model, height);
         if (role === "you") avatar.add(model);
         else if (role === "other") stand(model, -1.45, 37.5);
-        else if (role === "soldier") stand(model, 1.55, 4.2);
+        else if (role === "soldier") soldier = stand(model, 1.55, 4.2);
+        else if (role === "ge") {
+          grip = new THREE.Group();
+          grip.add(model);
+          grip.position.set(0.58, 0.02, 0.08);
+          grip.rotation.y = 0.35;
+          grip.visible = follow;
+          avatar.add(grip);
+        }
         else if (role === "flag") {
           flag = model;
           const holder = new THREE.Group();
@@ -384,6 +410,10 @@ export function mountVoyageScene(opts) {
         scene.add(holder);
       }
       if (disposed) return;
+      if (follow && soldier) {
+        soldier.position.set(pos.x + 0.95, 0, pos.z - 1.25);
+        soldier.rotation.y = yaw;
+      }
       placeMark();
       opts.onReady?.();
       clock.getDelta();

@@ -66,11 +66,11 @@ import {
   renderCuoshi,
   bindJourney,
   renderLeaderboardPage,
-} from "./journey.js?v=rad124";
+} from "./journey.js?v=rad126";
 import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad114";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad79";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";
-import { renderVoyage, bindVoyage } from "./voyage.js?v=rad124";
+import { renderVoyage, bindVoyage } from "./voyage.js?v=rad126";
 import { flavorLine, isoDay } from "./data/flavor.js?v=rad114";
 import {
   FORM_YEARS,

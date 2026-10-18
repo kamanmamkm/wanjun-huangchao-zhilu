@@ -539,12 +539,16 @@ export function renderJourneyHome(user, char, ui = {}) {
           user?.progress?.voyage?.stop > 0 ||
           user?.progress?.voyage?.line > 0 ||
           user?.progress?.voyage?.land ||
-          user?.progress?.voyage?.camp
+          user?.progress?.voyage?.camp ||
+          user?.progress?.voyage?.river ||
+          user?.progress?.voyage?.pine
             ? "is-on"
             : ""
         }">城門</span>
         <span class="${user?.progress?.voyage?.land ? "is-on" : ""}">城樓</span>
         <span class="${user?.progress?.voyage?.camp ? "is-on" : ""}">營帳</span>
+        <span class="${user?.progress?.voyage?.river ? "is-on" : ""}">河邊</span>
+        <span class="${user?.progress?.voyage?.pine ? "is-on" : ""}">松山</span>
         <span class="${user?.progress?.voyage?.flag ? "is-on" : ""}">布旗</span>
       </div>
       ${
@@ -555,20 +559,26 @@ export function renderJourneyHome(user, char, ui = {}) {
       <button type="button" class="play-door" data-goto="voyage">
         <span class="play-door-kicker">上路</span>
         <span class="play-door-title">${
-          user?.progress?.voyage?.flag && user?.progress?.voyage?.camp
-            ? "城門到營帳，旗是你的"
-            : user?.progress?.voyage?.camp
-              ? "城門到營帳是你的地盤"
-              : user?.progress?.voyage?.land
-                ? "城門到城樓是你的地盤"
-                : "城門、市集、城樓"
+          user?.progress?.voyage?.pine
+            ? "城門到松山是你的地盤"
+            : user?.progress?.voyage?.river
+              ? "城門到河邊是你的地盤"
+              : user?.progress?.voyage?.flag && user?.progress?.voyage?.camp
+                ? "城門到營帳，旗是你的"
+                : user?.progress?.voyage?.camp
+                  ? "城門到營帳是你的地盤"
+                  : user?.progress?.voyage?.land
+                    ? "城門到城樓是你的地盤"
+                    : "城門、市集、城樓"
         }</span>
         <span class="play-door-go">${
-          user?.progress?.voyage?.camp
+          user?.progress?.voyage?.pine
             ? "再走"
-            : user?.progress?.voyage?.land
-              ? "再大"
-              : "自己行"
+            : user?.progress?.voyage?.river || user?.progress?.voyage?.camp
+              ? "再遠"
+              : user?.progress?.voyage?.land
+                ? "再大"
+                : "自己行"
         }</span>
       </button>
       <button type="button" class="play-door" data-goto="voyage" data-voyage-open="duel">

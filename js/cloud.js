@@ -240,7 +240,24 @@ export function packSave(user) {
       museum: p.museum || {},
       inquiry: p.inquiry || null,
       literacy: p.literacy || null,
+      voyage: voyagePack(p.voyage),
     },
+  };
+}
+
+function voyagePack(raw) {
+  if (!raw || typeof raw !== "object") return undefined;
+  return {
+    stop: Math.max(0, Math.min(3, Number(raw.stop) || 0)),
+    line: Math.max(0, Math.min(4, Number(raw.line) || 0)),
+    miss: String(raw.miss || "").slice(0, 80),
+    done: !!raw.done,
+    rewarded: !!raw.rewarded,
+    weapon: !!raw.weapon,
+    soldier: !!raw.soldier,
+    land: !!raw.land,
+    camp: !!raw.camp,
+    flag: !!raw.flag,
   };
 }
 

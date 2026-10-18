@@ -537,14 +537,22 @@ export function renderJourneyHome(user, char, ui = {}) {
       <button type="button" class="play-door" data-goto="voyage">
         <span class="play-door-kicker">上路</span>
         <span class="play-door-title">${
-          user?.progress?.voyage?.camp
-            ? "城門到營帳是你的地盤"
-            : user?.progress?.voyage?.land
-              ? "城門到城樓是你的地盤"
-              : "城門、市集、城樓"
+          user?.progress?.voyage?.flag
+            ? "城門到營帳，旗是你的"
+            : user?.progress?.voyage?.camp
+              ? "城門到營帳是你的地盤"
+              : user?.progress?.voyage?.land
+                ? "城門到城樓是你的地盤"
+                : "城門、市集、城樓"
         }</span>
         <span class="play-door-go">${
-          user?.progress?.voyage?.camp ? "再走" : user?.progress?.voyage?.land ? "再大" : "自己行"
+          user?.progress?.voyage?.flag
+            ? "再走"
+            : user?.progress?.voyage?.camp
+              ? "去爭"
+              : user?.progress?.voyage?.land
+                ? "再大"
+                : "自己行"
         }</span>
       </button>
       <button type="button" class="home-quiet" data-goto="games">趣味關卡</button>

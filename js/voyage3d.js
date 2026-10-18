@@ -57,8 +57,10 @@ export function mountVoyageScene(opts) {
   let stopIndex = Math.max(0, Math.min(SPAWN_Z.length - 1, opts.stop || 0));
   let open = false;
   let follow = !!opts.follow;
+  let bannerOn = !!opts.banner;
   let soldier = null;
   let grip = null;
+  let prize = null;
   let yaw = 0;
   const pos = new THREE.Vector3(0, 0, SPAWN_Z[stopIndex]);
   const cam = new THREE.Vector3(0, 2.6, pos.z - 5.6);
@@ -303,6 +305,10 @@ export function mountVoyageScene(opts) {
       follow = true;
       if (grip) grip.visible = true;
     },
+    raise() {
+      bannerOn = true;
+      if (prize) prize.visible = true;
+    },
     dispose() {
       if (disposed) return;
       disposed = true;
@@ -414,6 +420,13 @@ export function mountVoyageScene(opts) {
         holder.position.set(4.4, 0, 38);
         holder.rotation.y = Math.PI;
         scene.add(holder);
+        const banner = flag.clone(true);
+        prize = new THREE.Group();
+        prize.add(banner);
+        prize.position.set(-4.6, 0, 56);
+        prize.rotation.y = 0.4;
+        prize.visible = bannerOn;
+        scene.add(prize);
       }
       if (disposed) return;
       if (follow && soldier) {

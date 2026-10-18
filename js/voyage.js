@@ -1,9 +1,10 @@
 /**
- * 上路：第三人稱自己行。城樓先有地盤，再到營帳，地盤變大。
- * 史實只重用已有判斷：孔子與秦始皇不同世；西周是分封，全國置郡縣是秦統一之後。
+ * 上路：第三人稱自己行。城樓先有地盤，再到營帳。
+ * 有了營帳，可以去榜上同窗的城門答一句。答對就在自己這邊插布旗。
+ * 史實只重用已有判斷：孔子與秦始皇不同世；西周是分封；科舉不在秦代。
  */
 import { addXp, updateUser } from "./storage.js?v=rad114";
-import { mountVoyageScene } from "./voyage3d.js?v=rad127";
+import { mountVoyageScene } from "./voyage3d.js?v=rad128";
 
 const XP_ONCE = 8;
 
@@ -77,6 +78,7 @@ function readRow(user) {
     soldier: !!raw?.soldier,
     land: !!raw?.land,
     camp: !!raw?.camp,
+    flag: !!raw?.flag,
   };
 }
 
@@ -114,9 +116,12 @@ function boxHtml(row, pathOpen, gender) {
   let controls = "";
   if (atCamp && row.camp && row.done) {
     controls = `<div class="voyage-actions">
+      <button type="button" class="voyage-go" data-voyage-duel="1">去同窗</button>
       <button type="button" class="voyage-go" data-voyage-replay="1">再走一程</button>
       <button type="button" class="voyage-go" data-voyage-home="1">回到行旅</button>
-    </div><p class="voyage-hint">戈一把，步卒一人。</p>`;
+    </div><p class="voyage-hint">${
+      row.flag ? "布旗已插上。同窗的城仍是他的。" : "戈一把，步卒一人。可以去同窗的城門。"
+    }</p>`;
   } else if (Array.isArray(line.choice)) {
     controls = `<div class="voyage-choices">${line.choice
       .map(
@@ -144,6 +149,48 @@ function boxHtml(row, pathOpen, gender) {
   return `${who}<p class="voyage-line">${esc(lineText)}</p>${controls}`;
 }
 
+function matesOf(user, board) {
+  if (!Array.isArray(board)) return null;
+  const year = user?.formYear || "";
+  const me = String(user?.username || "").toUpperCase();
+  return board
+    .filter((r) => String(r.username || "").toUpperCase() !== me)
+    .filter((r) => !year || !r.formYear || r.formYear === year)
+    .slice(0, 6)
+    .map((r) => ({
+      username: String(r.username || "").toUpperCase(),
+      name: String(r.heroName || r.username || "同窗").slice(0, 8),
+      score: Number(r.score) || 0,
+    }));
+}
+
+function duelHtml(duel, mates) {
+  if (!duel) return "";
+  if (duel.phase === "pick") {
+    if (mates == null) {
+      return `<p class="voyage-line">榜載入中。</p><button type="button" class="voyage-go" data-voyage-duel-back="1">返回</button>`;
+    }
+    if (!mates.length) {
+      return `<p class="voyage-line">同窗未上榜。答對題目，佢哋上榜就可以來。</p><button type="button" class="voyage-go" data-voyage-duel-back="1">返回</button>`;
+    }
+    const buttons = mates
+      .map(
+        (m) =>
+          `<button type="button" class="voyage-choice" data-voyage-rival="${esc(m.username)}">${esc(m.name)} · 史績 ${m.score}</button>`
+      )
+      .join("");
+    return `<p class="voyage-who">你</p><p class="voyage-line">揀一位同窗。答對就插旗。他的城仍是他的。</p><div class="voyage-choices">${buttons}</div><button type="button" class="voyage-go" data-voyage-duel-back="1">返回</button>`;
+  }
+  if (duel.phase === "won") {
+    return `<p class="voyage-who">你</p><p class="voyage-line">布旗插上。${esc(duel.name)}的城仍是他的。</p><button type="button" class="voyage-go" data-voyage-duel-back="1">回到自己的路</button>`;
+  }
+  const miss = duel.miss ? `<p class="voyage-miss">${esc(duel.miss)}</p>` : "";
+  return `<p class="voyage-who">步卒 · ${esc(duel.name)}的城門</p><p class="voyage-line">秦始皇用科舉揀官。</p><div class="voyage-choices">
+    <button type="button" class="voyage-choice" data-voyage-flag="1">科舉不在秦代。</button>
+    <button type="button" class="voyage-choice" data-voyage-flag="0">始皇開科取士。</button>
+  </div>${miss}`;
+}
+
 export function renderVoyage() {
   return `<section class="voyage is-loading" id="voyage-root">
     <canvas class="voyage-view" id="voyage-view" aria-hidden="true"></canvas>
@@ -164,15 +211,26 @@ export function bindVoyage(user, ctx) {
   const name = String(user?.username || "");
   let pathOpen = false;
   let world = null;
+  let boardTries = 0;
+  const opening = readRow(user);
+  let duel = opening.camp && opening.done && !opening.flag ? { phase: "pick" } : null;
 
   const fail = () => ctx.toast?.("這一步未寫入。請再試一次。");
 
   const paint = () => {
-    const row = readRow(ctx.getUser?.() || user);
+    const current = ctx.getUser?.() || user;
+    const row = readRow(current);
+    const mates = matesOf(current, ctx.state?.cloudBoard);
     const path = document.getElementById("voyage-path");
     const box = document.getElementById("voyage-box");
     if (path) path.innerHTML = pathHtml(row);
-    if (box) box.innerHTML = boxHtml(row, pathOpen, (ctx.getUser?.() || user)?.gender);
+    if (box) box.innerHTML = duel ? duelHtml(duel, mates) : boxHtml(row, pathOpen, current?.gender);
+    if (duel?.phase === "pick" && mates == null && boardTries < 8) {
+      boardTries += 1;
+      setTimeout(() => {
+        if (duel?.phase === "pick") paint();
+      }, 500);
+    }
   };
 
   const save = (next) => {
@@ -219,6 +277,19 @@ export function bindVoyage(user, ctx) {
     paint();
   };
 
+  const claimFlag = (row, rivalName) => {
+    const next = { ...row, flag: true, camp: true, done: true, miss: "", land: true, weapon: true, soldier: true };
+    if (!writeRow(name, next)) {
+      fail();
+      return;
+    }
+    world?.raise();
+    const fresh = !row.flag;
+    duel = { phase: "won", name: rivalName };
+    if (fresh) ctx.toast?.(`布旗插上。${rivalName}的城仍是他的。`);
+    paint();
+  };
+
   const goHome = () => {
     world?.dispose();
     world = null;
@@ -234,6 +305,7 @@ export function bindVoyage(user, ctx) {
     gender: user?.gender,
     stop: readRow(user).stop,
     follow: !!readRow(user).weapon,
+    banner: !!readRow(user).flag,
     onProgress: (text) => {
       const el = document.getElementById("voyage-load");
       if (el) el.textContent = text;
@@ -262,6 +334,38 @@ export function bindVoyage(user, ctx) {
       return;
     }
     const row = readRow(ctx.getUser?.() || user);
+    if (e.target.closest("[data-voyage-duel-back]")) {
+      duel = null;
+      paint();
+      return;
+    }
+    if (e.target.closest("[data-voyage-duel]")) {
+      if (row.camp) {
+        duel = { phase: "pick" };
+        boardTries = 0;
+        paint();
+      }
+      return;
+    }
+    const rivalBtn = e.target.closest("[data-voyage-rival]");
+    if (rivalBtn) {
+      const id = String(rivalBtn.dataset.voyageRival || "").toUpperCase();
+      const mates = matesOf(ctx.getUser?.() || user, ctx.state?.cloudBoard) || [];
+      const mate = mates.find((m) => m.username === id);
+      if (!mate) return;
+      duel = { phase: "ask", name: mate.name, miss: "" };
+      paint();
+      return;
+    }
+    const flagBtn = e.target.closest("[data-voyage-flag]");
+    if (flagBtn && duel?.phase === "ask") {
+      if (flagBtn.dataset.voyageFlag === "1") claimFlag(row, duel.name);
+      else {
+        duel = { ...duel, miss: "科舉不在秦代。秦與科舉，時代不同。" };
+        paint();
+      }
+      return;
+    }
     const stop = STOPS[row.stop];
     if (e.target.closest("[data-voyage-next]")) {
       if (row.line < stop.lines.length - 1) {

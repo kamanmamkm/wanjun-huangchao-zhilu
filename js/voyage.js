@@ -4,7 +4,7 @@
  * 史實只重用已有判斷，再走一程就換下一句：孔子與秦始皇不同世；西周是分封；科舉不在秦代；夏商周有先後。
  */
 import { addXp, updateUser } from "./storage.js?v=rad114";
-import { mountVoyageScene } from "./voyage3d.js?v=rad134";
+import { mountVoyageScene } from "./voyage3d.js?v=rad135";
 
 const XP_ONCE = 8;
 
@@ -119,7 +119,7 @@ function shownLine(row) {
   const quizStop = { 1: 0, 3: 1, 4: 2, 5: 3 }[row.stop];
   if (quizStop == null) return base;
   const quiz = quizAt(row.spin, quizStop);
-  if (row.line === 0) return { who: quiz.who, text: quiz.claim };
+  if (row.line === 0) return { who: row.stop === 5 ? "將領" : quiz.who, text: quiz.claim };
   if (row.line === 1) {
     return {
       who: "你",
@@ -130,6 +130,7 @@ function shownLine(row) {
       ],
     };
   }
+  if (row.stop === 5) return { who: "將領", text: "戰車歸你。這段路我交給你。" };
   return { who: "你", text: quiz.after };
 }
 

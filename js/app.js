@@ -66,10 +66,11 @@ import {
   renderCuoshi,
   bindJourney,
   renderLeaderboardPage,
-} from "./journey.js?v=rad118";
+} from "./journey.js?v=rad123";
 import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad114";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad79";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";
+import { renderVoyage, bindVoyage } from "./voyage.js?v=rad123";
 import { flavorLine, isoDay } from "./data/flavor.js?v=rad114";
 import {
   FORM_YEARS,
@@ -909,9 +910,12 @@ function renderShell(user) {
                                             ? renderInquiry(user, state.inquiryGranted)
                                             : state.view === "literacy"
                                               ? renderLiteracy(user, state.literacyGranted)
-                                              : "";
+                                              : state.view === "voyage"
+                                                ? renderVoyage(user, snap.stageId ?? idn.id)
+                                                : "";
 
   const homeProto = state.view === "home" && !isTeacherPortal();
+  const scene = state.view === "voyage";
 
   const navItems = [
     ["home", "行旅", "ico-home"],
@@ -936,9 +940,9 @@ function renderShell(user) {
     .join("");
 
   return `
-  <div class="app-shell paper-shell${homeProto ? " is-home" : ""}">
+  <div class="app-shell paper-shell${homeProto ? " is-home" : ""}${scene ? " is-scene" : ""}">
     ${
-      homeProto
+      homeProto || scene
         ? ""
         : `<header class="topbar">
       <div class="player-badge">
@@ -1454,6 +1458,9 @@ function bindShell(user) {
   if (state.view === "inquiry") {
     bindInquiry(user, { toast, render, state, getUser: getCurrentUser });
     state.inquiryGranted = false;
+  }
+  if (state.view === "voyage") {
+    bindVoyage(user, { toast, render, state, getUser: getCurrentUser });
   }
   if (state.view === "literacy") {
     bindLiteracy(user, { toast, render, state, getUser: getCurrentUser });

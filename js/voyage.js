@@ -2,11 +2,11 @@
  * 上路：第三人稱自己行。城樓先有地盤，再到營帳。
  * 有了營帳，可以去榜上同窗的城門答一句。答對就在自己這邊插布旗。
  * 史實只重用已有判斷，再走一程就換下一句：孔子與始皇不同世；西周是分封、受封的是諸侯；科舉不在秦代；夏商周有先後；百家爭鳴在春秋戰國；貞觀是唐太宗；《史記》是司馬遷。
- * 松山之後向前：七雄的圖、海岸、樓閣。答對只多一個已經屬於你的地方。樓閣答對，馬跟住你。樓閣之後才再走一程。
+ * 松山之後向前：七雄的圖、海岸、樓閣。答對只多一個已經屬於你的地方。樓閣有商人，講書同文。樓閣答對，馬跟住你。樓閣之後才再走一程。
  * 城門到松山之後，行旅「今晚未了」每日一句。答對只點亮已經屬於你的一個地方。
  */
 import { addXp, updateUser } from "./storage.js?v=rad114";
-import { mountVoyageScene } from "./voyage3d.js?v=rad140";
+import { mountVoyageScene } from "./voyage3d.js?v=rad141";
 
 const XP_ONCE = 8;
 
@@ -91,7 +91,7 @@ const STOPS = [
   {
     name: "樓閣",
     lines: [
-      { who: "步卒", text: "向前走到樓閣。" },
+      { who: "商人", text: "向前走到樓閣。" },
       { who: "你", text: "你點應？", choice: [] },
       { who: "你", text: "城門到樓閣是你的。" },
     ],
@@ -180,7 +180,7 @@ const QUIZ = [
     after: "海岸歸你。",
   },
   {
-    who: "步卒",
+    who: "商人",
     claim: "書同文是為了推廣文學。",
     ok: "為了政令傳達。",
     bad: "為了創作。",
@@ -198,6 +198,7 @@ function quizAt(spin, offset) {
 function placeWho(stop) {
   if (stop === 1) return "other";
   if (stop === 5) return "將領";
+  if (stop === 8) return "商人";
   return "步卒";
 }
 
@@ -219,6 +220,7 @@ function shownLine(row) {
     };
   }
   if (row.stop === 5) return { who: "將領", text: "戰車歸你。這段路我交給你。" };
+  if (row.stop === 8) return { who: "商人", text: quiz.after };
   return { who: "你", text: quiz.after };
 }
 

@@ -96,10 +96,12 @@ export function mountVoyageScene(opts) {
   let bannerOn = !!opts.banner;
   let crossbowOn = !!opts.crossbow;
   let chariotOn = !!opts.chariot;
+  let horseOn = !!opts.horse;
   let soldier = null;
   let grip = null;
   let bow = null;
   let cart = null;
+  let horse = null;
   let prize = null;
   let yaw = 0;
   const pos = new THREE.Vector3(SPAWN[stopIndex].x, 0, SPAWN[stopIndex].z);
@@ -331,6 +333,14 @@ export function mountVoyageScene(opts) {
       soldier.position.z += (tz - soldier.position.z) * catchUp;
       soldier.rotation.y = yaw;
     }
+    if (horseOn && horse) {
+      const hx = pos.x - Math.cos(yaw) * 1.55 - Math.sin(yaw) * 0.7;
+      const hz = pos.z + Math.sin(yaw) * 1.55 - Math.cos(yaw) * 0.7;
+      const catchUp = 1 - Math.exp(-dt * 2.1);
+      horse.position.x += (hx - horse.position.x) * catchUp;
+      horse.position.z += (hz - horse.position.z) * catchUp;
+      horse.rotation.y = yaw;
+    }
     npcs.forEach((npc) => {
       if (follow && npc === soldier) return;
       const dx = pos.x - npc.position.x;
@@ -412,6 +422,10 @@ export function mountVoyageScene(opts) {
       yaw = 0;
       pos.set(SPAWN[stopIndex].x, 0, SPAWN[stopIndex].z);
       cam.set(pos.x, 2.6, pos.z - 5.6);
+      if (horse && horseOn) {
+        horse.position.set(pos.x - 1.55, 0, pos.z - 0.7);
+        horse.rotation.y = yaw;
+      }
       placeMark();
     },
     setOpen(next) {
@@ -433,6 +447,13 @@ export function mountVoyageScene(opts) {
     hitch() {
       chariotOn = true;
       if (cart) cart.visible = true;
+    },
+    lead() {
+      horseOn = true;
+      if (!horse) return;
+      horse.visible = true;
+      horse.position.set(pos.x - 1.55, 0, pos.z - 0.7);
+      horse.rotation.y = yaw;
     },
     meet(label) {
       heldFollow = follow;
@@ -496,6 +517,7 @@ export function mountVoyageScene(opts) {
     ["states.glb", 4.6, "states", "stand"],
     ["coast.glb", 6.5, "coast", "tilt"],
     ["loft.glb", 5.2, "loft", "long"],
+    ["horse.glb", 2.05, "horse", "long"],
   ];
   let done = 0;
 
@@ -622,6 +644,12 @@ export function mountVoyageScene(opts) {
           holder.add(model);
           holder.position.set(-7.6, 0, 100);
           scene.add(holder);
+        } else if (role === "horse") {
+          horse = new THREE.Group();
+          horse.add(model);
+          horse.position.set(pos.x - 1.55, 0, pos.z - 0.7);
+          horse.visible = horseOn;
+          scene.add(horse);
         }
         done += 1;
         opts.onProgress?.(`載入中 ${done}／${jobs.length}`);

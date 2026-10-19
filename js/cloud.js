@@ -261,6 +261,7 @@ function voyagePack(raw) {
     pine: !!raw.pine,
     crossbow: !!raw.crossbow,
     chariot: !!raw.chariot,
+    horse: !!raw.horse || !!raw.loft,
     states: !!raw.states,
     coast: !!raw.coast,
     loft: !!raw.loft,

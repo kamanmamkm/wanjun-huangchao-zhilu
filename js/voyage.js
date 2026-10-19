@@ -1,12 +1,12 @@
 /**
  * 上路：第三人稱自己行。城樓先有地盤，再到營帳。
  * 有了營帳，可以去榜上同窗的城門答一句。答對就在自己這邊插布旗。
- * 史實只重用已有判斷，再走一程就換下一句：孔子與始皇不同世；西周是分封、受封的是諸侯；科舉不在秦代；夏商周有先後；百家爭鳴在春秋戰國；貞觀是唐太宗；《史記》是司馬遷。
+ * 史實只重用已有判斷。再走一程，市集、營帳、河邊、松山換下一句：孔子與始皇不同世；西周是分封、受封的是諸侯；科舉不在秦代；夏商周有先後；百家爭鳴在春秋戰國；貞觀是唐太宗；《史記》是司馬遷。同窗城門用呢一程路上未出現的另一句。七雄、海岸、樓閣的句子留在原處。
  * 松山之後向前：七雄的圖、海岸、樓閣。答對只多一個已經屬於你的地方。樓閣有商人，講書同文。樓閣答對，馬跟住你。樓閣之後才再走一程。
  * 城門到松山之後，行旅「今晚未了」每日一句。有了樓閣，逢單數日由商人問。未到樓閣，仍然聽將領。答對只點亮已經屬於你的一個地方。
  */
 import { addXp, updateUser } from "./storage.js?v=rad114";
-import { mountVoyageScene } from "./voyage3d.js?v=rad153";
+import { mountVoyageScene } from "./voyage3d.js?v=rad154";
 
 const XP_ONCE = 8;
 
@@ -189,10 +189,24 @@ const QUIZ = [
   },
 ];
 
-function quizAt(spin, offset) {
-  const n = QUIZ.length;
-  const i = (((Number(spin) || 0) + offset) % n + n) % n;
-  return QUIZ[i];
+const ROTATE = [0, 1, 2, 3, 4, 5, 6, 7];
+const ROAD_SLOT = { 1: 0, 3: 1, 4: 2, 5: 3 };
+const PLACE_QUIZ = { 6: 8, 7: 9, 8: 10 };
+
+function rotated(spin, slot) {
+  const n = ROTATE.length;
+  const i = (((Number(spin) || 0) + slot) % n + n) % n;
+  return QUIZ[ROTATE[i]];
+}
+
+function roadQuiz(spin, stop) {
+  if (PLACE_QUIZ[stop] != null) return QUIZ[PLACE_QUIZ[stop]];
+  if (ROAD_SLOT[stop] == null) return null;
+  return rotated(spin, ROAD_SLOT[stop]);
+}
+
+function duelQuiz(spin) {
+  return rotated(spin, 4);
 }
 
 function placeWho(stop) {
@@ -205,9 +219,8 @@ function placeWho(stop) {
 function shownLine(row) {
   const stop = STOPS[row.stop];
   const base = stop.lines[row.line];
-  const quizStop = { 1: 0, 3: 1, 4: 2, 5: 3, 6: 8, 7: 9, 8: 10 }[row.stop];
-  if (quizStop == null) return base;
-  const quiz = quizAt(row.spin, quizStop);
+  const quiz = roadQuiz(row.spin, row.stop);
+  if (!quiz) return base;
   if (row.line === 0) return { who: placeWho(row.stop), text: quiz.claim };
   if (row.line === 1) {
     return {
@@ -450,7 +463,7 @@ function duelHtml(duel, mates, row) {
   if (duel.phase === "won") {
     return `<p class="voyage-who">你</p><p class="voyage-line">布旗插上。${esc(duel.name)}的城仍是他的。</p><button type="button" class="voyage-go" data-voyage-duel-back="1">回到自己的路</button>`;
   }
-  const quiz = quizAt(row?.spin, 4);
+  const quiz = duelQuiz(row?.spin);
   const miss = duel.miss ? `<p class="voyage-miss">${esc(duel.miss)}</p>` : "";
   return `<p class="voyage-who">步卒 · ${esc(duel.name)}的城門</p><p class="voyage-line">${esc(quiz.claim)}</p><div class="voyage-choices">
     <button type="button" class="voyage-choice" data-voyage-flag="1">${esc(quiz.ok)}</button>
@@ -684,7 +697,7 @@ export function bindVoyage(user, ctx) {
     if (flagBtn && duel?.phase === "ask") {
       if (flagBtn.dataset.voyageFlag === "1") claimFlag(row, duel.name);
       else {
-        duel = { ...duel, miss: quizAt(row.spin, 4).miss };
+        duel = { ...duel, miss: duelQuiz(row.spin).miss };
         paint();
       }
       return;

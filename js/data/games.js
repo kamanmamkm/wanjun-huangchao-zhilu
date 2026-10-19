@@ -1,4 +1,4 @@
-import { filterByFormYear, normalizeFormYear } from "./formYear.js?v=rad114";
+import { filterByFormYear, isGradeAllowed, normalizeFormYear } from "./formYear.js?v=rad114";
 
 /** 時間線事件（排先後）——每套題池較大，開局隨機抽若干題，打亂後由學生排成由早到晚 */
 export const TIMELINE_SETS = [
@@ -154,14 +154,14 @@ export const WORDWALL_ROUNDS = [
     title: "人物與事蹟",
     pick: 4,
     pairs: [
-      { a: "張騫", b: "出使西域", note: "漢武帝時鑿空西域。" },
-      { a: "鄭和", b: "下西洋", note: "明成祖時率船隊遠航。" },
-      { a: "秦始皇", b: "書同文", note: "統一文字以便政令。" },
-      { a: "漢武帝", b: "獨尊儒術", note: "儒學成為官方主流。" },
-      { a: "唐太宗", b: "貞觀之治", note: "虛心納諫、任用賢才。" },
-      { a: "武則天", b: "破格用人", note: "發展科舉，不拘門第。" },
-      { a: "宋太祖", b: "杯酒釋兵權", note: "收兵權以防藩鎮。" },
-      { a: "孫中山", b: "三民主義", note: "民族、民權、民生。" },
+      { a: "張騫", b: "出使西域", note: "漢武帝時鑿空西域。", chapter: "ch1_escape", grade: "中一" },
+      { a: "鄭和", b: "下西洋", note: "明成祖時率船隊遠航。", chapter: "ch2_figures", grade: "中一" },
+      { a: "秦始皇", b: "書同文", note: "統一文字以便政令。", chapter: "ch1_escape", grade: "中一" },
+      { a: "漢武帝", b: "獨尊儒術", note: "儒學成為官方主流。", chapter: "ch1_escape", grade: "中一" },
+      { a: "唐太宗", b: "貞觀之治", note: "虛心納諫、任用賢才。", chapter: "ch2_figures", grade: "中一" },
+      { a: "武則天", b: "破格用人", note: "發展科舉，不拘門第。", chapter: "ch2_figures", grade: "中一" },
+      { a: "宋太祖", b: "杯酒釋兵權", note: "收兵權以防藩鎮。", chapter: "ch4_cause", grade: "中二" },
+      { a: "孫中山", b: "三民主義", note: "民族、民權、民生。", chapter: "ch2_figures", grade: "中三" },
     ],
   },
   {
@@ -169,12 +169,12 @@ export const WORDWALL_ROUNDS = [
     title: "戰爭與條約",
     pick: 4,
     pairs: [
-      { a: "鴉片戰爭", b: "南京條約", note: "割讓香港島、開放口岸。" },
-      { a: "英法聯軍", b: "北京條約", note: "第二次鴉片戰爭之後。" },
-      { a: "甲午戰爭", b: "馬關條約", note: "割讓台灣等條款。" },
-      { a: "八國聯軍", b: "辛丑條約", note: "庚子之後，賠款最重。" },
-      { a: "七七事變", b: "全面抗戰", note: "1937 年抗日戰爭全面爆發。" },
-      { a: "辛亥革命", b: "清帝退位", note: "1911 年起事，翌年民國成立。" },
+      { a: "鴉片戰爭", b: "南京條約", note: "割讓香港島、開放口岸。", chapter: "ch3_events", grade: "中二" },
+      { a: "英法聯軍", b: "北京條約", note: "第二次鴉片戰爭之後。", chapter: "ch3_events", grade: "中二" },
+      { a: "甲午戰爭", b: "馬關條約", note: "割讓台灣等條款。", chapter: "ch3_events", grade: "中二" },
+      { a: "八國聯軍", b: "辛丑條約", note: "庚子之後，賠款最重。", chapter: "ch3_events", grade: "中二" },
+      { a: "七七事變", b: "全面抗戰", note: "1937 年抗日戰爭全面爆發。", chapter: "ch3_events", grade: "中三" },
+      { a: "辛亥革命", b: "清帝退位", note: "1911 年起事，翌年民國成立。", chapter: "ch3_events", grade: "中三" },
     ],
   },
   {
@@ -182,12 +182,12 @@ export const WORDWALL_ROUNDS = [
     title: "制度與含義",
     pick: 4,
     pairs: [
-      { a: "封建", b: "分封諸侯", note: "西周把土地人民封給貴族。" },
-      { a: "郡縣", b: "中央直轄", note: "秦以後地方由朝廷任官。" },
-      { a: "科舉", b: "考試選官", note: "隋唐以後逐漸成熟。" },
-      { a: "藩鎮", b: "地方節度使", note: "唐後期軍閥坐大。" },
-      { a: "三省六部", b: "中央分職", note: "隋唐中央官制。" },
-      { a: "廢丞相", b: "明太祖集權", note: "政務分歸六部，直隸皇帝。" },
+      { a: "封建", b: "分封諸侯", note: "西周把土地人民封給貴族。", chapter: "ch1_escape", grade: "中一" },
+      { a: "郡縣", b: "中央直轄", note: "秦以後地方由朝廷任官。", chapter: "ch1_escape", grade: "中一" },
+      { a: "科舉", b: "考試選官", note: "隋唐以後逐漸成熟。", chapter: "ch1_escape", grade: "中一" },
+      { a: "藩鎮", b: "地方節度使", note: "唐後期軍閥坐大。", chapter: "ch3_events", grade: "中一" },
+      { a: "三省六部", b: "中央分職", note: "隋唐中央官制。", chapter: "ch1_escape", grade: "中一" },
+      { a: "廢丞相", b: "明太祖集權", note: "政務分歸六部，直隸皇帝。", chapter: "ch4_cause", grade: "中二" },
     ],
   },
   {
@@ -218,6 +218,17 @@ export const WORDWALL_ROUNDS = [
     ],
   },
 ];
+
+const BAG_FLIP_IDS = ["ww1", "ww2", "ww3"];
+
+/** 行囊一局：人物、戰爭、制度三套現有牌。行過嘅章、本年級先入選。 */
+export function bagFlipRound(walkedIds, formYear) {
+  const walked = new Set(walkedIds || []);
+  const pairs = WORDWALL_ROUNDS.filter((round) => BAG_FLIP_IDS.includes(round.id))
+    .flatMap((round) => round.pairs || [])
+    .filter((pair) => walked.has(pair.chapter) && isGradeAllowed(pair.grade, formYear));
+  return { id: "bag-flip", title: "一局", pick: 4, pairs };
+}
 
 function yearToken(formYear) {
   const year = normalizeFormYear(formYear) || "中一";

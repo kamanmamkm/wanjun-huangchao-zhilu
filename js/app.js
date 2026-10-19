@@ -2,8 +2,8 @@ import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad50";
 import { QUESTIONS } from "./data/questions.js?v=rad83";
 import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad66";
 import { levelFromXp } from "./data/levels.js?v=rad66";
-import { DIALOGUES, dialoguesByIds } from "./data/dialogues.js?v=rad156";
-import { TIMELINE_SETS, WORDWALL_ROUNDS, timelineSetsByIds } from "./data/games.js?v=rad156";
+import { DIALOGUES, dialoguesByIds } from "./data/dialogues.js?v=rad157";
+import { TIMELINE_SETS, WORDWALL_ROUNDS, timelineSetsByIds, bagFlipRound } from "./data/games.js?v=rad157";
 import { CHARMS } from "./data/wheel.js?v=rad67";
 import {
   getUnit,
@@ -19,13 +19,14 @@ import {
   CARD_TYPES,
   createBattle,
   shizhanPools,
+  walkedChapterIds,
   startPlayCard,
   useSkillOnQuiz,
   resolvePlayerQuiz,
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=rad156";
+} from "./data/shizhan.js?v=rad157";
 import {
   getCurrentUser,
   clearSession,
@@ -52,10 +53,10 @@ import {
   clearHomeRun,
   charmCount,
   consumeCharm,
-} from "./progress.js?v=rad156";
-import { renderWheelPage, bindWheel } from "./wheel.js?v=rad156";
-import { renderCase, bindCase, rememberCaseOpen, recallCaseOpen, caseSaveNoteText } from "./case.js?v=rad156";
-import { renderInquiry, bindInquiry, recallInquiryOpen, rememberInquiryOpen } from "./inquiry.js?v=rad156";
+} from "./progress.js?v=rad157";
+import { renderWheelPage, bindWheel } from "./wheel.js?v=rad157";
+import { renderCase, bindCase, rememberCaseOpen, recallCaseOpen, caseSaveNoteText } from "./case.js?v=rad157";
+import { renderInquiry, bindInquiry, recallInquiryOpen, rememberInquiryOpen } from "./inquiry.js?v=rad157";
 import { renderLiteracy, bindLiteracy, recallLiteracyOpen, rememberLiteracyOpen, prepareLiteracyOpen } from "./literacy.js?v=rad118";
 import { renderMuseum, bindMuseum, recallMuseumOpen, rememberMuseumOpen } from "./museum.js?v=rad118";
 import {
@@ -67,13 +68,13 @@ import {
   renderCuoshi,
   bindJourney,
   renderLeaderboardPage,
-} from "./journey.js?v=rad156";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad156";
+} from "./journey.js?v=rad157";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad157";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad79";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";
-import { renderVoyage, bindVoyage, nightOf } from "./voyage.js?v=rad156";
+import { renderVoyage, bindVoyage, nightOf } from "./voyage.js?v=rad157";
 import { schoolDay } from "./data/flavorSerial.js?v=rad98";
-import { flavorLine, isoDay } from "./data/flavor.js?v=rad156";
+import { flavorLine, isoDay } from "./data/flavor.js?v=rad157";
 import {
   FORM_YEARS,
   CONTENT_YEARS,
@@ -97,7 +98,7 @@ import {
   registerWithCloud,
   scheduleCloudSync,
   onCloudSync,
-} from "./cloud.js?v=rad156";
+} from "./cloud.js?v=rad157";
 import { isTeacherPortal } from "./data/portal.js?v=rad78";
 
 captureCloudFromLocation();
@@ -132,6 +133,7 @@ let state = {
   gamesYear: "",
   gamesUnit: null,
   gameFromUnit: false,
+  bagFlip: false,
   unitRun: null,
   dialogue: { id: DIALOGUES[0].id, step: 0, replied: false, good: 0 },
   shizhan: null,
@@ -435,7 +437,7 @@ function render() {
     if (state.levelUpReveal) mountLevelUpReveal();
     return;
   }
-  if (state.view === "games" || state.view === "wordwall" || state.view === "cuoshi") {
+  if (state.view === "games" || state.view === "cuoshi" || (state.view === "wordwall" && !state.bagFlip)) {
     state.view = "scroll";
     state.scrollStage = null;
     state.gamesUnit = null;
@@ -1114,10 +1116,22 @@ function bindShellNav() {
     const go = e.target.closest("[data-goto]");
     if (!go) return;
     const dest = go.dataset.goto === "practice" ? "home" : go.dataset.goto;
+    if (dest !== "wordwall") state.bagFlip = false;
     state.voyageDuel = dest === "voyage" && go.dataset.voyageOpen === "duel";
+    if (dest === "wordwall" && go.dataset.bagFlip === "1") {
+      state.bagFlip = true;
+      state.gameFromUnit = false;
+      state.gamesUnit = null;
+      state.unitRun = null;
+      state.flip = { cards: [], flipped: [], matched: new Set(), lock: false };
+      state.view = "wordwall";
+      render();
+      return;
+    }
     state.view = dest;
     if (state.view === "scroll") state.scrollStage = null;
     if (dest === "games" || dest === "wordwall" || dest === "cuoshi" || dest === "flip") {
+      state.bagFlip = false;
       state.view = "scroll";
       state.scrollStage = null;
       state.gamesUnit = null;
@@ -1401,6 +1415,10 @@ function cuoshiHubOpts() {
 }
 
 function flipRoundPool() {
+  if (state.bagFlip) {
+    const user = getCurrentUser();
+    return [bagFlipRound(walkedChapterIds(user), user?.formYear)];
+  }
   if (state.gameFromUnit) {
     const round = unitFlip(getUnit(state.gamesUnit));
     return round ? [round] : UNIT_FLIPS;
@@ -1881,6 +1899,14 @@ function dealFlipRound(round, roundIndex) {
 function renderWordwall() {
   const pool = flipRoundPool();
   let round = pool.find((r) => r.id === state.flip.roundId) || pool[state.flip.roundIndex || 0] || pool[0];
+  if (state.bagFlip && !(round?.pairs || []).length) {
+    return `
+    <section class="panel">
+      <h2>機緣連線</h2>
+      <p class="lead">先行長卷的一章，先有牌可配。</p>
+      <button class="btn ghost" type="button" data-goto="home">返回行旅</button>
+    </section>`;
+  }
   const idx = pool.findIndex((r) => r.id === round.id);
   if (!state.flip.left?.length || state.flip.roundId !== round.id) {
     state.flip = dealFlipRound(round, idx < 0 ? 0 : idx);
@@ -1909,12 +1935,12 @@ function renderWordwall() {
   return `
     <section class="panel">
       ${runHudHtml()}
-      <h2>機緣連線 · ${round.title}</h2>
-      <p class="lead">左邊人事、右邊史義，各撳一張配成一對。本題 ${f.pairCount} 對。</p>
+      <h2>${state.bagFlip ? "機緣連線" : `機緣連線 · ${round.title}`}</h2>
+      <p class="lead">左邊人事、右邊史義，各撳一張配成一對。${state.bagFlip ? "只出你行過的章，同本年級的牌。" : ""}本題 ${f.pairCount} 對。</p>
       <p class="muted">已配 ${f.matched.size}／${f.pairCount}　連擊 ${f.combo || 0}${f.maxCombo ? `　最高 ${f.maxCombo}` : ""}</p>
       <div class="toolbar">
         ${chips}
-        ${inUnitRun() ? "" : `<button class="btn ghost" type="button" id="ww-reshuffle">再抽一局</button>`}
+        ${inUnitRun() || state.bagFlip ? "" : `<button class="btn ghost" type="button" id="ww-reshuffle">再抽一局</button>`}
         ${charmUseButtons(["silk"])}
       </div>
       <div class="match-board" id="flip-grid">
@@ -1922,9 +1948,9 @@ function renderWordwall() {
         <div class="match-col">${col("r", f.right, f.pickR, f.missR)}</div>
       </div>
       <p class="flip-note">${f.lastNote || "左右各揀一張，睇佢哋係咪同一條史線。"}</p>
-      ${done ? `<p class="feedback">全對！${inUnitRun() ? "即將進入下一關。" : "可再抽一局繼續。"}</p>` : ""}
+      ${done ? `<p class="feedback">全對！${inUnitRun() ? "即將進入下一關。" : state.bagFlip ? "可再抽一局。" : "可再抽一局繼續。"}</p>` : ""}
       <div class="row-actions">
-        ${unitBackButton()}
+        ${state.bagFlip ? `<button class="btn ghost" type="button" id="ww-reshuffle">再抽一局</button><button class="btn ghost" type="button" data-goto="home">返回行旅</button>` : unitBackButton()}
       </div>
     </section>`;
 }

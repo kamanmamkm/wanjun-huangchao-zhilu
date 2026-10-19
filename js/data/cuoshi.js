@@ -352,6 +352,19 @@ export function getCuoshi(id) {
   return CUOSHI_BATTLES.find((b) => b.id === id) || null;
 }
 
+export function bossPack(id) {
+  return getCuoshi(id) || CHAPTER_BOSS_PAGES[id] || null;
+}
+
+/** 上次嗰頁之後嘅下一頁。未入過就由第一頁開始。 */
+export function nextBossId(ids, lastId) {
+  const list = (ids || []).filter(Boolean);
+  if (!list.length) return "";
+  const at = list.indexOf(lastId);
+  if (at < 0) return list[0];
+  return list[(at + 1) % list.length];
+}
+
 export function wrongLineOf(pack) {
   return (pack?.lines || []).find((ln) => ln.wrong) || null;
 }

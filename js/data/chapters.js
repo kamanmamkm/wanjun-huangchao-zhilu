@@ -116,7 +116,7 @@ export const CHAPTERS = {
         difficulty: "進階",
         boss: {
           title: "破損史頁",
-          cuoshiId: "cs1_opium_tang",
+          ids: ["cs1_opium_tang", "cs2_keju_qin", "cs9_qin_election"],
         },
       },
     ],
@@ -246,7 +246,7 @@ export const CHAPTERS = {
         difficulty: "進階",
         boss: {
           title: "錯置名人錄",
-          pageId: "ch2_figures",
+          ids: ["ch2_figures", "cs6_zhenghe_zhangqian", "cs11_kongzi_fenshu"],
         },
       },
     ],
@@ -371,7 +371,7 @@ export const CHAPTERS = {
         difficulty: "進階",
         boss: {
           title: "條約錯頁",
-          cuoshiId: "cs10_nanjing_taiwan",
+          ids: ["cs10_nanjing_taiwan", "cs7_song_changan"],
         },
       },
     ],
@@ -480,7 +480,7 @@ export const CHAPTERS = {
         difficulty: "進階",
         boss: {
           title: "偽因果",
-          cuoshiId: "cs5_linked_errors",
+          ids: ["cs5_linked_errors", "cs8_qing_one_cause"],
         },
       },
     ],

@@ -1,19 +1,19 @@
 /**
  * 《任平生》主介面：行旅首頁、歷史長卷、待考札記、史冊
  */
-import { CHAPTERS, chapterList } from "./data/chapters.js?v=rad151";
+import { CHAPTERS, chapterList } from "./data/chapters.js?v=rad152";
 import { XP_REWARDS } from "./data/levels.js?v=rad66";
-import { CUOSHI_BATTLES, CHAPTER_BOSS_PAGES, getCuoshi, wrongLineOf } from "./data/cuoshi.js?v=rad64";
+import { CUOSHI_BATTLES, getCuoshi, bossPack, nextBossId, wrongLineOf } from "./data/cuoshi.js?v=rad152";
 import { IDENTITIES } from "./data/identities.js?v=rad71";
 import { getStageVisual, SKILL_BARS, skillFill, realmLabel } from "./data/stageVisuals.js";
 import { heroDisplayName, normalizeHeroName } from "./data/characters.js";
 import { pickRandomHeroName, HERO_NAME_COUNT } from "./data/heroNames.js";
 import { renderAvatar } from "./avatar.js?v=rad79";
 import { renderHeroStage, renderStudyCompanion, renderPromoteReveal } from "./heroStage.js?v=rad79";
-import { nextHook, nextStageAfter, todayEncounter, dailyStageQuestions, hydrateStageQuestions, flavorDoneToday, flavorHitsToday, DAILY_FLAVOR_HITS } from "./data/flavor.js?v=rad151";
-import { renderFlavorSerial, renderSerialAside, bindFlavorSerial, serialLeadsFlavor, serialHookDetail, serialGoalChip } from "./flavorSerial.js?v=rad151";
+import { nextHook, nextStageAfter, todayEncounter, dailyStageQuestions, hydrateStageQuestions, flavorDoneToday, flavorHitsToday, DAILY_FLAVOR_HITS } from "./data/flavor.js?v=rad152";
+import { renderFlavorSerial, renderSerialAside, bindFlavorSerial, serialLeadsFlavor, serialHookDetail, serialGoalChip } from "./flavorSerial.js?v=rad152";
 import { schoolDay } from "./data/flavorSerial.js?v=rad98";
-import { nightOf } from "./voyage.js?v=rad151";
+import { nightOf } from "./voyage.js?v=rad152";
 import {
   userSnapshot,
   wheelStatus,
@@ -43,11 +43,11 @@ import {
   arenaStandings,
   levelBandLines,
   stageIdForUser,
-} from "./progress.js?v=rad151";
+} from "./progress.js?v=rad152";
 import { getCloudUrl } from "./data/cloud.js?v=rad80";
 import { updateUser, addXp, pushRecent } from "./storage.js?v=rad114";
 import { renderCaseEntry } from "./case.js?v=rad118";
-import { renderInquiryEntry } from "./inquiry.js?v=rad151";
+import { renderInquiryEntry } from "./inquiry.js?v=rad152";
 import { renderLiteracyEntry } from "./literacy.js?v=rad118";
 import { renderMuseumCard } from "./museum.js?v=rad118";
 import { getTrial } from "./data/trials.js";
@@ -1752,18 +1752,34 @@ function paintBoss(root, ctx) {
   const { state, toast, render } = ctx;
   const ch = CHAPTERS[root.dataset.chapter];
   const stage = ch.stages.find((s) => s.id === root.dataset.stage);
-  const pack = stage.boss?.cuoshiId
-    ? getCuoshi(stage.boss.cuoshiId)
-    : stage.boss?.pageId
-      ? CHAPTER_BOSS_PAGES[stage.boss.pageId]
-      : stage.boss;
+  const ids = stage.boss?.ids || [];
+  const key = `${ch.id}:${stage.id}`;
+  if (!state.bossPlay || state.bossPlay.stageKey !== key || !state.bossPlay.packId) {
+    const fresh = ctx.getUser?.() || {};
+    const last = fresh.progress?.chapters?.[ch.id]?.stages?.[stage.id]?.lastBossId || "";
+    const packId = nextBossId(ids, last);
+    state.bossPlay = { stageKey: key, phase: "spot", miss: [], packId };
+    if (packId) {
+      updateUser((u) => {
+        const p = u.progress || {};
+        p.chapters = p.chapters || {};
+        const chp = p.chapters[ch.id] || { stages: {} };
+        chp.stages = chp.stages || {};
+        const prev = chp.stages[stage.id];
+        const rec =
+          prev && typeof prev === "object" ? { ...prev } : prev === true ? { completed: true, mastered: true } : {};
+        rec.lastBossId = packId;
+        chp.stages[stage.id] = rec;
+        p.chapters[ch.id] = chp;
+        u.progress = p;
+      });
+    }
+  }
+  const pack = bossPack(state.bossPlay.packId);
   const body = document.getElementById("boss-body");
   if (!pack?.lines || !body) return;
-  if (!state.bossPlay || state.bossPlay.stageKey !== `${ch.id}:${stage.id}`) {
-    state.bossPlay = { stageKey: `${ch.id}:${stage.id}`, phase: "spot", miss: [] };
-  }
-  paintPageGame(body, { ...pack, title: stage.boss?.title || pack.title }, state.bossPlay, ctx, {
-    qidBase: `boss-${ch.id}-${stage.id}`,
+  paintPageGame(body, pack, state.bossPlay, ctx, {
+    qidBase: `boss-${ch.id}-${stage.id}-${state.bossPlay.packId}`,
     source: "關卡",
     chapterId: ch.id,
     onWin: () => {

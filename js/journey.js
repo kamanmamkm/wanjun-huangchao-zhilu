@@ -10,10 +10,10 @@ import { heroDisplayName, normalizeHeroName } from "./data/characters.js";
 import { pickRandomHeroName, HERO_NAME_COUNT } from "./data/heroNames.js";
 import { renderAvatar } from "./avatar.js?v=rad79";
 import { renderHeroStage, renderStudyCompanion, renderPromoteReveal } from "./heroStage.js?v=rad79";
-import { nextHook, nextStageAfter, todayEncounter, dailyStageQuestions, hydrateStageQuestions, flavorDoneToday, flavorHitsToday, DAILY_FLAVOR_HITS } from "./data/flavor.js?v=rad144";
+import { nextHook, nextStageAfter, todayEncounter, dailyStageQuestions, hydrateStageQuestions, flavorDoneToday, flavorHitsToday, DAILY_FLAVOR_HITS } from "./data/flavor.js?v=rad145";
 import { renderFlavorSerial, renderSerialAside, bindFlavorSerial, serialLeadsFlavor, serialHookDetail, serialGoalChip } from "./flavorSerial.js?v=rad118";
 import { schoolDay } from "./data/flavorSerial.js?v=rad98";
-import { nightOf } from "./voyage.js?v=rad144";
+import { nightOf } from "./voyage.js?v=rad145";
 import {
   userSnapshot,
   wheelStatus,
@@ -375,20 +375,6 @@ export function carryStrip(voyage) {
     .join("")}</div>`;
 }
 
-function landChip(name, id, voyage, night) {
-  const on =
-    id === "gate"
-      ? voyage?.stop > 0 || voyage?.line > 0 || voyage?.land || voyage?.camp || voyage?.river || voyage?.pine
-      : id === "tower"
-        ? !!voyage?.land
-        : id === "flag"
-          ? !!voyage?.flag
-          : !!voyage?.[id];
-  const glow = !!(night?.done && night.placeId === id);
-  const cls = [on ? "is-on" : "", glow ? "is-glow" : ""].filter(Boolean).join(" ");
-  return `<span class="${cls}">${name}</span>`;
-}
-
 function nightChoices(night) {
   if (!night || night.done) return "";
   const miss = night.missShown ? `<p class="home-status">${escArena(night.missShown)}</p>` : "";
@@ -590,23 +576,7 @@ export function renderJourneyHome(user, char, ui = {}) {
     </section>
     <section class="home-explore" aria-label="玩">
       <h3>玩</h3>
-      <div class="land-strip" aria-label="你的地盤">
-        ${landChip("城門", "gate", user?.progress?.voyage, nightState)}
-        ${landChip("城樓", "tower", user?.progress?.voyage, nightState)}
-        ${landChip("營帳", "camp", user?.progress?.voyage, nightState)}
-        ${landChip("河邊", "river", user?.progress?.voyage, nightState)}
-        ${landChip("松山", "pine", user?.progress?.voyage, nightState)}
-        ${landChip("七雄", "states", user?.progress?.voyage, nightState)}
-        ${landChip("海岸", "coast", user?.progress?.voyage, nightState)}
-        ${landChip("樓閣", "loft", user?.progress?.voyage, nightState)}
-        ${landChip("布旗", "flag", user?.progress?.voyage, nightState)}
-      </div>
       ${nightState && !nightHere ? nightPanel(nightState) : ""}
-      ${
-        user?.progress?.voyage?.flag
-          ? `<p class="land-note">布旗下記住${escArena(user.progress.voyage.flagName || "同窗")}</p>`
-          : ""
-      }
       ${carryStrip(user?.progress?.voyage)}
       <button type="button" class="play-door" data-goto="voyage">
         <span class="play-door-kicker">上路</span>

@@ -15,8 +15,10 @@ const SPAWN = [
   { x: 0, z: 62 },
   { x: 0, z: 76 },
   { x: 0, z: 88 },
+  { x: 0, z: 110 },
+  { x: 0, z: 124 },
 ];
-const BARRIER_Z = [16, 44, 50, 56, 60, 60, 76, 92, 106];
+const BARRIER_Z = [16, 44, 50, 56, 60, 60, 76, 92, 106, 118, 136];
 const MARK = [
   { x: 0, z: 34 },
   { x: 0, z: 46 },
@@ -26,9 +28,11 @@ const MARK = [
   { x: 0, z: 68 },
   { x: 0, z: 82 },
   { x: 0, z: 96 },
+  { x: 0, z: 112 },
+  { x: 0, z: 126 },
 ];
 const Z_MIN = -8;
-const Z_MAX = 106;
+const Z_MAX = 136;
 const ROAD_HALF = 2.15;
 const SPEED = 4.1;
 
@@ -130,7 +134,7 @@ export function mountVoyageScene(opts) {
   scene.add(sun);
 
   const ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(90, 170),
+    new THREE.PlaneGeometry(90, 210),
     new THREE.MeshStandardMaterial({ color: 0x7d684c, roughness: 1, metalness: 0 })
   );
   ground.rotation.x = -Math.PI / 2;
@@ -145,7 +149,7 @@ export function mountVoyageScene(opts) {
   road.position.set(0, 0.02, 34);
   scene.add(road);
   const roadOn = new THREE.Mesh(
-    new THREE.PlaneGeometry(5.4, 56),
+    new THREE.PlaneGeometry(5.4, 78),
     new THREE.MeshStandardMaterial({ color: 0xd2b48a, roughness: 1, metalness: 0 })
   );
   roadOn.rotation.x = -Math.PI / 2;
@@ -291,6 +295,8 @@ export function mountVoyageScene(opts) {
     if (stopIndex === 5) return pos.z >= 68;
     if (stopIndex === 6) return pos.z >= 82;
     if (stopIndex === 7) return pos.z >= 96;
+    if (stopIndex === 8) return pos.z >= 112;
+    if (stopIndex === 9) return pos.z >= 126;
     return false;
   }
 
@@ -590,6 +596,11 @@ export function mountVoyageScene(opts) {
           holder.add(model);
           holder.position.set(0, 0, 8);
           scene.add(holder);
+          const passGate = model.clone(true);
+          const passHold = new THREE.Group();
+          passHold.add(passGate);
+          passHold.position.set(0, 0, 128);
+          scene.add(passHold);
         } else if (role === "tower") {
           const holder = new THREE.Group();
           holder.add(model);
@@ -606,6 +617,12 @@ export function mountVoyageScene(opts) {
           holder.position.set(-9.2, 0.04, 55);
           holder.rotation.y = Math.PI / 2;
           scene.add(holder);
+          const ferry = model.clone(true);
+          const ferryHold = new THREE.Group();
+          ferryHold.add(ferry);
+          ferryHold.position.set(0, 0.04, 114);
+          ferryHold.rotation.y = Math.PI / 2;
+          scene.add(ferryHold);
         } else if (role === "pine") {
           const holder = new THREE.Group();
           holder.add(model);

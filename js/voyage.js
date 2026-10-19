@@ -2,11 +2,11 @@
  * 上路：第三人稱自己行。城樓先有地盤，再到營帳。
  * 有了營帳，可以去榜上同窗的城門答一句。答對就在自己這邊插布旗。
  * 史實只重用已有判斷。再走一程，市集、營帳、河邊、松山換下一句：孔子與始皇不同世；西周是分封、受封的是諸侯；科舉不在秦代；夏商周有先後；百家爭鳴在春秋戰國；貞觀是唐太宗；《史記》是司馬遷。同窗城門用呢一程路上未出現的另一句。七雄、海岸、樓閣的句子留在原處。
- * 松山之後向前：七雄的圖、海岸、樓閣。答對只多一個已經屬於你的地方。樓閣有商人，講書同文。樓閣答對，馬跟住你。樓閣之後才再走一程。
+ * 松山之後向前：七雄的圖、海岸、樓閣、渡口、關城。答對只多一個已經屬於你的地方。樓閣有商人，講書同文。樓閣答對，馬跟住你。關城之後才再走一程。
  * 城門到松山之後，行旅「今晚未了」每日一句。有了樓閣，逢單數日由商人問。未到樓閣，仍然聽將領。答對只點亮已經屬於你的一個地方。
  */
 import { addXp, updateUser } from "./storage.js?v=rad114";
-import { mountVoyageScene } from "./voyage3d.js?v=rad161";
+import { mountVoyageScene } from "./voyage3d.js?v=rad162";
 
 const XP_ONCE = 8;
 
@@ -94,6 +94,22 @@ const STOPS = [
       { who: "商人", text: "向前走到樓閣。" },
       { who: "你", text: "你點應？", choice: [] },
       { who: "你", text: "城門到樓閣是你的。" },
+    ],
+  },
+  {
+    name: "渡口",
+    lines: [
+      { who: "步卒", text: "向前走到渡口。" },
+      { who: "你", text: "你點應？", choice: [] },
+      { who: "你", text: "渡口是你的。向前走到關城。" },
+    ],
+  },
+  {
+    name: "關城",
+    lines: [
+      { who: "步卒", text: "向前走到關城。" },
+      { who: "你", text: "你點應？", choice: [] },
+      { who: "你", text: "關城是你的。" },
     ],
   },
 ];
@@ -187,11 +203,27 @@ const QUIZ = [
     miss: "書同文是統一文字，方便政令傳達。",
     after: "樓閣歸你。",
   },
+  {
+    who: "步卒",
+    claim: "大運河一日建成，民力毫無消耗。",
+    ok: "溝通南北，同時徵發民力。",
+    bad: "一日建成才算。",
+    miss: "大運河便利南北轉運，同時徵發民力甚眾。",
+    after: "渡口是你的。向前走到關城。",
+  },
+  {
+    who: "步卒",
+    claim: "北宋始終以長安為都。",
+    ok: "北宋都開封。",
+    bad: "長安就是開封。",
+    miss: "北宋都城是開封。長安主要是漢唐舊都。",
+    after: "關城是你的。",
+  },
 ];
 
 const ROTATE = [0, 1, 2, 3, 4, 5, 6, 7];
 const ROAD_SLOT = { 1: 0, 3: 1, 4: 2, 5: 3 };
-const PLACE_QUIZ = { 6: 8, 7: 9, 8: 10 };
+const PLACE_QUIZ = { 6: 8, 7: 9, 8: 10, 9: 11, 10: 12 };
 
 function rotated(spin, slot) {
   const n = ROTATE.length;
@@ -235,6 +267,8 @@ function shownLine(row) {
   if (row.stop === 4) return { who: "你", text: "河邊是你的。向右走到松山。" };
   if (row.stop === 5) return { who: "將領", text: "松山是你的。向前，有一幅七雄的圖。" };
   if (row.stop === 8) return { who: "商人", text: quiz.after };
+  if (row.stop === 9) return { who: "你", text: "渡口是你的。向前走到關城。" };
+  if (row.stop === 10) return { who: "你", text: "關城是你的。" };
   return { who: "你", text: quiz.after };
 }
 
@@ -268,6 +302,8 @@ function readRow(user) {
     states: !!raw?.states,
     coast: !!raw?.coast,
     loft: !!raw?.loft,
+    ferry: !!raw?.ferry,
+    pass: !!raw?.pass,
     flag: !!raw?.flag,
     flagName: String(raw?.flagName || "").slice(0, 8),
     spin: Math.max(0, Math.min(48, Number(raw?.spin) || 0)),
@@ -356,8 +392,12 @@ function boxHtml(row, pathOpen, gender) {
   const atStates = row.stop === 6 && last;
   const atCoast = row.stop === 7 && last;
   const atLoft = row.stop === 8 && last;
+  const atFerry = row.stop === 9 && last;
+  const atPass = row.stop === 10 && last;
   let lineText = line.text || "";
-  if (atLoft && row.loft) lineText = "城門到樓閣是你的。馬跟住你。";
+  if (atPass && row.pass) lineText = "關城是你的。馬跟住你。";
+  else if (atFerry && row.ferry) lineText = "渡口是你的。向前走到關城。";
+  else if (atLoft && row.loft) lineText = "城門到樓閣是你的。馬跟住你。向前走到渡口。";
   else if (atCoast && row.coast) lineText = "海岸是你的。向前走到樓閣。";
   else if (atStates && row.states) lineText = "這幅圖是你的。向前走到海岸。";
   else if (atPine && row.pine && !row.states) lineText = "城門到松山，是你的。向前，有一幅七雄的圖。";
@@ -367,7 +407,7 @@ function boxHtml(row, pathOpen, gender) {
   else if (atTower && row.land) lineText = "城門到城樓是你的。再向前，營帳也可以是你的。";
   else if (atTower) lineText = "你上了城樓。這條路可以是你的地盤。";
   let controls = "";
-  if (atLoft && row.loft) {
+  if (atPass && row.pass) {
     controls = `<div class="voyage-actions">
       <button type="button" class="voyage-go" data-voyage-duel="1">去同窗</button>
       <button type="button" class="voyage-go" data-voyage-replay="1">再走一程</button>
@@ -384,7 +424,7 @@ function boxHtml(row, pathOpen, gender) {
           `<button type="button" class="voyage-choice" data-voyage-pick="${i}">${esc(opt.text)}</button>`
       )
       .join("")}</div>${row.miss ? `<p class="voyage-miss">${esc(row.miss)}</p>` : ""}`;
-  } else if (last && !atPine && !atStates && !atCoast && !atLoft && pathOpen) {
+  } else if (last && !atPine && !atStates && !atCoast && !atLoft && !atFerry && !atPass && pathOpen) {
     controls = `<p class="voyage-hint">${
       atRiver
         ? "向右走到松山。"
@@ -420,8 +460,16 @@ function boxHtml(row, pathOpen, gender) {
     controls = `<button type="button" class="voyage-go" data-voyage-next="1">向前</button>`;
   } else if (atCoast) {
     controls = `<button type="button" class="voyage-go" data-voyage-coast="1">收下</button>`;
+  } else if (atLoft && row.loft) {
+    controls = `<button type="button" class="voyage-go" data-voyage-next="1">向前</button>`;
   } else if (atLoft) {
     controls = `<button type="button" class="voyage-go" data-voyage-loft="1">收下</button>`;
+  } else if (atFerry && row.ferry) {
+    controls = `<button type="button" class="voyage-go" data-voyage-next="1">向前</button>`;
+  } else if (atFerry) {
+    controls = `<button type="button" class="voyage-go" data-voyage-ferry="1">收下</button>`;
+  } else if (atPass) {
+    controls = `<button type="button" class="voyage-go" data-voyage-pass="1">收下</button>`;
   } else {
     controls = `<button type="button" class="voyage-go" data-voyage-next="1">知道了</button>`;
   }
@@ -586,16 +634,18 @@ export function bindVoyage(user, ctx) {
   };
 
   const claimPlace = (row, key, toast) => {
-    const next = { ...row, [key]: true, done: key === "loft", miss: "" };
+    const next = { ...row, [key]: true, done: key === "pass" ? true : row.done, miss: "" };
     if (key === "loft") next.horse = true;
     if (!writeRow(name, next)) {
       fail();
       return;
     }
-    pathOpen = true;
-    world?.setOpen(true);
+    if (key !== "pass") {
+      pathOpen = true;
+      world?.setOpen(true);
+    }
     if (key === "loft") world?.lead();
-    if (!row[key]) ctx.toast?.(key === "loft" ? "馬跟住你。城門到樓閣是你的。" : toast);
+    if (!row[key]) ctx.toast?.(toast);
     paint();
   };
 
@@ -765,7 +815,15 @@ export function bindVoyage(user, ctx) {
       return;
     }
     if (e.target.closest("[data-voyage-loft]")) {
-      claimPlace(row, "loft", "城門到樓閣是你的。");
+      claimPlace(row, "loft", "馬跟住你。城門到樓閣是你的。向前走到渡口。");
+      return;
+    }
+    if (e.target.closest("[data-voyage-ferry]")) {
+      claimPlace(row, "ferry", "渡口是你的。向前走到關城。");
+      return;
+    }
+    if (e.target.closest("[data-voyage-pass]")) {
+      claimPlace(row, "pass", "關城是你的。城門到關城是你的。");
       return;
     }
     if (e.target.closest("[data-voyage-replay]")) {

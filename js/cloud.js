@@ -2,7 +2,7 @@
  * 全班史績榜＋同一學號雲端存檔（Google Apps Script）。
  */
 import { getCloudUrl } from "./data/cloud.js?v=rad80";
-import { userSnapshot, ensureArena } from "./progress.js?v=rad154";
+import { userSnapshot, ensureArena } from "./progress.js?v=rad155";
 import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad50";
 import {
   findLocalUser,

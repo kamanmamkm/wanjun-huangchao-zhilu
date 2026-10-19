@@ -1,7 +1,7 @@
 /**
  * 短循環趣味：答題旁白、過關信物、今日機緣、下回鉤。
  */
-import { CHAPTERS, chapterList } from "./chapters.js?v=rad158";
+import { CHAPTERS, chapterList } from "./chapters.js?v=rad159";
 import { QUESTIONS } from "./questions.js?v=rad83";
 import { filterByFormYear } from "./formYear.js?v=rad114";
 
@@ -55,6 +55,11 @@ export const RELICS = {
   "ch5_policy:interact": { id: "r_policy_ribbon", name: "政策絲帶", hint: "政策也要放回它的年代。" },
   "ch5_policy:source": { id: "r_cost", name: "代價夾註", hint: "只寫好處，通常講得太盡。" },
   "ch5_policy:boss": { id: "r_both", name: "並陳朱筆", hint: "開拓有功，民力負擔也要寫上。" },
+  "ch6_compare:story": { id: "r_clip", name: "對讀夾", hint: "材料有限，先問它能證明到哪裡。" },
+  "ch6_compare:basic": { id: "r_scope", name: "範圍木籤", hint: "一郡的話，只到這一郡。" },
+  "ch6_compare:interact": { id: "r_source_ribbon", name: "材料絲帶", hint: "材料也要放回它的年代。" },
+  "ch6_compare:source": { id: "r_pair", name: "兩則夾", hint: "立場不同，先分開再對讀。" },
+  "ch6_compare:boss": { id: "r_over", name: "過度朱筆", hint: "一郡自述，不能講成全國人人如此。" },
 };
 
 export function relicFor(chapterId, stageId) {

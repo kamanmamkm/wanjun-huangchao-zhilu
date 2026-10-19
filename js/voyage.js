@@ -6,7 +6,7 @@
  * 城門到松山之後，行旅「今晚未了」每日一句。有了樓閣，逢單數日由商人問。未到樓閣，仍然聽將領。答對只點亮已經屬於你的一個地方。
  */
 import { addXp, updateUser } from "./storage.js?v=rad114";
-import { mountVoyageScene } from "./voyage3d.js?v=rad152";
+import { mountVoyageScene } from "./voyage3d.js?v=rad153";
 
 const XP_ONCE = 8;
 
@@ -61,7 +61,7 @@ const STOPS = [
     lines: [
       { who: "步卒", text: "河邊有一句要辨。" },
       { who: "你", text: "你點應？", choice: [] },
-      { who: "你", text: "弩歸你。" },
+      { who: "你", text: "河邊是你的。向右走到松山。" },
     ],
   },
   {
@@ -69,7 +69,7 @@ const STOPS = [
     lines: [
       { who: "步卒", text: "松山前再辨一句。" },
       { who: "你", text: "你點應？", choice: [] },
-      { who: "你", text: "戰車歸你。" },
+      { who: "你", text: "松山是你的。向前，有一幅七雄的圖。" },
     ],
   },
   {
@@ -219,7 +219,8 @@ function shownLine(row) {
       ],
     };
   }
-  if (row.stop === 5) return { who: "將領", text: "戰車歸你。這段路我交給你。" };
+  if (row.stop === 4) return { who: "你", text: "河邊是你的。向右走到松山。" };
+  if (row.stop === 5) return { who: "將領", text: "松山是你的。向前，有一幅七雄的圖。" };
   if (row.stop === 8) return { who: "商人", text: quiz.after };
   return { who: "你", text: quiz.after };
 }
@@ -348,7 +349,7 @@ function boxHtml(row, pathOpen, gender) {
   else if (atStates && row.states) lineText = "這幅圖是你的。向前走到海岸。";
   else if (atPine && row.pine && !row.states) lineText = "城門到松山，是你的。向前，有一幅七雄的圖。";
   else if (atPine && row.pine) lineText = "城門到松山，是你的地盤。";
-  else if (atRiver && row.river) lineText = "弩在身。向右走到松山，戰車也可以是你的。";
+  else if (atRiver && row.river) lineText = "河邊是你的。向右走到松山。";
   else if (atCamp && row.camp) lineText = "城門到營帳是你的。向左走到河邊，可以再大。";
   else if (atTower && row.land) lineText = "城門到城樓是你的。再向前，營帳也可以是你的。";
   else if (atTower) lineText = "你上了城樓。這條路可以是你的地盤。";
@@ -360,8 +361,8 @@ function boxHtml(row, pathOpen, gender) {
       <button type="button" class="voyage-go" data-voyage-home="1">回到行旅</button>
     </div><p class="voyage-hint">${
       row.flag
-        ? `布旗下記住${esc(row.flagName || "同窗")}。馬跟住你。弩與戰車在你這邊。`
-        : "馬跟住你。弩一把，戰車一輛。"
+        ? `布旗下記住${esc(row.flagName || "同窗")}。馬跟住你。`
+        : "馬跟住你。"
     }</p>`;
   } else if (Array.isArray(line.choice) && line.choice.length) {
     controls = `<div class="voyage-choices">${line.choice
@@ -373,13 +374,13 @@ function boxHtml(row, pathOpen, gender) {
   } else if (last && !atPine && !atStates && !atCoast && !atLoft && pathOpen) {
     controls = `<p class="voyage-hint">${
       atRiver
-        ? "向右走到松山。答對，得到戰車。"
+        ? "向右走到松山。"
         : atCamp
-          ? "向左走到河邊。答對，得到弩。"
+          ? "向左走到河邊。"
           : atTower
-            ? "向前走到營帳。答對，地盤就再大。"
+            ? "向前走到營帳。"
             : row.weapon
-              ? "得到戈。步卒跟上。拖左下圓鈕向前。"
+              ? "步卒跟上。拖左下圓鈕向前。"
               : "拖左下圓鈕向前，或按鍵盤。"
     }</p>`;
   } else if (atTower && row.land) {
@@ -556,7 +557,7 @@ export function bindVoyage(user, ctx) {
     pathOpen = true;
     world?.setOpen(true);
     world?.arm();
-    if (!row.river) ctx.toast?.("得到弩。向右走到松山。");
+    if (!row.river) ctx.toast?.("河邊是你的。向右走到松山。");
     paint();
   };
 
@@ -567,7 +568,7 @@ export function bindVoyage(user, ctx) {
       return;
     }
     world?.hitch();
-    if (!row.pine) ctx.toast?.("得到戰車。城門到松山是你的。");
+    if (!row.pine) ctx.toast?.("松山是你的。向前，有一幅七雄的圖。");
     paint();
   };
 

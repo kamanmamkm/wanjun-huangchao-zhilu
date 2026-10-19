@@ -12,17 +12,23 @@ const SPAWN = [
   { x: 0, z: 52 },
   { x: -5.2, z: 55 },
   { x: 6.0, z: 48 },
+  { x: 0, z: 62 },
+  { x: 0, z: 76 },
+  { x: 0, z: 88 },
 ];
-const BARRIER_Z = [16, 44, 50, 56, 60, 60];
+const BARRIER_Z = [16, 44, 50, 56, 60, 60, 76, 92, 106];
 const MARK = [
   { x: 0, z: 34 },
   { x: 0, z: 46 },
   { x: 0, z: 54 },
   { x: -5.4, z: 55 },
   { x: 6.2, z: 48 },
+  { x: 0, z: 68 },
+  { x: 0, z: 82 },
+  { x: 0, z: 96 },
 ];
 const Z_MIN = -8;
-const Z_MAX = 60;
+const Z_MAX = 106;
 const ROAD_HALF = 2.15;
 const SPEED = 4.1;
 
@@ -111,7 +117,7 @@ export function mountVoyageScene(opts) {
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0xc3d5e2);
-  scene.fog = new THREE.Fog(0xc3d5e2, 24, 92);
+  scene.fog = new THREE.Fog(0xc3d5e2, 24, 120);
 
   const camera = new THREE.PerspectiveCamera(46, 1, 0.1, 150);
   camera.position.copy(cam);
@@ -122,11 +128,11 @@ export function mountVoyageScene(opts) {
   scene.add(sun);
 
   const ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(80, 120),
+    new THREE.PlaneGeometry(90, 170),
     new THREE.MeshStandardMaterial({ color: 0x7d684c, roughness: 1, metalness: 0 })
   );
   ground.rotation.x = -Math.PI / 2;
-  ground.position.set(0, 0, 36);
+  ground.position.set(0, 0, 52);
   scene.add(ground);
 
   const road = new THREE.Mesh(
@@ -136,6 +142,13 @@ export function mountVoyageScene(opts) {
   road.rotation.x = -Math.PI / 2;
   road.position.set(0, 0.02, 34);
   scene.add(road);
+  const roadOn = new THREE.Mesh(
+    new THREE.PlaneGeometry(5.4, 56),
+    new THREE.MeshStandardMaterial({ color: 0xd2b48a, roughness: 1, metalness: 0 })
+  );
+  roadOn.rotation.x = -Math.PI / 2;
+  roadOn.position.set(0, 0.02, 102);
+  scene.add(roadOn);
 
   function mound(x, z, r, lift, color) {
     const mesh = new THREE.Mesh(
@@ -273,6 +286,9 @@ export function mountVoyageScene(opts) {
     if (stopIndex === 2) return pos.z >= 54;
     if (stopIndex === 3) return pos.z >= 52 && pos.x <= -4.2;
     if (stopIndex === 4) return pos.x >= 4.6 && pos.z <= 52;
+    if (stopIndex === 5) return pos.z >= 68;
+    if (stopIndex === 6) return pos.z >= 82;
+    if (stopIndex === 7) return pos.z >= 96;
     return false;
   }
 
@@ -477,6 +493,9 @@ export function mountVoyageScene(opts) {
     ["crossbow.glb", 1.15, "crossbow", "long"],
     ["chariot.glb", 3.2, "chariot", "long"],
     ["general.glb", 1.7, "general"],
+    ["states.glb", 4.6, "states", "stand"],
+    ["coast.glb", 6.5, "coast", "tilt"],
+    ["loft.glb", 5.2, "loft", "long"],
   ];
   let done = 0;
 
@@ -507,7 +526,14 @@ export function mountVoyageScene(opts) {
         const gltf = await loader.loadAsync(assetUrl(name));
         const model = gltf.scene;
         prepare(model);
-        if (mode === "long") fitLongest(model, size);
+        if (mode === "stand") {
+          model.rotation.x = -Math.PI / 2;
+          model.rotation.y = Math.PI / 2;
+          fitLongest(model, size);
+        } else if (mode === "tilt") {
+          model.rotation.x = -0.65;
+          fitLongest(model, size);
+        } else if (mode === "long") fitLongest(model, size);
         else normalize(model, size);
         if (role === "you") avatar.add(model);
         else if (role === "other") stand(model, -1.45, 37.5);
@@ -544,7 +570,7 @@ export function mountVoyageScene(opts) {
         } else if (role === "tower") {
           const holder = new THREE.Group();
           holder.add(model);
-          holder.position.set(0, 0, 74);
+          holder.position.set(-18, 0, 72);
           scene.add(holder);
         } else if (role === "camp") {
           const holder = new THREE.Group();
@@ -581,6 +607,21 @@ export function mountVoyageScene(opts) {
           plate.position.set(0, 2.02, 0);
           holder.add(plate);
           paintPlate(plate, "將領");
+        } else if (role === "states") {
+          const holder = new THREE.Group();
+          holder.add(model);
+          holder.position.set(-9.2, 0, 70);
+          scene.add(holder);
+        } else if (role === "coast") {
+          const holder = new THREE.Group();
+          holder.add(model);
+          holder.position.set(8, 0, 86);
+          scene.add(holder);
+        } else if (role === "loft") {
+          const holder = new THREE.Group();
+          holder.add(model);
+          holder.position.set(-7.6, 0, 100);
+          scene.add(holder);
         }
         done += 1;
         opts.onProgress?.(`載入中 ${done}／${jobs.length}`);

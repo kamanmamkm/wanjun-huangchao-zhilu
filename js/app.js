@@ -53,7 +53,7 @@ import {
   consumeCharm,
 } from "./progress.js?v=rad92";
 import { renderWheelPage, bindWheel } from "./wheel.js?v=rad114";
-import { renderCase, bindCase, rememberCaseOpen, recallCaseOpen, caseSaveNoteText } from "./case.js?v=rad138";
+import { renderCase, bindCase, rememberCaseOpen, recallCaseOpen, caseSaveNoteText } from "./case.js?v=rad139";
 import { renderInquiry, bindInquiry, recallInquiryOpen, rememberInquiryOpen } from "./inquiry.js?v=rad118";
 import { renderLiteracy, bindLiteracy, recallLiteracyOpen, rememberLiteracyOpen, prepareLiteracyOpen } from "./literacy.js?v=rad118";
 import { renderMuseum, bindMuseum, recallMuseumOpen, rememberMuseumOpen } from "./museum.js?v=rad118";
@@ -66,11 +66,11 @@ import {
   renderCuoshi,
   bindJourney,
   renderLeaderboardPage,
-} from "./journey.js?v=rad138";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad138";
+} from "./journey.js?v=rad139";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad139";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad79";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";
-import { renderVoyage, bindVoyage, nightOf } from "./voyage.js?v=rad138";
+import { renderVoyage, bindVoyage, nightOf } from "./voyage.js?v=rad139";
 import { schoolDay } from "./data/flavorSerial.js?v=rad98";
 import { flavorLine, isoDay } from "./data/flavor.js?v=rad114";
 import {
@@ -96,7 +96,7 @@ import {
   registerWithCloud,
   scheduleCloudSync,
   onCloudSync,
-} from "./cloud.js?v=rad138";
+} from "./cloud.js?v=rad139";
 import { isTeacherPortal } from "./data/portal.js?v=rad78";
 
 captureCloudFromLocation();

@@ -1,7 +1,7 @@
 /**
  * 短循環趣味：答題旁白、過關信物、今日機緣、下回鉤。
  */
-import { CHAPTERS, chapterList } from "./chapters.js";
+import { CHAPTERS, chapterList } from "./chapters.js?v=rad149";
 import { QUESTIONS } from "./questions.js?v=rad83";
 import { filterByFormYear } from "./formYear.js?v=rad114";
 
@@ -40,6 +40,11 @@ export const RELICS = {
   "ch2_figures:interact": { id: "r_voice", name: "對談牙牌", hint: "用符合史實的回應，把對話說完。" },
   "ch2_figures:source": { id: "r_bio", name: "本紀夾註", hint: "正史經過編纂，宜對照其他材料。" },
   "ch2_figures:boss": { id: "r_mismatch", name: "張冠李戴籤", hint: "孔子與始皇不同世，這籤專揭錯置。" },
+  "ch3_events:story": { id: "r_spine", name: "年代骨幹", hint: "商鞅在戰國，安史在唐，鴉片戰爭在清。" },
+  "ch3_events:basic": { id: "r_year_tag", name: "事件年籤", hint: "先問這件事在哪一朝。" },
+  "ch3_events:interact": { id: "r_river", name: "長河細繩", hint: "由早到晚，把事件串起來。" },
+  "ch3_events:source": { id: "r_treaty", name: "條約對讀", hint: "戰爭要配對它的條約。" },
+  "ch3_events:boss": { id: "r_wrong_page", name: "錯頁朱印", hint: "《南京條約》不割台灣。" },
 };
 
 export function relicFor(chapterId, stageId) {
@@ -332,8 +337,12 @@ function shuffleStageQuestion(q, seed) {
 
 function stageQuestionPool(user, stage) {
   const baked = (stage.questions || []).map(mcToStageQuestion).filter((q) => q.q && q.options?.length);
+  if (stage.onlyBaked) return baked;
   const year = user?.formYear || "中一";
-  const bank = filterByFormYear(QUESTIONS.mc || [], year).map(mcToStageQuestion);
+  const source = Array.isArray(stage.questionIds) && stage.questionIds.length
+    ? stage.questionIds.map((id) => (QUESTIONS.mc || []).find((q) => q.id === id)).filter(Boolean)
+    : QUESTIONS.mc || [];
+  const bank = filterByFormYear(source, year).map(mcToStageQuestion);
   const seen = new Set();
   const pool = [];
   for (const q of [...bank, ...baked]) {
@@ -363,7 +372,8 @@ export function hydrateStageQuestions(user, stage, chapterId, ids, drawN) {
  */
 export function dailyStageQuestions(user, stage, chapterId, opts = {}) {
   const baked = (stage.questions || []).map(mcToStageQuestion).filter((q) => q.q && q.options?.length);
-  if (!baked.length) return baked;
+  const hasIds = Array.isArray(stage.questionIds) && stage.questionIds.length > 0;
+  if (!baked.length && !hasIds) return baked;
   const pool = stageQuestionPool(user, stage);
   const n = Math.min(STAGE_QUIZ_COUNT, Math.max(baked.length, pool.length));
   const exclude = new Set(opts.excludeIds || []);

@@ -1,5 +1,5 @@
 /**
- * 上路：第三人稱沿路走。城門有步卒，市集有另一位旅人。
+ * 上路：第三人稱沿路走。城門有步卒，市集有另一位旅人。樓閣有商人。
  * 模型係課堂用的縮圖，原檔留在下載資料夾。
  */
 import * as THREE from "../vendor/three/three.module.js";
@@ -518,6 +518,7 @@ export function mountVoyageScene(opts) {
     ["coast.glb", 6.5, "coast", "tilt"],
     ["loft.glb", 5.2, "loft", "long"],
     ["horse.glb", 2.05, "horse", "long"],
+    ["merchant.glb", 1.7, "merchant"],
   ];
   let done = 0;
 
@@ -644,6 +645,12 @@ export function mountVoyageScene(opts) {
           holder.add(model);
           holder.position.set(-7.6, 0, 100);
           scene.add(holder);
+        } else if (role === "merchant") {
+          const holder = stand(model, -3.1, 98);
+          const plate = makeNameSprite();
+          plate.position.set(0, 2.02, 0);
+          holder.add(plate);
+          paintPlate(plate, "商人");
         } else if (role === "horse") {
           horse = new THREE.Group();
           horse.add(model);

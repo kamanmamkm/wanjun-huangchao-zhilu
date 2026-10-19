@@ -12,6 +12,8 @@ import { renderAvatar } from "./avatar.js?v=rad79";
 import { renderHeroStage, renderStudyCompanion, renderPromoteReveal } from "./heroStage.js?v=rad79";
 import { nextHook, nextStageAfter, todayEncounter, dailyStageQuestions, hydrateStageQuestions, flavorDoneToday, flavorHitsToday, DAILY_FLAVOR_HITS } from "./data/flavor.js?v=rad114";
 import { renderFlavorSerial, renderSerialAside, bindFlavorSerial, serialLeadsFlavor, serialHookDetail, serialGoalChip } from "./flavorSerial.js?v=rad118";
+import { schoolDay } from "./data/flavorSerial.js?v=rad98";
+import { nightOf } from "./voyage.js?v=rad138";
 import {
   userSnapshot,
   wheelStatus,
@@ -360,6 +362,39 @@ export function renderLeaderboardPage(user, ui = {}) {
   </section>`;
 }
 
+function landChip(name, id, voyage, night) {
+  const on =
+    id === "gate"
+      ? voyage?.stop > 0 || voyage?.line > 0 || voyage?.land || voyage?.camp || voyage?.river || voyage?.pine
+      : id === "tower"
+        ? !!voyage?.land
+        : id === "flag"
+          ? !!voyage?.flag
+          : !!voyage?.[id];
+  const glow = !!(night?.done && night.placeId === id);
+  const cls = [on ? "is-on" : "", glow ? "is-glow" : ""].filter(Boolean).join(" ");
+  return `<span class="${cls}">${name}</span>`;
+}
+
+function nightChoices(night) {
+  if (!night || night.done) return "";
+  const miss = night.missShown ? `<p class="home-status">${escArena(night.missShown)}</p>` : "";
+  return `<div class="night-choices">
+    <button type="button" class="night-choice" data-night="1">${escArena(night.ok)}</button>
+    <button type="button" class="night-choice" data-night="0">${escArena(night.bad)}</button>
+  </div>${miss}`;
+}
+
+function nightPanel(night) {
+  if (!night) return "";
+  if (night.done) return `<p class="land-note">${escArena(night.placeName)}亮了。</p>`;
+  return `<div class="night-aside">
+    <p class="land-note">${escArena(night.who)}</p>
+    <p class="play-door-title">${escArena(night.claim)}</p>
+    ${nightChoices(night)}
+  </div>`;
+}
+
 export function renderJourneyHome(user, char, ui = {}) {
   const snap = userSnapshot(user);
   const stageId = snap.stageId ?? user.identityId ?? 0;
@@ -442,15 +477,23 @@ export function renderJourneyHome(user, char, ui = {}) {
   let heroKicker = "當前任務";
   let heroTitle = task?.label || "今日";
   let heroHook = task?.detail || "";
+  const nightState = nightOf(user?.progress?.voyage, schoolDay());
+  const nightHere = !!(nightState && !serialLead && !questIsTrial && !questIsPromote);
   if (serialLead) {
     heroKicker = `第${serialLead.no}章`;
     heroTitle = serialLead.title || heroTitle;
     heroHook = serialLead.suspense || heroHook;
+  } else if (nightHere) {
+    heroKicker = "今晚未了";
+    heroTitle = nightState.done ? nightState.after : nightState.claim;
+    heroHook = nightState.done ? `${nightState.placeName}亮了。` : nightState.who;
   } else if (task?.kind === "flavor" || task?.kind === "wheel" || task?.kind === "run" || task?.kind === "review") {
     heroKicker = "今晚未了";
   }
   const heroTime = serialLead && Number(serialLead.minutes) > 0 ? `約${serialLead.minutes}分鐘` : "";
-  const heroButton = task?.hideQuestButton
+  const heroButton = nightHere
+    ? nightChoices(nightState)
+    : task?.hideQuestButton
     ? `<a class="home-go" href="#home-challenge">${serialNote === "第一章已完成" ? "去收尾" : escArena(task?.primary || "去答")}</a>`
     : `<button type="button" class="home-go" ${questAction}>${escArena(task?.primary || task?.label || "繼續")}</button>`;
 
@@ -535,22 +578,14 @@ export function renderJourneyHome(user, char, ui = {}) {
     <section class="home-explore" aria-label="玩">
       <h3>玩</h3>
       <div class="land-strip" aria-label="你的地盤">
-        <span class="${
-          user?.progress?.voyage?.stop > 0 ||
-          user?.progress?.voyage?.line > 0 ||
-          user?.progress?.voyage?.land ||
-          user?.progress?.voyage?.camp ||
-          user?.progress?.voyage?.river ||
-          user?.progress?.voyage?.pine
-            ? "is-on"
-            : ""
-        }">城門</span>
-        <span class="${user?.progress?.voyage?.land ? "is-on" : ""}">城樓</span>
-        <span class="${user?.progress?.voyage?.camp ? "is-on" : ""}">營帳</span>
-        <span class="${user?.progress?.voyage?.river ? "is-on" : ""}">河邊</span>
-        <span class="${user?.progress?.voyage?.pine ? "is-on" : ""}">松山</span>
-        <span class="${user?.progress?.voyage?.flag ? "is-on" : ""}">布旗</span>
+        ${landChip("城門", "gate", user?.progress?.voyage, nightState)}
+        ${landChip("城樓", "tower", user?.progress?.voyage, nightState)}
+        ${landChip("營帳", "camp", user?.progress?.voyage, nightState)}
+        ${landChip("河邊", "river", user?.progress?.voyage, nightState)}
+        ${landChip("松山", "pine", user?.progress?.voyage, nightState)}
+        ${landChip("布旗", "flag", user?.progress?.voyage, nightState)}
       </div>
+      ${nightState && !nightHere ? nightPanel(nightState) : ""}
       ${
         user?.progress?.voyage?.flag
           ? `<p class="land-note">布旗下記住${escArena(user.progress.voyage.flagName || "同窗")}</p>`

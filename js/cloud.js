@@ -264,6 +264,9 @@ function voyagePack(raw) {
     flag: !!raw.flag,
     flagName: String(raw.flagName || "").slice(0, 8),
     spin: Math.max(0, Math.min(48, Number(raw.spin) || 0)),
+    night: /^\d{4}-\d{2}-\d{2}$/.test(raw.night) ? raw.night : "",
+    nightTry: /^\d{4}-\d{2}-\d{2}$/.test(raw.nightTry) ? raw.nightTry : "",
+    nightMiss: String(raw.nightMiss || "").slice(0, 80),
   };
 }
 

@@ -52,8 +52,8 @@ import {
   charmCount,
   consumeCharm,
 } from "./progress.js?v=rad92";
-import { renderWheelPage, bindWheel } from "./wheel.js?v=rad146";
-import { renderCase, bindCase, rememberCaseOpen, recallCaseOpen, caseSaveNoteText } from "./case.js?v=rad146";
+import { renderWheelPage, bindWheel } from "./wheel.js?v=rad147";
+import { renderCase, bindCase, rememberCaseOpen, recallCaseOpen, caseSaveNoteText } from "./case.js?v=rad147";
 import { renderInquiry, bindInquiry, recallInquiryOpen, rememberInquiryOpen } from "./inquiry.js?v=rad118";
 import { renderLiteracy, bindLiteracy, recallLiteracyOpen, rememberLiteracyOpen, prepareLiteracyOpen } from "./literacy.js?v=rad118";
 import { renderMuseum, bindMuseum, recallMuseumOpen, rememberMuseumOpen } from "./museum.js?v=rad118";
@@ -66,13 +66,13 @@ import {
   renderCuoshi,
   bindJourney,
   renderLeaderboardPage,
-} from "./journey.js?v=rad146";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad146";
+} from "./journey.js?v=rad147";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad147";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad79";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";
-import { renderVoyage, bindVoyage, nightOf } from "./voyage.js?v=rad146";
+import { renderVoyage, bindVoyage, nightOf } from "./voyage.js?v=rad147";
 import { schoolDay } from "./data/flavorSerial.js?v=rad98";
-import { flavorLine, isoDay } from "./data/flavor.js?v=rad146";
+import { flavorLine, isoDay } from "./data/flavor.js?v=rad147";
 import {
   FORM_YEARS,
   CONTENT_YEARS,
@@ -96,7 +96,7 @@ import {
   registerWithCloud,
   scheduleCloudSync,
   onCloudSync,
-} from "./cloud.js?v=rad146";
+} from "./cloud.js?v=rad147";
 import { isTeacherPortal } from "./data/portal.js?v=rad78";
 
 captureCloudFromLocation();
@@ -433,6 +433,13 @@ function render() {
     bindFormYearGate();
     if (state.levelUpReveal) mountLevelUpReveal();
     return;
+  }
+  if (state.view === "games" || state.view === "wordwall" || state.view === "cuoshi") {
+    state.view = "scroll";
+    state.scrollStage = null;
+    state.gamesUnit = null;
+    state.gameFromUnit = false;
+    state.unitRun = null;
   }
   const snap = userSnapshot(user);
   const id = snap.stageId ?? user.identityId ?? 0;
@@ -923,7 +930,6 @@ function renderShell(user) {
     ["board", "排行", "ico-board"],
     ["scroll", "長卷", "ico-scroll"],
     ["chronicle", "史冊", "ico-book"],
-    ["games", "遊戲", "ico-game"],
     ...(isTeacherPortal() ? [["teacher", "老師", "ico-teacher"]] : []),
   ];
 
@@ -931,10 +937,9 @@ function renderShell(user) {
     .map(([id, label, ico]) => {
       const active =
         state.view === id ||
-        (id === "scroll" && state.view === "chapter") ||
-        (id === "home" && (state.view === "notes" || state.view === "promote")) ||
-        (id === "games" &&
-          ["cuoshi", "wordwall", "timeline", "dialogue", "shizhan"].includes(state.view));
+        (id === "scroll" &&
+          (state.view === "chapter" || state.view === "timeline" || state.view === "dialogue")) ||
+        (id === "home" && (state.view === "notes" || state.view === "promote"));
       return `<button type="button" data-nav="${id}" class="${active ? "active" : ""}"><span class="ico ${ico}" aria-hidden="true"></span>${label}</button>`;
     })
     .join("");
@@ -1111,16 +1116,16 @@ function bindShellNav() {
     state.voyageDuel = dest === "voyage" && go.dataset.voyageOpen === "duel";
     state.view = dest;
     if (state.view === "scroll") state.scrollStage = null;
-    if (dest === "games") {
-      persistHomeRun();
-      if (!go.dataset.keepUnit) {
-        state.gamesUnit = null;
-        state.gameFromUnit = false;
-        state.unitRun = null;
-      }
+    if (dest === "games" || dest === "wordwall" || dest === "cuoshi" || dest === "flip") {
+      state.view = "scroll";
+      state.scrollStage = null;
+      state.gamesUnit = null;
+      state.gameFromUnit = false;
+      state.unitRun = null;
       state.cuoshi = null;
+      render();
+      return;
     }
-    if (dest === "cuoshi") state.cuoshi = null;
     render();
   });
 }
@@ -1248,7 +1253,7 @@ function unitBackButton() {
     return `<button class="btn ghost" type="button" data-run-abort>放棄闖關</button>`;
   }
   if (!state.gameFromUnit || !state.gamesUnit) {
-    return `<button class="btn ghost" type="button" data-goto="games">返回大廳</button>`;
+    return `<button class="btn ghost" type="button" data-goto="scroll">返回長卷</button>`;
   }
   return `<button class="btn ghost" type="button" data-games-unit="${state.gamesUnit}">返回本單元</button>`;
 }
@@ -1677,7 +1682,7 @@ function renderShizhan(user, char, rank) {
       </div>
       <p class="lead">雙方各有 ${4} 點體力。打空對手體力即可獲勝（+${XP_REWARDS.shizhanWin} XP）。</p>
       <button type="button" class="btn" id="shizhan-start">以「${char?.name}」出戰</button>
-      <button type="button" class="btn ghost" data-goto="games">返回大廳</button>
+      <button type="button" class="btn ghost" data-goto="home">返回行旅</button>
     </section>`;
   }
 
@@ -1697,7 +1702,7 @@ function renderShizhan(user, char, rank) {
         <h3>${b.winner === "player" ? "🏆 大獲全勝！" : "💀 再接再厲"}</h3>
         <p>${b.winner === "player" ? `擊敗 ${enemy.name}，史識立功。` : `${enemy.name} 技高一籌，溫習後再戰！`}</p>
         <button type="button" class="btn" id="shizhan-again">再戰一場</button>
-        <button type="button" class="btn ghost" data-goto="games">返回大廳</button>
+        <button type="button" class="btn ghost" data-goto="home">返回行旅</button>
       </div>`;
   } else if (b.phase === "quiz" && b.quiz) {
     const q = b.quiz.question;
@@ -1747,7 +1752,7 @@ function renderShizhan(user, char, rank) {
   <section class="panel shizhan-panel">
     <div class="shizhan-top">
       <h2>史戰風雲</h2>
-      <button type="button" class="btn ghost" data-goto="games">離開</button>
+      <button type="button" class="btn ghost" data-goto="home">離開</button>
     </div>
     <div class="shizhan-arena">
       <div class="sz-fighter enemy">

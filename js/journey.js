@@ -10,10 +10,10 @@ import { heroDisplayName, normalizeHeroName } from "./data/characters.js";
 import { pickRandomHeroName, HERO_NAME_COUNT } from "./data/heroNames.js";
 import { renderAvatar } from "./avatar.js?v=rad79";
 import { renderHeroStage, renderStudyCompanion, renderPromoteReveal } from "./heroStage.js?v=rad79";
-import { nextHook, nextStageAfter, todayEncounter, dailyStageQuestions, hydrateStageQuestions, flavorDoneToday, flavorHitsToday, DAILY_FLAVOR_HITS } from "./data/flavor.js?v=rad146";
+import { nextHook, nextStageAfter, todayEncounter, dailyStageQuestions, hydrateStageQuestions, flavorDoneToday, flavorHitsToday, DAILY_FLAVOR_HITS } from "./data/flavor.js?v=rad147";
 import { renderFlavorSerial, renderSerialAside, bindFlavorSerial, serialLeadsFlavor, serialHookDetail, serialGoalChip } from "./flavorSerial.js?v=rad118";
 import { schoolDay } from "./data/flavorSerial.js?v=rad98";
-import { nightOf } from "./voyage.js?v=rad146";
+import { nightOf } from "./voyage.js?v=rad147";
 import {
   userSnapshot,
   wheelStatus,
@@ -40,13 +40,11 @@ import {
   saveFinaleSegment,
   markCuoshiWon,
   visitStreak,
-  getHomeRun,
   arenaStandings,
   levelBandLines,
   stageIdForUser,
 } from "./progress.js?v=rad98";
 import { getCloudUrl } from "./data/cloud.js?v=rad80";
-import { getUnit } from "./data/units.js?v=rad67";
 import { updateUser, addXp, pushRecent } from "./storage.js?v=rad114";
 import { renderCaseEntry } from "./case.js?v=rad118";
 import { renderInquiryEntry } from "./inquiry.js?v=rad118";
@@ -219,7 +217,6 @@ function reviewTask(user) {
 function tonightHook(user) {
   const enc = todayEncounter(user);
   const flavorDone = flavorDoneToday(user, enc.day);
-  const saved = getHomeRun(user);
   if (serialLeadsFlavor(user)) {
     return {
       kind: "flavor",
@@ -239,16 +236,6 @@ function tonightHook(user) {
   }
   const review = reviewTask(user);
   if (review) return review;
-  if (saved) {
-    const unit = getUnit(saved.unitId);
-    return {
-      kind: "run",
-      label: `闖關未完 · ${unit?.era || "本單元"}`,
-      detail: `仲有 ${saved.lives} 盞燈火，第 ${saved.step + 1}／${saved.steps.length} 關。`,
-      resumeRun: true,
-      primary: "繼續闖關",
-    };
-  }
   return null;
 }
 
@@ -999,7 +986,7 @@ export function renderCuoshi(user, opts = {}) {
     ? `<button type="button" class="btn ghost" data-run-abort>放棄闖關</button>`
     : opts.backUnit
     ? `<button type="button" class="btn ghost" data-games-unit="${opts.backUnit}">返回本單元</button>`
-    : `<button type="button" class="btn ghost" data-goto="games">返回大廳</button>`;
+    : `<button type="button" class="btn ghost" data-goto="scroll">返回長卷</button>`;
   return `
   <section class="panel-paper cuoshi-view">
     ${opts.hud || ""}

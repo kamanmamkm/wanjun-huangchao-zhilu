@@ -6,7 +6,7 @@
  * 城門到松山之後，行旅「今晚未了」每日一句。有了樓閣，逢單數日由商人問。未到樓閣，仍然聽將領。答對只點亮已經屬於你的一個地方。
  */
 import { addXp, updateUser } from "./storage.js?v=rad114";
-import { mountVoyageScene } from "./voyage3d.js?v=rad162";
+import { mountVoyageScene } from "./voyage3d.js?v=rad163";
 
 const XP_ONCE = 8;
 
@@ -272,6 +272,58 @@ function shownLine(row) {
   return { who: "你", text: quiz.after };
 }
 
+const GOAL = [
+  "去市集搵旅人",
+  "去城樓",
+  "去營帳",
+  "去河邊",
+  "去松山",
+  "去七雄的圖",
+  "去海岸",
+  "去樓閣搵商人",
+  "去渡口",
+  "去關城",
+  "",
+];
+
+function ownedKey(stop) {
+  return ["", "", "land", "camp", "river", "pine", "states", "coast", "loft", "ferry", "pass"][stop] || "";
+}
+
+function placeOwned(row) {
+  const key = ownedKey(row.stop);
+  return key ? !!row[key] : false;
+}
+
+function segmentDone(row) {
+  const next = row.stop + 1;
+  if (next <= 2) return !!row.land;
+  const key = ownedKey(next);
+  return key ? !!row[key] : false;
+}
+
+function isAsking(row) {
+  if (!roadQuiz(row.spin, row.stop)) return false;
+  return row.line < STOPS[row.stop].lines.length - 1;
+}
+
+function canWalk(row, duel) {
+  if (duel) return false;
+  if (isAsking(row)) return false;
+  if (row.stop >= STOPS.length - 1) return false;
+  if (row.stop === 0) return true;
+  if (roadQuiz(row.spin, row.stop) && row.line < STOPS[row.stop].lines.length - 1) return false;
+  return true;
+}
+
+function coachText(row) {
+  if (row.guide >= 3) return "";
+  if (isAsking(row) || row.guide >= 2) return "揀一句回應。";
+  if (row.stop > 0) return "";
+  if (row.guide <= 0) return "拖左下圓鈕，向前走。";
+  return "光柱那邊。走近旅人。";
+}
+
 function esc(s) {
   return String(s || "")
     .replace(/&/g, "&amp;")
@@ -304,6 +356,7 @@ function readRow(user) {
     loft: !!raw?.loft,
     ferry: !!raw?.ferry,
     pass: !!raw?.pass,
+    guide: raw?.guide == null ? (raw?.land ? 3 : 0) : Math.max(0, Math.min(3, Number(raw.guide) || 0)),
     flag: !!raw?.flag,
     flagName: String(raw?.flagName || "").slice(0, 8),
     spin: Math.max(0, Math.min(48, Number(raw?.spin) || 0)),
@@ -407,7 +460,15 @@ function boxHtml(row, pathOpen, gender) {
   else if (atTower && row.land) lineText = "城門到城樓是你的。再向前，營帳也可以是你的。";
   else if (atTower) lineText = "你上了城樓。這條路可以是你的地盤。";
   let controls = "";
-  if (atPass && row.pass) {
+  const asking = isAsking(row);
+  const quiz = asking ? roadQuiz(row.spin, row.stop) : null;
+  if (asking && quiz) {
+    lineText = quiz.claim;
+    controls = `<div class="voyage-choices">
+      <button type="button" class="voyage-choice" data-voyage-pick="0">${esc(quiz.ok)}</button>
+      <button type="button" class="voyage-choice" data-voyage-pick="1">${esc(quiz.bad)}</button>
+    </div>${row.miss ? `<p class="voyage-miss">${esc(row.miss)}</p>` : ""}`;
+  } else if (atPass && row.pass) {
     controls = `<div class="voyage-actions">
       <button type="button" class="voyage-go" data-voyage-duel="1">去同窗</button>
       <button type="button" class="voyage-go" data-voyage-replay="1">再走一程</button>
@@ -417,63 +478,37 @@ function boxHtml(row, pathOpen, gender) {
         ? `布旗下記住${esc(row.flagName || "同窗")}。馬跟住你。`
         : "馬跟住你。"
     }</p>`;
-  } else if (Array.isArray(line.choice) && line.choice.length) {
-    controls = `<div class="voyage-choices">${line.choice
-      .map(
-        (opt, i) =>
-          `<button type="button" class="voyage-choice" data-voyage-pick="${i}">${esc(opt.text)}</button>`
-      )
-      .join("")}</div>${row.miss ? `<p class="voyage-miss">${esc(row.miss)}</p>` : ""}`;
-  } else if (last && !atPine && !atStates && !atCoast && !atLoft && !atFerry && !atPass && pathOpen) {
-    controls = `<p class="voyage-hint">${
-      atRiver
-        ? "向右走到松山。"
-        : atCamp
-          ? "向左走到河邊。"
-          : atTower
-            ? "向前走到營帳。"
-            : row.weapon
-              ? "步卒跟上。拖左下圓鈕向前。"
-              : "拖左下圓鈕向前，或按鍵盤。"
-    }</p>`;
-  } else if (atTower && row.land) {
-    controls = `<button type="button" class="voyage-go" data-voyage-next="1">向前</button>`;
-  } else if (atTower) {
-    controls = `<button type="button" class="voyage-go" data-voyage-claim="1">收下</button>`;
-  } else if (atCamp && row.camp) {
-    controls = `<button type="button" class="voyage-go" data-voyage-next="1">向前</button>`;
-  } else if (atCamp) {
-    controls = `<button type="button" class="voyage-go" data-voyage-finish="1">收下</button>`;
-  } else if (atRiver && row.river) {
-    controls = `<button type="button" class="voyage-go" data-voyage-next="1">向前</button>`;
-  } else if (atRiver) {
-    controls = `<button type="button" class="voyage-go" data-voyage-river="1">收下</button>`;
-  } else if (atPine && row.pine) {
-    controls = `<button type="button" class="voyage-go" data-voyage-next="1">向前</button>`;
-  } else if (atPine) {
-    controls = `<button type="button" class="voyage-go" data-voyage-pine="1">收下</button>`;
-  } else if (atStates && row.states) {
-    controls = `<button type="button" class="voyage-go" data-voyage-next="1">向前</button>`;
-  } else if (atStates) {
-    controls = `<button type="button" class="voyage-go" data-voyage-states="1">收下</button>`;
-  } else if (atCoast && row.coast) {
-    controls = `<button type="button" class="voyage-go" data-voyage-next="1">向前</button>`;
-  } else if (atCoast) {
-    controls = `<button type="button" class="voyage-go" data-voyage-coast="1">收下</button>`;
-  } else if (atLoft && row.loft) {
-    controls = `<button type="button" class="voyage-go" data-voyage-next="1">向前</button>`;
-  } else if (atLoft) {
-    controls = `<button type="button" class="voyage-go" data-voyage-loft="1">收下</button>`;
-  } else if (atFerry && row.ferry) {
-    controls = `<button type="button" class="voyage-go" data-voyage-next="1">向前</button>`;
-  } else if (atFerry) {
-    controls = `<button type="button" class="voyage-go" data-voyage-ferry="1">收下</button>`;
-  } else if (atPass) {
-    controls = `<button type="button" class="voyage-go" data-voyage-pass="1">收下</button>`;
-  } else {
-    controls = `<button type="button" class="voyage-go" data-voyage-next="1">知道了</button>`;
+  } else if (needsClaim(row)) {
+    const kind = claimKind(row.stop);
+    controls = `<button type="button" class="voyage-go" data-voyage-${kind}="1">收下</button>`;
+  } else if (canWalk(row, false) && segmentDone(row)) {
+    controls = `<button type="button" class="voyage-go" data-voyage-skip="1">快返</button>`;
   }
-  return `${who}<p class="voyage-line">${esc(lineText)}</p>${controls}`;
+  const coach = coachText(row);
+  const note = coach ? `<p class="voyage-coach-line">${esc(coach)}</p>` : "";
+  const head = asking && quiz
+    ? `<p class="voyage-who">${esc(quiz.who === "other" ? otherName(gender) : quiz.who)}</p>`
+    : who;
+  return `${head}<p class="voyage-line">${esc(lineText)}</p>${note}${controls}`;
+}
+
+function needsClaim(row) {
+  if (isAsking(row)) return false;
+  if (row.line < STOPS[row.stop].lines.length - 1 && row.stop !== 2) return false;
+  return !!claimKind(row.stop) && !placeOwned(row);
+}
+
+function claimKind(stop) {
+  if (stop === 2) return "claim";
+  if (stop === 3) return "finish";
+  if (stop === 4) return "river";
+  if (stop === 5) return "pine";
+  if (stop === 6) return "states";
+  if (stop === 7) return "coast";
+  if (stop === 8) return "loft";
+  if (stop === 9) return "ferry";
+  if (stop === 10) return "pass";
+  return "";
 }
 
 function matesOf(user, board) {
@@ -525,6 +560,8 @@ export function renderVoyage() {
     <p class="voyage-load" id="voyage-load">載入中</p>
     <button type="button" class="voyage-back" data-voyage-home="1">返回</button>
     <div class="voyage-path" id="voyage-path" aria-label="這一程"></div>
+    <p class="voyage-goal" id="voyage-goal" hidden></p>
+    <div class="voyage-arrow" id="voyage-arrow" hidden aria-hidden="true">↑</div>
     <div class="voyage-stick" id="voyage-stick" aria-label="行走">
       <div class="voyage-knob" id="voyage-knob"></div>
     </div>
@@ -554,7 +591,22 @@ export function bindVoyage(user, ctx) {
     const box = document.getElementById("voyage-box");
     if (path) path.innerHTML = pathHtml(row);
     if (box) box.innerHTML = duel ? duelHtml(duel, mates, row) : boxHtml(row, pathOpen, current?.gender);
+    const walking = !duel && canWalk(row, duel);
+    const talking = !!duel || isAsking(row);
+    pathOpen = walking;
+    world?.setOpen(walking);
+    world?.setHold(talking);
+    world?.setPace(segmentDone(row));
     root.classList.toggle("is-rival", !!(duel && duel.phase !== "pick"));
+    root.classList.toggle("is-talk", talking);
+    const goal = document.getElementById("voyage-goal");
+    if (goal) {
+      const text = walking ? GOAL[row.stop] || "" : "";
+      goal.hidden = !text;
+      goal.textContent = text;
+    }
+    const arrow = document.getElementById("voyage-arrow");
+    if (arrow && !walking) arrow.hidden = true;
     if (duel?.phase === "pick" && mates == null && boardTries < 8) {
       boardTries += 1;
       setTimeout(() => {
@@ -629,6 +681,8 @@ export function bindVoyage(user, ctx) {
       return;
     }
     world?.hitch();
+    pathOpen = true;
+    world?.setOpen(true);
     if (!row.pine) ctx.toast?.("松山是你的。向前，有一幅七雄的圖。");
     paint();
   };
@@ -698,9 +752,36 @@ export function bindVoyage(user, ctx) {
       const row = readRow(ctx.getUser?.() || user);
       pathOpen = false;
       world?.setOpen(false);
-      save({ ...row, stop, line: 0, miss: "", done: false });
+      const next = { ...row, stop, line: 0, miss: "", done: false };
+      if (!save(next)) return;
+      if (stop === 2 && !row.land) claimLand(readRow(ctx.getUser?.() || user));
+    },
+    onWalk: () => {
+      const row = readRow(ctx.getUser?.() || user);
+      if (row.guide !== 0) return;
+      save({ ...row, guide: 1 });
+    },
+    onNear: () => {
+      const row = readRow(ctx.getUser?.() || user);
+      if (row.guide !== 1) return;
+      save({ ...row, guide: 2 });
+    },
+    onAim: (aim) => {
+      const arrow = document.getElementById("voyage-arrow");
+      if (!arrow) return;
+      if (!aim?.show) {
+        arrow.hidden = true;
+        return;
+      }
+      const x = Math.max(12, Math.min(88, 50 + aim.x * 38));
+      const y = Math.max(18, Math.min(62, 50 - aim.y * 28));
+      arrow.hidden = false;
+      arrow.style.left = `${x}%`;
+      arrow.style.top = `${y}%`;
+      arrow.style.transform = `rotate(${aim.deg || 0}deg)`;
     },
   });
+  paint();
 
   root.addEventListener("click", (e) => {
     const home = e.target.closest("[data-voyage-home]");
@@ -767,27 +848,70 @@ export function bindVoyage(user, ctx) {
     }
     const pick = e.target.closest("[data-voyage-pick]");
     if (pick) {
-      const line = shownLine(row);
-      const opt = line.choice?.[Number(pick.dataset.voyagePick)];
+      const quiz = roadQuiz(row.spin, row.stop);
+      const opt = quiz && isAsking(row)
+        ? (Number(pick.dataset.voyagePick) === 0 ? { ok: true } : { ok: false, miss: quiz.miss })
+        : shownLine(row).choice?.[Number(pick.dataset.voyagePick)];
       if (!opt) return;
       if (!opt.ok) {
         save({ ...row, miss: opt.miss || "再揀一句。" });
         return;
       }
-      if (row.line < stop.lines.length - 1) {
-        const next = { ...row, line: row.line + 1, miss: "" };
-        if (row.stop < 6) {
-          next.weapon = true;
-          next.soldier = true;
-        }
-        if (row.stop === 4) next.crossbow = true;
-        if (row.stop === 5) next.chariot = true;
-        if (save(next)) {
-          if (row.stop < 6) world?.grant();
-          if (row.stop === 4) world?.arm();
-          if (row.stop === 5) world?.hitch();
-        }
+      const doneRow = {
+        ...row,
+        line: STOPS[row.stop].lines.length - 1,
+        miss: "",
+        guide: row.guide < 3 ? 3 : row.guide,
+      };
+      if (row.stop < 6) {
+        doneRow.weapon = true;
+        doneRow.soldier = true;
       }
+      if (row.stop === 4) doneRow.crossbow = true;
+      if (row.stop === 5) doneRow.chariot = true;
+      if (row.stop === 3) {
+        claimCamp(doneRow);
+        return;
+      }
+      if (row.stop === 4) {
+        claimRiver(doneRow);
+        return;
+      }
+      if (row.stop === 5) {
+        claimPine(doneRow);
+        return;
+      }
+      if (row.stop === 6) {
+        claimPlace(doneRow, "states", "這幅圖是你的。向前走到海岸。");
+        return;
+      }
+      if (row.stop === 7) {
+        claimPlace(doneRow, "coast", "海岸是你的。向前走到樓閣。");
+        return;
+      }
+      if (row.stop === 8) {
+        claimPlace(doneRow, "loft", "馬跟住你。城門到樓閣是你的。向前走到渡口。");
+        return;
+      }
+      if (row.stop === 9) {
+        claimPlace(doneRow, "ferry", "渡口是你的。向前走到關城。");
+        return;
+      }
+      if (row.stop === 10) {
+        claimPlace(doneRow, "pass", "關城是你的。城門到關城是你的。");
+        return;
+      }
+      if (save(doneRow)) {
+        pathOpen = true;
+        world?.setOpen(true);
+        if (row.stop < 6) world?.grant();
+        if (row.stop === 4) world?.arm();
+        if (row.stop === 5) world?.hitch();
+      }
+      return;
+    }
+    if (e.target.closest("[data-voyage-skip]")) {
+      world?.skip();
       return;
     }
     if (e.target.closest("[data-voyage-claim]")) {
@@ -827,9 +951,7 @@ export function bindVoyage(user, ctx) {
       return;
     }
     if (e.target.closest("[data-voyage-replay]")) {
-      pathOpen = false;
       world?.place(0);
-      world?.setOpen(false);
       save({ ...row, stop: 0, line: 0, miss: "", done: false, spin: (Number(row.spin) || 0) + 1 });
     }
   });

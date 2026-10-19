@@ -108,6 +108,10 @@ export function mountVoyageScene(opts) {
   let horse = null;
   let prize = null;
   let yaw = 0;
+  let hold = false;
+  let fast = false;
+  let notedWalk = false;
+  let notedNear = false;
   const pos = new THREE.Vector3(SPAWN[stopIndex].x, 0, SPAWN[stopIndex].z);
   const cam = new THREE.Vector3(pos.x, 2.6, pos.z - 5.6);
   const stickVec = { x: 0, z: 0 };
@@ -172,14 +176,22 @@ export function mountVoyageScene(opts) {
 
   const npcs = [];
 
+  const pillar = new THREE.Group();
   const mark = new THREE.Mesh(
-    new THREE.RingGeometry(0.85, 1.15, 28),
+    new THREE.RingGeometry(0.85, 1.35, 28),
     new THREE.MeshBasicMaterial({ color: 0xf4e2c4, side: THREE.DoubleSide })
   );
   mark.rotation.x = -Math.PI / 2;
   mark.position.y = 0.06;
-  mark.visible = false;
-  scene.add(mark);
+  const beam = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.16, 0.55, 10, 16, 1, true),
+    new THREE.MeshBasicMaterial({ color: 0xf4e2c4, transparent: true, opacity: 0.62, side: THREE.DoubleSide, depthWrite: false })
+  );
+  beam.position.y = 5;
+  pillar.add(mark);
+  pillar.add(beam);
+  pillar.visible = false;
+  scene.add(pillar);
 
   const player = new THREE.Group();
   const avatar = new THREE.Group();
@@ -218,8 +230,8 @@ export function mountVoyageScene(opts) {
   window.addEventListener("keyup", onKeyUp);
 
   function setKnob(x, y) {
-    if (!knob) return;
-    const max = 34;
+    if (!knob || !stick) return;
+    const max = Math.max(16, stick.clientWidth / 2 - 22);
     knob.style.transform = `translate(${x * max}px, ${y * max}px)`;
   }
   function onPointerDown(e) {
@@ -271,12 +283,24 @@ export function mountVoyageScene(opts) {
 
   function placeMark() {
     if (!open || stopIndex >= MARK.length) {
-      mark.visible = false;
+      pillar.visible = false;
       return;
     }
-    mark.visible = true;
-    mark.position.x = MARK[stopIndex].x;
-    mark.position.z = MARK[stopIndex].z;
+    pillar.visible = true;
+    pillar.position.x = MARK[stopIndex].x;
+    pillar.position.z = MARK[stopIndex].z;
+  }
+
+  function aimAtMark() {
+    if (!open || stopIndex >= MARK.length) {
+      opts.onAim?.({ show: false });
+      return;
+    }
+    const m = MARK[stopIndex];
+    const ahead = new THREE.Vector3(m.x, 3, m.z).project(camera);
+    const onScreen = ahead.z < 1 && Math.abs(ahead.x) < 0.9 && Math.abs(ahead.y) < 0.9;
+    const deg = Math.atan2(ahead.x, ahead.y) * (180 / Math.PI);
+    opts.onAim?.({ show: !onScreen, x: ahead.x, y: ahead.y, deg });
   }
 
   function halfLane() {
@@ -307,7 +331,8 @@ export function mountVoyageScene(opts) {
       return;
     }
     const dt = Math.min(0.05, clock.getDelta());
-    const mv = rivalVisit ? { moving: false, x: 0, z: 0 } : moveInput();
+    const mv = hold || rivalVisit ? { moving: false, x: 0, z: 0 } : moveInput();
+    const speed = fast ? SPEED * 1.9 : SPEED;
     if (mv.moving) {
       const aim = Math.atan2(mv.x, mv.z);
       let dy = aim - yaw;
@@ -315,8 +340,8 @@ export function mountVoyageScene(opts) {
       while (dy < -Math.PI) dy += Math.PI * 2;
       yaw += dy * Math.min(1, dt * 8);
       const lane = halfLane();
-      pos.x = Math.max(-lane, Math.min(lane, pos.x + mv.x * SPEED * dt));
-      let nz = pos.z + mv.z * SPEED * dt;
+      pos.x = Math.max(-lane, Math.min(lane, pos.x + mv.x * speed * dt));
+      let nz = pos.z + mv.z * speed * dt;
       const cap = open ? null : BARRIER_Z[stopIndex];
       if (cap != null && nz > cap) nz = cap;
       pos.z = Math.max(Z_MIN, Math.min(Z_MAX, nz));
@@ -359,7 +384,14 @@ export function mountVoyageScene(opts) {
       npc.rotation.y += turn * Math.min(1, dt * 4);
     });
     mark.rotation.z += dt * 0.8;
-
+    if (mv.moving && !notedWalk && Math.hypot(pos.x, pos.z - SPAWN[0].z) > 2.2) {
+      notedWalk = true;
+      opts.onWalk?.();
+    }
+    if (!notedNear && stopIndex === 0 && Math.hypot(pos.x + 1.45, pos.z - 37.5) < 8) {
+      notedNear = true;
+      opts.onNear?.();
+    }
     const k = 1 - Math.exp(-dt * 4);
     const tx = pos.x - Math.sin(yaw) * 5.5;
     const tz = pos.z - Math.cos(yaw) * 5.5;
@@ -368,6 +400,7 @@ export function mountVoyageScene(opts) {
     cam.z += (tz - cam.z) * k;
     camera.position.copy(cam);
     camera.lookAt(pos.x, 1.25, pos.z);
+    aimAtMark();
     renderer.render(scene, camera);
   }
 
@@ -437,6 +470,28 @@ export function mountVoyageScene(opts) {
     setOpen(next) {
       open = !!next;
       placeMark();
+    },
+    setHold(next) {
+      hold = !!next;
+      if (hold) {
+        stickVec.x = 0;
+        stickVec.z = 0;
+        keys.clear();
+        setKnob(0, 0);
+      }
+    },
+    setPace(next) {
+      fast = !!next;
+    },
+    skip() {
+      if (!open || stopIndex >= MARK.length) return;
+      const m = MARK[stopIndex];
+      pos.set(m.x, 0, m.z);
+      yaw = 0;
+      stopIndex += 1;
+      open = false;
+      placeMark();
+      opts.onArrive?.(stopIndex);
     },
     grant() {
       follow = true;

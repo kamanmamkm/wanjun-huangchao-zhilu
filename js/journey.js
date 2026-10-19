@@ -13,7 +13,7 @@ import { renderHeroStage, renderStudyCompanion, renderPromoteReveal } from "./he
 import { nextHook, nextStageAfter, todayEncounter, dailyStageQuestions, hydrateStageQuestions, flavorDoneToday, flavorHitsToday, DAILY_FLAVOR_HITS } from "./data/flavor.js?v=rad114";
 import { renderFlavorSerial, renderSerialAside, bindFlavorSerial, serialLeadsFlavor, serialHookDetail, serialGoalChip } from "./flavorSerial.js?v=rad118";
 import { schoolDay } from "./data/flavorSerial.js?v=rad98";
-import { nightOf } from "./voyage.js?v=rad141";
+import { nightOf } from "./voyage.js?v=rad142";
 import {
   userSnapshot,
   wheelStatus,

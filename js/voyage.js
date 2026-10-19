@@ -3,10 +3,10 @@
  * 有了營帳，可以去榜上同窗的城門答一句。答對就在自己這邊插布旗。
  * 史實只重用已有判斷，再走一程就換下一句：孔子與始皇不同世；西周是分封、受封的是諸侯；科舉不在秦代；夏商周有先後；百家爭鳴在春秋戰國；貞觀是唐太宗；《史記》是司馬遷。
  * 松山之後向前：七雄的圖、海岸、樓閣。答對只多一個已經屬於你的地方。樓閣有商人，講書同文。樓閣答對，馬跟住你。樓閣之後才再走一程。
- * 城門到松山之後，行旅「今晚未了」每日一句。答對只點亮已經屬於你的一個地方。
+ * 城門到松山之後，行旅「今晚未了」每日一句。有了樓閣，逢單數日由商人問。未到樓閣，仍然聽將領。答對只點亮已經屬於你的一個地方。
  */
 import { addXp, updateUser } from "./storage.js?v=rad114";
-import { mountVoyageScene } from "./voyage3d.js?v=rad141";
+import { mountVoyageScene } from "./voyage3d.js?v=rad142";
 
 const XP_ONCE = 8;
 
@@ -291,7 +291,7 @@ export function nightOf(raw, day) {
   const place = owned[n % owned.length];
   const done = !!dayText && row.night === dayText;
   return {
-    who: "將領",
+    who: row.loft && n % 2 === 1 ? "商人" : "將領",
     claim: quiz.claim,
     ok: quiz.ok,
     bad: quiz.bad,

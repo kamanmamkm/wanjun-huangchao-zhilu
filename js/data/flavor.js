@@ -1,7 +1,7 @@
 /**
  * 短循環趣味：答題旁白、過關信物、今日機緣、下回鉤。
  */
-import { CHAPTERS, chapterList } from "./chapters.js?v=rad157";
+import { CHAPTERS, chapterList } from "./chapters.js?v=rad158";
 import { QUESTIONS } from "./questions.js?v=rad83";
 import { filterByFormYear } from "./formYear.js?v=rad114";
 
@@ -50,6 +50,11 @@ export const RELICS = {
   "ch4_cause:interact": { id: "r_ask", name: "問因牙牌", hint: "用符合史實的理由回答古人。" },
   "ch4_cause:source": { id: "r_single", name: "單因夾註", hint: "一件結果往往不能只歸於一件事。" },
   "ch4_cause:boss": { id: "r_false_link", name: "偽因果印", hint: "相隔極遠的事，不宜寫成直接因果。" },
+  "ch5_policy:story": { id: "r_scale", name: "權衡秤", hint: "措施有功，仍要問代價。" },
+  "ch5_policy:basic": { id: "r_measure", name: "措施木籤", hint: "先問這項政策用來做什麼。" },
+  "ch5_policy:interact": { id: "r_policy_ribbon", name: "政策絲帶", hint: "政策也要放回它的年代。" },
+  "ch5_policy:source": { id: "r_cost", name: "代價夾註", hint: "只寫好處，通常講得太盡。" },
+  "ch5_policy:boss": { id: "r_both", name: "並陳朱筆", hint: "開拓有功，民力負擔也要寫上。" },
 };
 
 export function relicFor(chapterId, stageId) {

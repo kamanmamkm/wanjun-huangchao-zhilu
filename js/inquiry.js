@@ -5,7 +5,7 @@
 import { INQUIRY } from "./data/inquiry.js?v=rad103";
 import { XP_REWARDS } from "./data/levels.js?v=rad103";
 import { updateUser } from "./storage.js?v=rad114";
-import { grantNamedRelic } from "./progress.js?v=rad157";
+import { grantNamedRelic } from "./progress.js?v=rad158";
 
 const OPEN_KEY = "huangchao_inquiry_open";
 const RELIC_ID = "inquiry_keju_notice";

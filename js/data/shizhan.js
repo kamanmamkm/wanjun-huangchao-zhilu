@@ -1,9 +1,11 @@
 /**
  * 史戰風雲 —— 靈感來自回合制卡牌對戰（如三國殺的體力／出牌節奏）
  * 原創中史科教學玩法，並非三國殺複製品，不含官方牌面／技能原文
+ * 出牌只抽行過嘅章（任一關已完成）同本年級嘅現有題。打贏仍然加經驗。
  */
 import { QUESTIONS, checkFill } from "./questions.js";
 import { RIVALS } from "./characters.js";
+import { CHAPTERS } from "./chapters.js?v=rad156";
 import { filterByFormYear } from "./formYear.js?v=rad114";
 
 export const SHIZHAN_MAX_HP = 4;
@@ -39,18 +41,73 @@ export const CARD_TYPES = {
   },
 };
 
-function pickMc(hard = false, formYear) {
-  const list = filterByFormYear(QUESTIONS.mc, formYear);
-  const srcList = list.length ? list : QUESTIONS.mc;
-  const pool = hard ? srcList.filter((q) => q.grade === "中二" || q.grade === "中三") : srcList;
-  const src = pool.length ? pool : srcList;
-  return src[Math.floor(Math.random() * src.length)];
+function stageWalked(raw) {
+  if (!raw) return false;
+  if (raw === true) return true;
+  return !!raw.completed;
 }
 
-function pickFill(formYear) {
-  const list = filterByFormYear(QUESTIONS.fill, formYear);
-  const src = list.length ? list : QUESTIONS.fill;
-  return src[Math.floor(Math.random() * src.length)];
+export function walkedChapterIds(user) {
+  const saved = user?.progress?.chapters || {};
+  return Object.keys(CHAPTERS).filter((id) => {
+    const stages = saved[id]?.stages || {};
+    return Object.values(stages).some(stageWalked);
+  });
+}
+
+function draw(list) {
+  if (!list?.length) return null;
+  return list[Math.floor(Math.random() * list.length)];
+}
+
+export function shizhanPools(user) {
+  const year = user?.formYear || null;
+  const walked = walkedChapterIds(user);
+  const mcById = new Map((QUESTIONS.mc || []).map((q) => [q.id, q]));
+  const seen = new Set();
+  const mc = [];
+  const bakedFill = [];
+  for (const id of walked) {
+    for (const stage of CHAPTERS[id]?.stages || []) {
+      for (const qid of stage.questionIds || []) {
+        const q = mcById.get(qid);
+        if (!q || seen.has(q.id)) continue;
+        seen.add(q.id);
+        mc.push(q);
+      }
+      for (const q of stage.questions || []) {
+        if (!q?.id || seen.has(q.id) || !q.q) continue;
+        if (q.type === "fill" || (Array.isArray(q.answers) && !q.options?.length)) {
+          seen.add(q.id);
+          bakedFill.push(q);
+          continue;
+        }
+        if (!q.options?.length || !Number.isFinite(Number(q.answer))) continue;
+        seen.add(q.id);
+        mc.push(q);
+      }
+    }
+  }
+  const yearMc = filterByFormYear(mc, year);
+  const topics = new Set(yearMc.map((q) => q.topic).filter(Boolean));
+  const fill = filterByFormYear(
+    [...bakedFill, ...(QUESTIONS.fill || []).filter((q) => topics.has(q.topic))],
+    year
+  );
+  return { walked, mc: yearMc, fill };
+}
+
+function pickMc(battle, hard = false) {
+  const all = battle?.pools?.mc || [];
+  const hardPool = hard ? all.filter((q) => q.grade === "中二" || q.grade === "中三") : all;
+  return draw(hardPool.length ? hardPool : all);
+}
+
+function pickHeal(battle) {
+  const fill = draw(battle?.pools?.fill || []);
+  if (fill) return { mode: "fill", question: fill };
+  const question = pickMc(battle, false);
+  return question ? { mode: "mc", question } : null;
 }
 
 export function randomEnemy() {
@@ -67,11 +124,13 @@ export function createHand() {
   return hand;
 }
 
-export function createBattle(playerChar, formYear) {
+export function createBattle(playerChar, user) {
   const enemy = randomEnemy();
+  const person = user && typeof user === "object" ? user : { formYear: user };
   return {
     phase: "player", // player | quiz | enemy | end
-    formYear: formYear || null,
+    formYear: person.formYear || null,
+    pools: shizhanPools(person),
     turn: 1,
     playerHp: SHIZHAN_MAX_HP,
     enemyHp: SHIZHAN_MAX_HP,
@@ -106,15 +165,17 @@ export function startPlayCard(battle, cardUid) {
     };
   }
 
-  const mode = card.type === "heal" ? "fill" : "mc";
-  const question = mode === "fill" ? pickFill(battle.formYear) : pickMc(card.type === "strategy", battle.formYear);
+  const picked = card.type === "heal" ? pickHeal(battle) : { mode: "mc", question: pickMc(battle, card.type === "strategy") };
+  if (!picked?.question) {
+    return { ...battle, log: [...battle.log, "行過的章未有可出的題。"] };
+  }
   return {
     ...battle,
     quiz: {
       cardUid,
       cardType: card.type,
-      question,
-      mode,
+      question: picked.question,
+      mode: picked.mode,
       purpose: "play",
       skillBoost: false,
     },
@@ -182,7 +243,8 @@ export function resolvePlayerQuiz(battle, answer) {
 export function resolveEnemyTurn(battle) {
   if (battle.phase !== "enemy" || battle.winner) return battle;
   // 敵方發動問攻：你需要答題守禦，或若已有守勢則較易
-  const question = pickMc(false, battle.formYear);
+  const question = pickMc(battle, false);
+  if (!question) return battle;
   return {
     ...battle,
     phase: "quiz",

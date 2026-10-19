@@ -2,8 +2,8 @@ import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad50";
 import { QUESTIONS } from "./data/questions.js?v=rad83";
 import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad66";
 import { levelFromXp } from "./data/levels.js?v=rad66";
-import { DIALOGUES, dialoguesByIds } from "./data/dialogues.js?v=rad155";
-import { TIMELINE_SETS, WORDWALL_ROUNDS, timelineSetsByIds } from "./data/games.js?v=rad155";
+import { DIALOGUES, dialoguesByIds } from "./data/dialogues.js?v=rad156";
+import { TIMELINE_SETS, WORDWALL_ROUNDS, timelineSetsByIds } from "./data/games.js?v=rad156";
 import { CHARMS } from "./data/wheel.js?v=rad67";
 import {
   getUnit,
@@ -18,13 +18,14 @@ import { renderAvatar } from "./avatar.js?v=rad79";
 import {
   CARD_TYPES,
   createBattle,
+  shizhanPools,
   startPlayCard,
   useSkillOnQuiz,
   resolvePlayerQuiz,
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=rad114";
+} from "./data/shizhan.js?v=rad156";
 import {
   getCurrentUser,
   clearSession,
@@ -51,10 +52,10 @@ import {
   clearHomeRun,
   charmCount,
   consumeCharm,
-} from "./progress.js?v=rad155";
-import { renderWheelPage, bindWheel } from "./wheel.js?v=rad155";
-import { renderCase, bindCase, rememberCaseOpen, recallCaseOpen, caseSaveNoteText } from "./case.js?v=rad155";
-import { renderInquiry, bindInquiry, recallInquiryOpen, rememberInquiryOpen } from "./inquiry.js?v=rad155";
+} from "./progress.js?v=rad156";
+import { renderWheelPage, bindWheel } from "./wheel.js?v=rad156";
+import { renderCase, bindCase, rememberCaseOpen, recallCaseOpen, caseSaveNoteText } from "./case.js?v=rad156";
+import { renderInquiry, bindInquiry, recallInquiryOpen, rememberInquiryOpen } from "./inquiry.js?v=rad156";
 import { renderLiteracy, bindLiteracy, recallLiteracyOpen, rememberLiteracyOpen, prepareLiteracyOpen } from "./literacy.js?v=rad118";
 import { renderMuseum, bindMuseum, recallMuseumOpen, rememberMuseumOpen } from "./museum.js?v=rad118";
 import {
@@ -66,13 +67,13 @@ import {
   renderCuoshi,
   bindJourney,
   renderLeaderboardPage,
-} from "./journey.js?v=rad155";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad155";
+} from "./journey.js?v=rad156";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad156";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad79";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";
-import { renderVoyage, bindVoyage, nightOf } from "./voyage.js?v=rad155";
+import { renderVoyage, bindVoyage, nightOf } from "./voyage.js?v=rad156";
 import { schoolDay } from "./data/flavorSerial.js?v=rad98";
-import { flavorLine, isoDay } from "./data/flavor.js?v=rad155";
+import { flavorLine, isoDay } from "./data/flavor.js?v=rad156";
 import {
   FORM_YEARS,
   CONTENT_YEARS,
@@ -96,7 +97,7 @@ import {
   registerWithCloud,
   scheduleCloudSync,
   onCloudSync,
-} from "./cloud.js?v=rad155";
+} from "./cloud.js?v=rad156";
 import { isTeacherPortal } from "./data/portal.js?v=rad78";
 
 captureCloudFromLocation();
@@ -1690,8 +1691,13 @@ function renderShizhan(user, char, rank) {
         <div><strong>🌿 回春</strong> 答填充題回血 1 點</div>
         <div><strong>🛡️ 守禦</strong> 下回合可擋敵方攻擊</div>
       </div>
+      <p class="lead">${
+        shizhanPools(user).mc.length
+          ? "只出你行過的章，同本年級的題。"
+          : "先行長卷的一章，先有題可出。"
+      }</p>
       <p class="lead">雙方各有 ${4} 點體力。打空對手體力即可獲勝（+${XP_REWARDS.shizhanWin} XP）。</p>
-      <button type="button" class="btn" id="shizhan-start">以「${char?.name}」出戰</button>
+      <button type="button" class="btn" id="shizhan-start" ${shizhanPools(user).mc.length ? "" : "disabled"}>以「${char?.name}」出戰</button>
       <button type="button" class="btn ghost" data-goto="home">返回行旅</button>
     </section>`;
   }
@@ -1796,11 +1802,11 @@ function renderShizhan(user, char, rank) {
 
 function bindShizhan(user, char) {
   app.querySelector("#shizhan-start")?.addEventListener("click", () => {
-    state.shizhan = createBattle(char, user.formYear);
+    state.shizhan = createBattle(char, user);
     render();
   });
   app.querySelector("#shizhan-again")?.addEventListener("click", () => {
-    state.shizhan = createBattle(char, user.formYear);
+    state.shizhan = createBattle(char, user);
     render();
   });
   app.querySelectorAll("[data-sz-card]").forEach((btn) => {

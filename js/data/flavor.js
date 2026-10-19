@@ -56,7 +56,7 @@ export function nextHook(chapterId, stageId) {
   const ci = list.findIndex((c) => c.id === chapterId);
   const nch = ci >= 0 ? list[ci + 1] : null;
   if (nch?.stages?.length) return `下回：${nch.title}——${nch.blurb || ""}`;
-  if (nch) return `下回：${nch.title}（關卡製作中，可先打錯史）。`;
+  if (nch) return `下回：${nch.title}。關卡製作中。`;
   return "下回：行旅待你來試煉。";
 }
 

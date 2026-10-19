@@ -487,6 +487,11 @@ body:has(.is-home)::before {
   font-weight: 700;
 }
 
+.home-more-body > h3 {
+  margin: 1rem 0 0.45rem;
+  font-size: 1.05rem;
+}
+
 .home-more-body p {
   margin: 0.4rem 0;
 }

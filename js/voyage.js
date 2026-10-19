@@ -7,7 +7,7 @@
  * 行旅列出帶住的戈、弩、戰車、馬。未得到的不列出。
  */
 import { addXp, updateUser } from "./storage.js?v=rad114";
-import { mountVoyageScene } from "./voyage3d.js?v=rad143";
+import { mountVoyageScene } from "./voyage3d.js?v=rad144";
 
 const XP_ONCE = 8;
 

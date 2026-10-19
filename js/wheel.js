@@ -101,7 +101,7 @@ export function renderWheelPage(user) {
         st.canSpin ? `轉動天機輪（${st.charges}）` : "先去答對一題"
       }</button>
       <button type="button" class="btn ghost" data-goto="scroll">去長卷答題</button>
-      <button type="button" class="btn ghost" data-goto="games">去用錦囊</button>
+      <button type="button" class="btn ghost" data-goto="home">返回行旅</button>
     </div>
     <p class="muted">${hint}</p>
     ${charmBagHtml(user)}

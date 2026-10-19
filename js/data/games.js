@@ -232,6 +232,43 @@ export const TIMELINE_SETS = [
       { id: "d", label: "抗戰勝利", year: 1945, hint: "日本投降" },
     ],
   },
+  {
+    id: "tl18",
+    title: "治策先後：上古至唐",
+    grade: "中一",
+    pick: 5,
+    items: [
+      { id: "a", label: "西周封建開始", year: -1046, hint: "約公元前11世紀" },
+      { id: "b", label: "商鞅變法", year: -356, hint: "戰國秦國" },
+      { id: "c", label: "秦始皇行郡縣", year: -221, hint: "統一後" },
+      { id: "d", label: "漢武帝推恩令", year: -127, hint: "削弱王國" },
+      { id: "e", label: "科舉制確立發展（隋唐）", year: 605, hint: "隋煬帝設進士科前後" },
+    ],
+  },
+  {
+    id: "tl19",
+    title: "治策先後：宋至清",
+    grade: "中二",
+    pick: 4,
+    items: [
+      { id: "a", label: "陳橋兵變／北宋建立", year: 960, hint: "公元960年" },
+      { id: "b", label: "王安石開始變法", year: 1069, hint: "熙寧年間" },
+      { id: "c", label: "明太祖廢宰相", year: 1380, hint: "洪武年間" },
+      { id: "d", label: "洋務運動展開", year: 1861, hint: "自強運動" },
+    ],
+  },
+  {
+    id: "tl20",
+    title: "治策先後：晚清至當代",
+    grade: "中三",
+    pick: 4,
+    items: [
+      { id: "a", label: "戊戌維新", year: 1898, hint: "百日維新" },
+      { id: "b", label: "辛亥革命", year: 1911, hint: "公元1911年" },
+      { id: "c", label: "中華人民共和國成立", year: 1949, hint: "公元1949年" },
+      { id: "d", label: "改革開放啟動", year: 1978, hint: "十一屆三中全會" },
+    ],
+  },
 ];
 
 /** 機緣翻牌：撳兩張有關嘅牌配對。每套題池較大，開局隨機抽若干對 */

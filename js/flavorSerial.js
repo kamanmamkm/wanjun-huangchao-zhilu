@@ -11,9 +11,9 @@ import {
   serialGoal,
 } from "./data/flavorSerial.js?v=rad98";
 import { XP_REWARDS } from "./data/levels.js?v=rad98";
-import { isoDay, DAILY_FLAVOR_HITS } from "./data/flavor.js?v=rad160";
+import { isoDay, DAILY_FLAVOR_HITS } from "./data/flavor.js?v=rad161";
 import { updateUser, addXp } from "./storage.js?v=rad114";
-import { grantNamedRelic } from "./progress.js?v=rad160";
+import { grantNamedRelic } from "./progress.js?v=rad161";
 import { logCaseEvent, researchOn } from "./case.js?v=rad118";
 
 function esc(s) {

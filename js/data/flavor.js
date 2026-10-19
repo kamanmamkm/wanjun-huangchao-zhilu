@@ -1,7 +1,7 @@
 /**
  * 短循環趣味：答題旁白、過關信物、今日機緣、下回鉤。
  */
-import { CHAPTERS, chapterList } from "./chapters.js?v=rad160";
+import { CHAPTERS, chapterList } from "./chapters.js?v=rad161";
 import { QUESTIONS } from "./questions.js?v=rad83";
 import { filterByFormYear } from "./formYear.js?v=rad114";
 
@@ -65,6 +65,11 @@ export const RELICS = {
   "ch7_synthesis:interact": { id: "r_span", name: "跨章絲帶", hint: "不同章的事，仍排在同一條線上。" },
   "ch7_synthesis:source": { id: "r_split", name: "拆句夾註", hint: "一句裡可以有多過一處錯。" },
   "ch7_synthesis:boss": { id: "r_return", name: "歸位朱筆", hint: "人物、制度、條約各自歸位。" },
+  "ch8_finale_prep:story": { id: "r_crown", name: "登基紙箋", hint: "沒有一句可以同時刪去邊防同民生。" },
+  "ch8_finale_prep:basic": { id: "r_rule", name: "治策木籤", hint: "推恩是削弱王國，不是恢復封建。" },
+  "ch8_finale_prep:interact": { id: "r_rule_ribbon", name: "治策絲帶", hint: "制度先放回它的年代。" },
+  "ch8_finale_prep:source": { id: "r_both_sides", name: "並顧夾註", hint: "邊防要顧，民力也要顧。" },
+  "ch8_finale_prep:boss": { id: "r_pending", name: "待定朱筆", hint: "天下待定之前，先把代價寫上。" },
 };
 
 export function relicFor(chapterId, stageId) {

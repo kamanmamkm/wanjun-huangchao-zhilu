@@ -322,6 +322,54 @@ export const CUOSHI_BATTLES = [
 
 /** 長卷 Boss 用嘅殘卷（唔出現喺趣味關卡列表） */
 export const CHAPTER_BOSS_PAGES = {
+  ch8_balance: {
+    id: "boss_ch8_balance",
+    title: "集權不是毫無代價",
+    pageTitle: "登基殘卷",
+    lines: [
+      { id: "a", text: "漢武帝推恩令，令諸侯封地再分，王國勢力漸弱。" },
+      { id: "b", text: "秦行郡縣，長官由朝廷任免，加強中央對地方的管治。" },
+      { id: "c", text: "因此只要加強中央，邊防用兵就百利而無一害。", wrong: true },
+      { id: "d", text: "開拓或用兵有功，軍費與民力負擔仍要並陳。" },
+    ],
+    fix: {
+      prompt: "呢句應該點改？",
+      options: [
+        "集權可以加強管治，不能把用兵寫成毫無代價。",
+        "改成推恩是恢復西周封建即可。",
+        "改成邊防不用管民生即可。",
+        "刪去郡縣制。",
+      ],
+      answer: 0,
+      repaired: "加強中央有助管治，惟用兵的軍費與民力負擔仍要並陳，不宜寫成百利而無一害。",
+      skill: "argue",
+      explain: "推恩削弱王國，郡縣加強中央。邊防的代價不會因為集權而消失。",
+    },
+  },
+  ch8_era_first: {
+    id: "boss_ch8_era_first",
+    title: "先歸位再比較",
+    pageTitle: "制度殘卷",
+    lines: [
+      { id: "a", text: "西周封建，諸侯世襲。" },
+      { id: "b", text: "隋唐以後科舉發展，較多憑考試選官。" },
+      { id: "c", text: "明清海禁、秦代郡縣、漢代推恩其實是同一年的同一項政策。", wrong: true },
+      { id: "d", text: "幾項制度各有時代，要先歸位再比較。" },
+    ],
+    fix: {
+      prompt: "呢句應該點改？",
+      options: [
+        "先放回各自時代，再問各自想達成什麼。海禁不是郡縣，推恩不是西周封建。",
+        "改成三項制度同一年開始即可。",
+        "改成全部都是秦代科舉即可。",
+        "刪去所有時代。",
+      ],
+      answer: 0,
+      repaired: "封建、郡縣、推恩、科舉、海禁各有時代，要先歸位，再比較它們想達成什麼。",
+      skill: "timeline",
+      explain: "討論制度，第一步是放回它的時代，不是合成同一年。",
+    },
+  },
   ch7_stacked: {
     id: "boss_ch7_stacked",
     title: "一句三錯",

@@ -322,6 +322,30 @@ export const CUOSHI_BATTLES = [
 
 /** 長卷 Boss 用嘅殘卷（唔出現喺趣味關卡列表） */
 export const CHAPTER_BOSS_PAGES = {
+  ch6_two_voices: {
+    id: "boss_ch6_two_voices",
+    title: "兩則對不上",
+    pageTitle: "對讀殘頁",
+    lines: [
+      { id: "a", text: "官方記載寫：某郡本年勸農有成，境內稱便。" },
+      { id: "b", text: "同一年，另有訴狀稱該郡仍有饑民。" },
+      { id: "c", text: "因此兩則材料互相抵消，這一年什麼都沒有發生。", wrong: true },
+      { id: "d", text: "兩則各有立場，範圍都只到這一郡、這一年。" },
+    ],
+    fix: {
+      prompt: "呢句應該點改？",
+      options: [
+        "兩則都留下，對讀各自講到哪裡，不能說成什麼都沒發生。",
+        "只刪官方記載。",
+        "只刪訴狀。",
+        "合成全國大豐收又全國大饑荒。",
+      ],
+      answer: 0,
+      repaired: "兩則材料對不上，應分開看立場與範圍，不能互相抵消成什麼都沒發生。",
+      skill: "source",
+      explain: "對不上的材料要對讀，不是互相抵消，也不是合成全國。",
+    },
+  },
   ch2_figures: {
     id: "boss_ch2_kongzi_qin",
     title: "張冠李戴",

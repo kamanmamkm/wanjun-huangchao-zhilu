@@ -170,6 +170,30 @@ export const TIMELINE_SETS = [
       { id: "d", label: "戊戌維新", year: 1898, hint: "百日維新" },
     ],
   },
+  {
+    id: "tl13",
+    title: "材料先後：上古至漢",
+    grade: "中一",
+    pick: 4,
+    items: [
+      { id: "a", label: "商朝以甲骨占卜", year: -1300, hint: "殷墟時期" },
+      { id: "b", label: "孔子講學，言論後來編成《論語》", year: -500, hint: "春秋" },
+      { id: "c", label: "秦統一後的詔令", year: -221, hint: "公元前221年後" },
+      { id: "d", label: "司馬遷寫《史記》", year: -90, hint: "西漢" },
+    ],
+  },
+  {
+    id: "tl14",
+    title: "材料先後：宋至清",
+    grade: "中二",
+    pick: 4,
+    items: [
+      { id: "a", label: "司馬光修成《資治通鑑》", year: 1084, hint: "北宋" },
+      { id: "b", label: "《南京條約》簽訂", year: 1842, hint: "鴉片戰爭後" },
+      { id: "c", label: "《馬關條約》簽訂", year: 1895, hint: "甲午戰爭後" },
+      { id: "d", label: "《辛丑條約》簽訂", year: 1901, hint: "八國聯軍之後" },
+    ],
+  },
 ];
 
 /** 機緣翻牌：撳兩張有關嘅牌配對。每套題池較大，開局隨機抽若干對 */

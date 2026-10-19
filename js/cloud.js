@@ -248,7 +248,7 @@ export function packSave(user) {
 function voyagePack(raw) {
   if (!raw || typeof raw !== "object") return undefined;
   return {
-    stop: Math.max(0, Math.min(5, Number(raw.stop) || 0)),
+    stop: Math.max(0, Math.min(8, Number(raw.stop) || 0)),
     line: Math.max(0, Math.min(4, Number(raw.line) || 0)),
     miss: String(raw.miss || "").slice(0, 80),
     done: !!raw.done,
@@ -261,6 +261,9 @@ function voyagePack(raw) {
     pine: !!raw.pine,
     crossbow: !!raw.crossbow,
     chariot: !!raw.chariot,
+    states: !!raw.states,
+    coast: !!raw.coast,
+    loft: !!raw.loft,
     flag: !!raw.flag,
     flagName: String(raw.flagName || "").slice(0, 8),
     spin: Math.max(0, Math.min(48, Number(raw.spin) || 0)),

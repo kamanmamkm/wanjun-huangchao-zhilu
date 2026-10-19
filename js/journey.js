@@ -13,7 +13,7 @@ import { renderHeroStage, renderStudyCompanion, renderPromoteReveal } from "./he
 import { nextHook, nextStageAfter, todayEncounter, dailyStageQuestions, hydrateStageQuestions, flavorDoneToday, flavorHitsToday, DAILY_FLAVOR_HITS } from "./data/flavor.js?v=rad114";
 import { renderFlavorSerial, renderSerialAside, bindFlavorSerial, serialLeadsFlavor, serialHookDetail, serialGoalChip } from "./flavorSerial.js?v=rad118";
 import { schoolDay } from "./data/flavorSerial.js?v=rad98";
-import { nightOf } from "./voyage.js?v=rad138";
+import { nightOf } from "./voyage.js?v=rad139";
 import {
   userSnapshot,
   wheelStatus,
@@ -583,6 +583,9 @@ export function renderJourneyHome(user, char, ui = {}) {
         ${landChip("營帳", "camp", user?.progress?.voyage, nightState)}
         ${landChip("河邊", "river", user?.progress?.voyage, nightState)}
         ${landChip("松山", "pine", user?.progress?.voyage, nightState)}
+        ${landChip("七雄", "states", user?.progress?.voyage, nightState)}
+        ${landChip("海岸", "coast", user?.progress?.voyage, nightState)}
+        ${landChip("樓閣", "loft", user?.progress?.voyage, nightState)}
         ${landChip("布旗", "flag", user?.progress?.voyage, nightState)}
       </div>
       ${nightState && !nightHere ? nightPanel(nightState) : ""}
@@ -594,26 +597,34 @@ export function renderJourneyHome(user, char, ui = {}) {
       <button type="button" class="play-door" data-goto="voyage">
         <span class="play-door-kicker">上路</span>
         <span class="play-door-title">${
-          user?.progress?.voyage?.pine
-            ? "城門到松山是你的地盤"
-            : user?.progress?.voyage?.river
-              ? "城門到河邊是你的地盤"
-              : user?.progress?.voyage?.flag && user?.progress?.voyage?.camp
-                ? "城門到營帳，旗是你的"
-                : user?.progress?.voyage?.camp
-                  ? "城門到營帳是你的地盤"
-                  : user?.progress?.voyage?.land
-                    ? "城門到城樓是你的地盤"
-                    : "城門、市集、城樓"
+          user?.progress?.voyage?.loft
+            ? "城門到樓閣是你的地盤"
+            : user?.progress?.voyage?.coast
+              ? "到了海岸"
+              : user?.progress?.voyage?.states
+                ? "到了七雄的圖"
+                : user?.progress?.voyage?.pine
+                  ? "城門到松山是你的地盤"
+                  : user?.progress?.voyage?.river
+                    ? "城門到河邊是你的地盤"
+                    : user?.progress?.voyage?.flag && user?.progress?.voyage?.camp
+                      ? "城門到營帳，旗是你的"
+                      : user?.progress?.voyage?.camp
+                        ? "城門到營帳是你的地盤"
+                        : user?.progress?.voyage?.land
+                          ? "城門到城樓是你的地盤"
+                          : "城門、市集、城樓"
         }</span>
         <span class="play-door-go">${
-          user?.progress?.voyage?.pine
+          user?.progress?.voyage?.loft
             ? "再走"
-            : user?.progress?.voyage?.river || user?.progress?.voyage?.camp
+            : user?.progress?.voyage?.coast || user?.progress?.voyage?.states || user?.progress?.voyage?.pine
               ? "再遠"
-              : user?.progress?.voyage?.land
-                ? "再大"
-                : "自己行"
+              : user?.progress?.voyage?.river || user?.progress?.voyage?.camp
+                ? "再遠"
+                : user?.progress?.voyage?.land
+                  ? "再大"
+                  : "自己行"
         }</span>
       </button>
       <button type="button" class="play-door" data-goto="voyage" data-voyage-open="duel">

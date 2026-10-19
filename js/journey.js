@@ -10,10 +10,10 @@ import { heroDisplayName, normalizeHeroName } from "./data/characters.js";
 import { pickRandomHeroName, HERO_NAME_COUNT } from "./data/heroNames.js";
 import { renderAvatar } from "./avatar.js?v=rad79";
 import { renderHeroStage, renderStudyCompanion, renderPromoteReveal } from "./heroStage.js?v=rad79";
-import { nextHook, nextStageAfter, todayEncounter, dailyStageQuestions, hydrateStageQuestions, flavorDoneToday, flavorHitsToday, DAILY_FLAVOR_HITS } from "./data/flavor.js?v=rad114";
+import { nextHook, nextStageAfter, todayEncounter, dailyStageQuestions, hydrateStageQuestions, flavorDoneToday, flavorHitsToday, DAILY_FLAVOR_HITS } from "./data/flavor.js?v=rad144";
 import { renderFlavorSerial, renderSerialAside, bindFlavorSerial, serialLeadsFlavor, serialHookDetail, serialGoalChip } from "./flavorSerial.js?v=rad118";
 import { schoolDay } from "./data/flavorSerial.js?v=rad98";
-import { nightOf } from "./voyage.js?v=rad143";
+import { nightOf } from "./voyage.js?v=rad144";
 import {
   userSnapshot,
   wheelStatus,
@@ -646,33 +646,28 @@ export function renderJourneyHome(user, char, ui = {}) {
         <span class="play-door-title">去同窗的城門</span>
         <span class="play-door-go">去爭</span>
       </button>
-      <button type="button" class="home-quiet" data-goto="games">趣味關卡</button>
     </section>
     <section class="home-challenge" id="home-challenge" tabindex="-1" aria-label="拆一句">
       <h3>拆一句</h3>
       ${renderFlavorCard(user, ui)}
     </section>
-    <section class="home-explore" aria-label="還可以">
-      <h3 class="home-side">還可以</h3>
-      <div class="home-compact">
-        ${renderInquiryEntry(user)}
-        ${renderCaseEntry(user)}
-        ${renderMuseumCard(user)}
-        ${renderLiteracyEntry(user)}
-      </div>
-    </section>
-    <section class="home-keep" aria-label="收藏">
-      <h3>收藏</h3>
-      ${renderRelicTray(user)}
-      <button type="button" class="home-link" data-nav="chronicle">打開史冊</button>
-    </section>
-    <section class="home-unlock" aria-label="已解鎖身份">
-      <h3>已解鎖身份</h3>
-      <div class="growth-avatars">${avatars}</div>
-    </section>
     <details class="home-more" ${ui.openBag ? "open" : ""}>
       <summary>行囊與說明</summary>
       <div class="home-more-body">
+        <div class="home-compact">
+          ${renderInquiryEntry(user)}
+          ${renderCaseEntry(user)}
+          ${renderMuseumCard(user)}
+          ${renderLiteracyEntry(user)}
+        </div>
+        <div class="home-links">
+          <button type="button" class="home-link" data-goto="shizhan">史戰風雲</button>
+          <button type="button" class="home-link" data-nav="wheel">天機輪</button>
+        </div>
+        <h3>收藏</h3>
+        ${renderRelicTray(user)}
+        <h3>已解鎖身份</h3>
+        <div class="growth-avatars">${avatars}</div>
         <p>${escArena(realm)}${taskCh?.arc ? ` · ${escArena(taskCh.arc)}` : ""}</p>
         <p>${escArena(vis.quote || "")}</p>
         <p>Lv.${snap.level.level} · 經驗 ${user.xp} · 史績 ${snap.score}</p>
@@ -688,7 +683,7 @@ export function renderJourneyHome(user, char, ui = {}) {
         ${renderArenaBoard(user, ui)}
         <div class="home-links">
           <button type="button" class="home-link" data-nav="board">排行</button>
-          <button type="button" class="home-link" data-nav="wheel">天機輪</button>
+          <button type="button" class="home-link" data-nav="chronicle">打開史冊</button>
           <button type="button" class="btn ghost" id="logout-btn">登出</button>
         </div>
       </div>
@@ -762,7 +757,7 @@ export function renderScroll(user) {
             <p>${ch.blurb}</p>
             <p class="muted">${
               !hasStages
-                ? "關卡製作中（可先用趣味關卡）"
+                ? "關卡製作中"
                 : enterable
                   ? `已完成 ${doneN}/${total} · 已掌握 ${masteredN}/${total}`
                   : lockHint
@@ -1166,7 +1161,7 @@ export function bindJourney(user, ctx) {
     const cid = btn.dataset.openChapter;
     const ch = CHAPTERS[cid];
     if (!(ch?.stages || []).length) {
-      toast("本章關卡製作中，可先用趣味關卡。");
+      toast("本章關卡製作中。");
       return;
     }
     if (!isChapterEnterable(user, cid)) {
@@ -2052,7 +2047,7 @@ export function renderNotes(user) {
     <p class="eyebrow ink-red">待考札記</p>
     <h2>待考札記</h2>
     <p class="lead">長卷關卡結算可重答錯題；呢度只記尚未掌握嘅弱項，蓋章後再戰。</p>
-    <div class="note-grid">${cards || "<p>暫無未掌握錯題。繼續長卷或趣味關卡吧。</p>"}</div>
+    <div class="note-grid">${cards || "<p>暫無未掌握錯題。繼續長卷吧。</p>"}</div>
     <div class="row-actions">
       <button type="button" class="btn ghost" data-goto="home">返回行旅</button>
       <button type="button" class="btn" data-goto="scroll">去長卷</button>

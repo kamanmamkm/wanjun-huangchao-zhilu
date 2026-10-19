@@ -10,10 +10,10 @@ import { heroDisplayName, normalizeHeroName } from "./data/characters.js";
 import { pickRandomHeroName, HERO_NAME_COUNT } from "./data/heroNames.js";
 import { renderAvatar } from "./avatar.js?v=rad79";
 import { renderHeroStage, renderStudyCompanion, renderPromoteReveal } from "./heroStage.js?v=rad79";
-import { nextHook, nextStageAfter, todayEncounter, dailyStageQuestions, hydrateStageQuestions, flavorDoneToday, flavorHitsToday, DAILY_FLAVOR_HITS } from "./data/flavor.js?v=rad145";
+import { nextHook, nextStageAfter, todayEncounter, dailyStageQuestions, hydrateStageQuestions, flavorDoneToday, flavorHitsToday, DAILY_FLAVOR_HITS } from "./data/flavor.js?v=rad146";
 import { renderFlavorSerial, renderSerialAside, bindFlavorSerial, serialLeadsFlavor, serialHookDetail, serialGoalChip } from "./flavorSerial.js?v=rad118";
 import { schoolDay } from "./data/flavorSerial.js?v=rad98";
-import { nightOf } from "./voyage.js?v=rad145";
+import { nightOf } from "./voyage.js?v=rad146";
 import {
   userSnapshot,
   wheelStatus,
@@ -362,19 +362,6 @@ export function renderLeaderboardPage(user, ui = {}) {
   </section>`;
 }
 
-export function carryStrip(voyage) {
-  const names = [
-    voyage?.weapon ? "戈" : "",
-    voyage?.crossbow ? "弩" : "",
-    voyage?.chariot ? "戰車" : "",
-    voyage?.horse || voyage?.loft ? "馬" : "",
-  ].filter(Boolean);
-  if (!names.length) return "";
-  return `<div class="carry-strip" aria-label="你帶住"><span class="carry-kicker">帶住</span>${names
-    .map((name) => `<span>${escArena(name)}</span>`)
-    .join("")}</div>`;
-}
-
 function nightChoices(night) {
   if (!night || night.done) return "";
   const miss = night.missShown ? `<p class="home-status">${escArena(night.missShown)}</p>` : "";
@@ -577,7 +564,6 @@ export function renderJourneyHome(user, char, ui = {}) {
     <section class="home-explore" aria-label="玩">
       <h3>玩</h3>
       ${nightState && !nightHere ? nightPanel(nightState) : ""}
-      ${carryStrip(user?.progress?.voyage)}
       <button type="button" class="play-door" data-goto="voyage">
         <span class="play-door-kicker">上路</span>
         <span class="play-door-title">${

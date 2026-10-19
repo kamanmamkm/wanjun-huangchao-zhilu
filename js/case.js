@@ -5,7 +5,7 @@
 import { CASES, getCase } from "./data/cases.js?v=rad105";
 import { XP_REWARDS } from "./data/levels.js?v=rad90";
 import { updateUser, addXp } from "./storage.js?v=rad114";
-import { cloudSyncStatus } from "./cloud.js?v=rad145";
+import { cloudSyncStatus } from "./cloud.js?v=rad146";
 
 const LOG_KEY = "huangchao_case_log_v1";
 const LOG_EXPORT_KEY = "huangchao_case_log_export_v1";

@@ -2,8 +2,8 @@ import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad50";
 import { QUESTIONS } from "./data/questions.js?v=rad83";
 import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad66";
 import { levelFromXp } from "./data/levels.js?v=rad66";
-import { DIALOGUES } from "./data/dialogues.js?v=rad62";
-import { TIMELINE_SETS, WORDWALL_ROUNDS } from "./data/games.js?v=rad64";
+import { DIALOGUES, dialoguesByIds } from "./data/dialogues.js?v=rad151";
+import { TIMELINE_SETS, WORDWALL_ROUNDS, timelineSetsByIds } from "./data/games.js?v=rad151";
 import { CHARMS } from "./data/wheel.js?v=rad67";
 import {
   getUnit,
@@ -51,10 +51,10 @@ import {
   clearHomeRun,
   charmCount,
   consumeCharm,
-} from "./progress.js?v=rad150";
-import { renderWheelPage, bindWheel } from "./wheel.js?v=rad150";
-import { renderCase, bindCase, rememberCaseOpen, recallCaseOpen, caseSaveNoteText } from "./case.js?v=rad150";
-import { renderInquiry, bindInquiry, recallInquiryOpen, rememberInquiryOpen } from "./inquiry.js?v=rad150";
+} from "./progress.js?v=rad151";
+import { renderWheelPage, bindWheel } from "./wheel.js?v=rad151";
+import { renderCase, bindCase, rememberCaseOpen, recallCaseOpen, caseSaveNoteText } from "./case.js?v=rad151";
+import { renderInquiry, bindInquiry, recallInquiryOpen, rememberInquiryOpen } from "./inquiry.js?v=rad151";
 import { renderLiteracy, bindLiteracy, recallLiteracyOpen, rememberLiteracyOpen, prepareLiteracyOpen } from "./literacy.js?v=rad118";
 import { renderMuseum, bindMuseum, recallMuseumOpen, rememberMuseumOpen } from "./museum.js?v=rad118";
 import {
@@ -66,13 +66,13 @@ import {
   renderCuoshi,
   bindJourney,
   renderLeaderboardPage,
-} from "./journey.js?v=rad150";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad150";
+} from "./journey.js?v=rad151";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad151";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad79";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";
-import { renderVoyage, bindVoyage, nightOf } from "./voyage.js?v=rad150";
+import { renderVoyage, bindVoyage, nightOf } from "./voyage.js?v=rad151";
 import { schoolDay } from "./data/flavorSerial.js?v=rad98";
-import { flavorLine, isoDay } from "./data/flavor.js?v=rad150";
+import { flavorLine, isoDay } from "./data/flavor.js?v=rad151";
 import {
   FORM_YEARS,
   CONTENT_YEARS,
@@ -96,7 +96,7 @@ import {
   registerWithCloud,
   scheduleCloudSync,
   onCloudSync,
-} from "./cloud.js?v=rad150";
+} from "./cloud.js?v=rad151";
 import { isTeacherPortal } from "./data/portal.js?v=rad78";
 
 captureCloudFromLocation();
@@ -1412,8 +1412,18 @@ function timelineSetPool(formYear) {
     const set = unitTimeline(getUnit(state.gamesUnit));
     return set ? [set] : UNIT_TIMELINES;
   }
+  const ids = state.stageInteract?.game === "timeline" ? state.stageInteract.timelineIds : null;
+  if (Array.isArray(ids) && ids.length) return timelineSetsByIds(ids, formYear);
   const sets = filterByFormYear(TIMELINE_SETS, formYear);
   return sets.length ? sets : TIMELINE_SETS;
+}
+
+function dialoguePool() {
+  const unit = state.gameFromUnit ? getUnit(state.gamesUnit) : null;
+  if (unit?.dialogues?.length) return DIALOGUES.filter((x) => unit.dialogues.includes(x.id));
+  const ids = state.stageInteract?.game === "dialogue" ? state.stageInteract.dialogueIds : null;
+  if (Array.isArray(ids) && ids.length) return dialoguesByIds(ids, getCurrentUser()?.formYear);
+  return DIALOGUES;
 }
 
 function openUnitPlay(type, playId, opts = {}) {
@@ -2386,9 +2396,7 @@ function bindTimeline() {
 }
 
 function renderDialogue() {
-  const unit = state.gameFromUnit ? getUnit(state.gamesUnit) : null;
-  const people =
-    unit?.dialogues?.length ? DIALOGUES.filter((x) => unit.dialogues.includes(x.id)) : DIALOGUES;
+  const people = dialoguePool();
   const d = people.find((x) => x.id === state.dialogue.id) || people[0] || DIALOGUES[0];
   if (state.dialogue.id !== d.id) state.dialogue = { id: d.id, step: 0, replied: false, good: 0 };
   const step = d.steps[state.dialogue.step];

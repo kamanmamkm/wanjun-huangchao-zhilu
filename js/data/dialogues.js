@@ -1,4 +1,24 @@
+import { isGradeAllowed, normalizeFormYear } from "./formYear.js?v=rad114";
+
 /** 與古人對話：選擇回應，答得貼近史實／價值觀得分 */
+
+const DIALOGUE_GRADE = {
+  d_qin: "中一",
+  d_han: "中一",
+  d_sui: "中一",
+  d_tang: "中一",
+  d_zetian: "中一",
+  d_song: "中二",
+  d_ming: "中二",
+  d_kangxi: "中二",
+  d_sun: "中三",
+};
+
+function yearToken(formYear) {
+  const year = normalizeFormYear(formYear) || "中一";
+  if (year === "中四" || year === "中五") return "中三";
+  return year;
+}
 export const DIALOGUES = [
   {
     id: "d_qin",
@@ -226,3 +246,13 @@ export const DIALOGUES = [
     ],
   },
 ];
+
+export function dialoguesByIds(ids, formYear) {
+  const source = (ids || []).map((id) => DIALOGUES.find((d) => d.id === id)).filter(Boolean);
+  const token = yearToken(formYear);
+  const kept = source.filter((d) => {
+    const grade = DIALOGUE_GRADE[d.id] || "";
+    return isGradeAllowed(grade, formYear) || grade.includes(token);
+  });
+  return kept.length ? kept : source.slice(0, 1);
+}

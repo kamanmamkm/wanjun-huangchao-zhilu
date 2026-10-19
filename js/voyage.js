@@ -2,11 +2,11 @@
  * 上路：第三人稱自己行。城樓先有地盤，再到營帳。
  * 有了營帳，可以去榜上同窗的城門答一句。答對就在自己這邊插布旗。
  * 史實只重用已有判斷，再走一程就換下一句：孔子與始皇不同世；西周是分封、受封的是諸侯；科舉不在秦代；夏商周有先後；百家爭鳴在春秋戰國；貞觀是唐太宗；《史記》是司馬遷。
- * 松山之後向前：七雄的圖、海岸、樓閣。答對只多一個已經屬於你的地方。樓閣之後才再走一程。
+ * 松山之後向前：七雄的圖、海岸、樓閣。答對只多一個已經屬於你的地方。樓閣答對，馬跟住你。樓閣之後才再走一程。
  * 城門到松山之後，行旅「今晚未了」每日一句。答對只點亮已經屬於你的一個地方。
  */
 import { addXp, updateUser } from "./storage.js?v=rad114";
-import { mountVoyageScene } from "./voyage3d.js?v=rad139";
+import { mountVoyageScene } from "./voyage3d.js?v=rad140";
 
 const XP_ONCE = 8;
 
@@ -248,6 +248,7 @@ function readRow(user) {
     pine: !!raw?.pine,
     crossbow: !!raw?.crossbow,
     chariot: !!raw?.chariot,
+    horse: !!raw?.horse || !!raw?.loft,
     states: !!raw?.states,
     coast: !!raw?.coast,
     loft: !!raw?.loft,
@@ -340,7 +341,7 @@ function boxHtml(row, pathOpen, gender) {
   const atCoast = row.stop === 7 && last;
   const atLoft = row.stop === 8 && last;
   let lineText = line.text || "";
-  if (atLoft && row.loft) lineText = "城門到樓閣，是你的地盤。";
+  if (atLoft && row.loft) lineText = "城門到樓閣是你的。馬跟住你。";
   else if (atCoast && row.coast) lineText = "海岸是你的。向前走到樓閣。";
   else if (atStates && row.states) lineText = "這幅圖是你的。向前走到海岸。";
   else if (atPine && row.pine && !row.states) lineText = "城門到松山，是你的。向前，有一幅七雄的圖。";
@@ -357,8 +358,8 @@ function boxHtml(row, pathOpen, gender) {
       <button type="button" class="voyage-go" data-voyage-home="1">回到行旅</button>
     </div><p class="voyage-hint">${
       row.flag
-        ? `布旗下記住${esc(row.flagName || "同窗")}。弩與戰車在你這邊。`
-        : "弩一把，戰車一輛。"
+        ? `布旗下記住${esc(row.flagName || "同窗")}。馬跟住你。弩與戰車在你這邊。`
+        : "馬跟住你。弩一把，戰車一輛。"
     }</p>`;
   } else if (Array.isArray(line.choice) && line.choice.length) {
     controls = `<div class="voyage-choices">${line.choice
@@ -570,13 +571,15 @@ export function bindVoyage(user, ctx) {
 
   const claimPlace = (row, key, toast) => {
     const next = { ...row, [key]: true, done: key === "loft", miss: "" };
+    if (key === "loft") next.horse = true;
     if (!writeRow(name, next)) {
       fail();
       return;
     }
     pathOpen = true;
     world?.setOpen(true);
-    if (!row[key]) ctx.toast?.(toast);
+    if (key === "loft") world?.lead();
+    if (!row[key]) ctx.toast?.(key === "loft" ? "馬跟住你。城門到樓閣是你的。" : toast);
     paint();
   };
 
@@ -611,6 +614,7 @@ export function bindVoyage(user, ctx) {
     banner: !!readRow(user).flag,
     crossbow: !!readRow(user).crossbow,
     chariot: !!readRow(user).chariot,
+    horse: !!readRow(user).horse,
     onProgress: (text) => {
       const el = document.getElementById("voyage-load");
       if (el) el.textContent = text;

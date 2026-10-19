@@ -1,7 +1,7 @@
 /**
  * 短循環趣味：答題旁白、過關信物、今日機緣、下回鉤。
  */
-import { CHAPTERS, chapterList } from "./chapters.js?v=rad149";
+import { CHAPTERS, chapterList } from "./chapters.js?v=rad150";
 import { QUESTIONS } from "./questions.js?v=rad83";
 import { filterByFormYear } from "./formYear.js?v=rad114";
 
@@ -45,6 +45,11 @@ export const RELICS = {
   "ch3_events:interact": { id: "r_river", name: "長河細繩", hint: "由早到晚，把事件串起來。" },
   "ch3_events:source": { id: "r_treaty", name: "條約對讀", hint: "戰爭要配對它的條約。" },
   "ch3_events:boss": { id: "r_wrong_page", name: "錯頁朱印", hint: "《南京條約》不割台灣。" },
+  "ch4_cause:story": { id: "r_why", name: "問因紙箋", hint: "先問為何，再記發生了什麼。" },
+  "ch4_cause:basic": { id: "r_cause_tag", name: "原因木籤", hint: "書同文是為了政令傳達。" },
+  "ch4_cause:interact": { id: "r_ask", name: "問因牙牌", hint: "用符合史實的理由回答古人。" },
+  "ch4_cause:source": { id: "r_single", name: "單因夾註", hint: "一件結果往往不能只歸於一件事。" },
+  "ch4_cause:boss": { id: "r_false_link", name: "偽因果印", hint: "相隔極遠的事，不宜寫成直接因果。" },
 };
 
 export function relicFor(chapterId, stageId) {

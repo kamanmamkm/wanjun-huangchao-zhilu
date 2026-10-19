@@ -194,6 +194,44 @@ export const TIMELINE_SETS = [
       { id: "d", label: "《辛丑條約》簽訂", year: 1901, hint: "八國聯軍之後" },
     ],
   },
+  {
+    id: "tl15",
+    title: "跨章先後：上古至唐",
+    grade: "中一",
+    pick: 5,
+    items: [
+      { id: "a", label: "西周封建開始", year: -1046, hint: "約公元前11世紀" },
+      { id: "b", label: "秦滅六國、行郡縣", year: -221, hint: "公元前221年" },
+      { id: "c", label: "張騫首次出使西域", year: -138, hint: "漢武帝時期" },
+      { id: "d", label: "科舉制確立發展（隋唐）", year: 605, hint: "隋煬帝設進士科前後" },
+      { id: "e", label: "安史之亂爆發", year: 755, hint: "唐玄宗後期" },
+    ],
+  },
+  {
+    id: "tl16",
+    title: "跨章先後：宋至清",
+    grade: "中二",
+    pick: 5,
+    items: [
+      { id: "a", label: "陳橋兵變／北宋建立", year: 960, hint: "公元960年" },
+      { id: "b", label: "王安石開始變法", year: 1069, hint: "熙寧年間" },
+      { id: "c", label: "明太祖廢宰相", year: 1380, hint: "洪武年間" },
+      { id: "d", label: "鄭和首次下西洋", year: 1405, hint: "永樂年間" },
+      { id: "e", label: "鴉片戰爭爆發", year: 1840, hint: "近代開端" },
+    ],
+  },
+  {
+    id: "tl17",
+    title: "跨章先後：清末至抗戰",
+    grade: "中三",
+    pick: 4,
+    items: [
+      { id: "a", label: "辛亥革命", year: 1911, hint: "公元1911年" },
+      { id: "b", label: "五四運動", year: 1919, hint: "公元1919年" },
+      { id: "c", label: "七七事變／全面抗戰", year: 1937, hint: "公元1937年" },
+      { id: "d", label: "抗戰勝利", year: 1945, hint: "日本投降" },
+    ],
+  },
 ];
 
 /** 機緣翻牌：撳兩張有關嘅牌配對。每套題池較大，開局隨機抽若干對 */

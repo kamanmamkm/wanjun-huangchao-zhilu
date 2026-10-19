@@ -322,6 +322,54 @@ export const CUOSHI_BATTLES = [
 
 /** 長卷 Boss 用嘅殘卷（唔出現喺趣味關卡列表） */
 export const CHAPTER_BOSS_PAGES = {
+  ch7_stacked: {
+    id: "boss_ch7_stacked",
+    title: "一句三錯",
+    pageTitle: "跨章殘卷",
+    lines: [
+      { id: "a", text: "西周封建，諸侯世襲；秦統一後改行郡縣，長官由朝廷任免。" },
+      { id: "b", text: "漢武帝獨尊儒術，儒學成官方主流。" },
+      { id: "c", text: "秦始皇以科舉選官，並因此直接爆發鴉片戰爭。", wrong: true },
+      { id: "d", text: "科舉主要在隋唐以後發展；鴉片戰爭在清朝。" },
+    ],
+    fix: {
+      prompt: "呢句應該點改？",
+      options: [
+        "科舉與鴉片戰爭都要放回自己的時代，不能套在秦始皇身上，也不能寫成直接因果。",
+        "改成秦代已有科舉即可。",
+        "改成鴉片戰爭在秦代即可。",
+        "刪去郡縣制。",
+      ],
+      answer: 0,
+      repaired: "秦代並非以科舉選官；鴉片戰爭在清朝，與秦始皇不宜寫成直接因果。",
+      skill: "source",
+      explain: "制度要對朝代，結果要對時代。相隔極遠的事，不宜寫成直接因果。",
+    },
+  },
+  ch7_treaty_span: {
+    id: "boss_ch7_treaty_span",
+    title: "人物同條約串錯",
+    pageTitle: "海陸殘卷",
+    lines: [
+      { id: "a", text: "張騫於漢武帝時出使西域，史稱鑿空。" },
+      { id: "b", text: "鄭和於明朝率船隊下西洋。" },
+      { id: "c", text: "張騫下西洋之後，清朝簽《南京條約》割讓台灣。", wrong: true },
+      { id: "d", text: "《南京條約》割讓香港島；台灣割讓見於《馬關條約》。" },
+    ],
+    fix: {
+      prompt: "呢句應該點改？",
+      options: [
+        "下西洋是鄭和的事；《南京條約》不割台灣。人物、航路、條約不能串成一條因果。",
+        "改成張騫確曾下西洋即可。",
+        "改成《南京條約》與《馬關條約》條款相同即可。",
+        "刪去西域。",
+      ],
+      answer: 0,
+      repaired: "下西洋屬鄭和；《南京條約》割讓香港島，割讓台灣見於《馬關條約》。",
+      skill: "source",
+      explain: "漢的陸路、明的海路、清的兩份條約，要分開再合看。",
+    },
+  },
   ch6_two_voices: {
     id: "boss_ch6_two_voices",
     title: "兩則對不上",

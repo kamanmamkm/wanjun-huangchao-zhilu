@@ -1,7 +1,7 @@
 /**
  * 短循環趣味：答題旁白、過關信物、今日機緣、下回鉤。
  */
-import { CHAPTERS, chapterList } from "./chapters.js?v=rad159";
+import { CHAPTERS, chapterList } from "./chapters.js?v=rad160";
 import { QUESTIONS } from "./questions.js?v=rad83";
 import { filterByFormYear } from "./formYear.js?v=rad114";
 
@@ -60,6 +60,11 @@ export const RELICS = {
   "ch6_compare:interact": { id: "r_source_ribbon", name: "材料絲帶", hint: "材料也要放回它的年代。" },
   "ch6_compare:source": { id: "r_pair", name: "兩則夾", hint: "立場不同，先分開再對讀。" },
   "ch6_compare:boss": { id: "r_over", name: "過度朱筆", hint: "一郡自述，不能講成全國人人如此。" },
+  "ch7_synthesis:story": { id: "r_three", name: "三線夾", hint: "時代、制度、原因要分開再合看。" },
+  "ch7_synthesis:basic": { id: "r_place", name: "歸位木籤", hint: "郡縣不是封建，科舉不是秦制。" },
+  "ch7_synthesis:interact": { id: "r_span", name: "跨章絲帶", hint: "不同章的事，仍排在同一條線上。" },
+  "ch7_synthesis:source": { id: "r_split", name: "拆句夾註", hint: "一句裡可以有多過一處錯。" },
+  "ch7_synthesis:boss": { id: "r_return", name: "歸位朱筆", hint: "人物、制度、條約各自歸位。" },
 };
 
 export function relicFor(chapterId, stageId) {

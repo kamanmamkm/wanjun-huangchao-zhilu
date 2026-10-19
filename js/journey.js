@@ -13,7 +13,7 @@ import { renderHeroStage, renderStudyCompanion, renderPromoteReveal } from "./he
 import { nextHook, nextStageAfter, todayEncounter, dailyStageQuestions, hydrateStageQuestions, flavorDoneToday, flavorHitsToday, DAILY_FLAVOR_HITS } from "./data/flavor.js?v=rad114";
 import { renderFlavorSerial, renderSerialAside, bindFlavorSerial, serialLeadsFlavor, serialHookDetail, serialGoalChip } from "./flavorSerial.js?v=rad118";
 import { schoolDay } from "./data/flavorSerial.js?v=rad98";
-import { nightOf } from "./voyage.js?v=rad142";
+import { nightOf } from "./voyage.js?v=rad143";
 import {
   userSnapshot,
   wheelStatus,
@@ -362,6 +362,19 @@ export function renderLeaderboardPage(user, ui = {}) {
   </section>`;
 }
 
+export function carryStrip(voyage) {
+  const names = [
+    voyage?.weapon ? "戈" : "",
+    voyage?.crossbow ? "弩" : "",
+    voyage?.chariot ? "戰車" : "",
+    voyage?.horse || voyage?.loft ? "馬" : "",
+  ].filter(Boolean);
+  if (!names.length) return "";
+  return `<div class="carry-strip" aria-label="你帶住"><span class="carry-kicker">帶住</span>${names
+    .map((name) => `<span>${escArena(name)}</span>`)
+    .join("")}</div>`;
+}
+
 function landChip(name, id, voyage, night) {
   const on =
     id === "gate"
@@ -594,6 +607,7 @@ export function renderJourneyHome(user, char, ui = {}) {
           ? `<p class="land-note">布旗下記住${escArena(user.progress.voyage.flagName || "同窗")}</p>`
           : ""
       }
+      ${carryStrip(user?.progress?.voyage)}
       <button type="button" class="play-door" data-goto="voyage">
         <span class="play-door-kicker">上路</span>
         <span class="play-door-title">${

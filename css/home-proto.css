@@ -380,6 +380,36 @@ body:has(.is-home)::before {
   color: #f6f1e7;
 }
 
+.land-strip span.is-glow {
+  background: #e2c27a;
+  color: #24312e;
+}
+
+.night-choices {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.45rem;
+}
+
+.night-choice {
+  min-height: 48px;
+  padding: 0.7rem 1rem;
+  border: 0;
+  border-radius: 8px;
+  background: #f6f1e7;
+  color: #252a2d;
+  font-family: var(--font-ui);
+  font-size: 1.0625rem;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+}
+
+.night-aside {
+  margin: 0.2rem 0 0.55rem;
+}
+
 .land-note {
   margin: 0 0 0.45rem;
   color: #8a5a2b;

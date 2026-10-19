@@ -2,9 +2,10 @@
  * 上路：第三人稱自己行。城樓先有地盤，再到營帳。
  * 有了營帳，可以去榜上同窗的城門答一句。答對就在自己這邊插布旗。
  * 史實只重用已有判斷，再走一程就換下一句：孔子與始皇不同世；西周是分封、受封的是諸侯；科舉不在秦代；夏商周有先後；百家爭鳴在春秋戰國；貞觀是唐太宗；《史記》是司馬遷。
+ * 城門到松山之後，行旅「今晚未了」每日一句。答對只點亮已經屬於你的一個地方。
  */
 import { addXp, updateUser } from "./storage.js?v=rad114";
-import { mountVoyageScene } from "./voyage3d.js?v=rad137";
+import { mountVoyageScene } from "./voyage3d.js?v=rad138";
 
 const XP_ONCE = 8;
 
@@ -201,6 +202,47 @@ function readRow(user) {
     flag: !!raw?.flag,
     flagName: String(raw?.flagName || "").slice(0, 8),
     spin: Math.max(0, Math.min(48, Number(raw?.spin) || 0)),
+    night: dayKey(raw?.night),
+    nightTry: dayKey(raw?.nightTry),
+    nightMiss: String(raw?.nightMiss || "").slice(0, 80),
+  };
+}
+
+function dayKey(value) {
+  const text = String(value || "");
+  return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : "";
+}
+
+const NIGHT_PLACES = [
+  { id: "gate", name: "城門", own: (row) => row.stop > 0 || row.line > 0 || row.land || row.camp || row.river || row.pine },
+  { id: "tower", name: "城樓", own: (row) => !!row.land },
+  { id: "camp", name: "營帳", own: (row) => !!row.camp },
+  { id: "river", name: "河邊", own: (row) => !!row.river },
+  { id: "pine", name: "松山", own: (row) => !!row.pine },
+  { id: "flag", name: "布旗", own: (row) => !!row.flag },
+];
+
+export function nightOf(raw, day) {
+  if (!raw?.pine) return null;
+  const row = readRow({ progress: { voyage: raw } });
+  const owned = NIGHT_PLACES.filter((place) => place.own(row));
+  if (!owned.length) return null;
+  const dayText = dayKey(day);
+  const n = Number(dayText.replace(/\D/g, "")) || 0;
+  const quiz = QUIZ[n % QUIZ.length];
+  const place = owned[n % owned.length];
+  const done = !!dayText && row.night === dayText;
+  return {
+    who: "將領",
+    claim: quiz.claim,
+    ok: quiz.ok,
+    bad: quiz.bad,
+    miss: quiz.miss,
+    after: quiz.after,
+    placeId: place.id,
+    placeName: place.name,
+    done,
+    missShown: !done && row.nightTry === dayText ? row.nightMiss : "",
   };
 }
 

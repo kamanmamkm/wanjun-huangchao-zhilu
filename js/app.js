@@ -53,7 +53,7 @@ import {
   consumeCharm,
 } from "./progress.js?v=rad92";
 import { renderWheelPage, bindWheel } from "./wheel.js?v=rad114";
-import { renderCase, bindCase, rememberCaseOpen, recallCaseOpen, caseSaveNoteText } from "./case.js?v=rad137";
+import { renderCase, bindCase, rememberCaseOpen, recallCaseOpen, caseSaveNoteText } from "./case.js?v=rad138";
 import { renderInquiry, bindInquiry, recallInquiryOpen, rememberInquiryOpen } from "./inquiry.js?v=rad118";
 import { renderLiteracy, bindLiteracy, recallLiteracyOpen, rememberLiteracyOpen, prepareLiteracyOpen } from "./literacy.js?v=rad118";
 import { renderMuseum, bindMuseum, recallMuseumOpen, rememberMuseumOpen } from "./museum.js?v=rad118";
@@ -66,11 +66,12 @@ import {
   renderCuoshi,
   bindJourney,
   renderLeaderboardPage,
-} from "./journey.js?v=rad137";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad137";
+} from "./journey.js?v=rad138";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad138";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad79";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";
-import { renderVoyage, bindVoyage } from "./voyage.js?v=rad137";
+import { renderVoyage, bindVoyage, nightOf } from "./voyage.js?v=rad138";
+import { schoolDay } from "./data/flavorSerial.js?v=rad98";
 import { flavorLine, isoDay } from "./data/flavor.js?v=rad114";
 import {
   FORM_YEARS,
@@ -95,7 +96,7 @@ import {
   registerWithCloud,
   scheduleCloudSync,
   onCloudSync,
-} from "./cloud.js?v=rad137";
+} from "./cloud.js?v=rad138";
 import { isTeacherPortal } from "./data/portal.js?v=rad78";
 
 captureCloudFromLocation();
@@ -964,6 +965,23 @@ function renderShell(user) {
   </div>`;
 }
 
+function answerNight(correct) {
+  const user = getCurrentUser();
+  if (!user) return;
+  const day = schoolDay();
+  const night = nightOf(user.progress?.voyage, day);
+  if (!night || night.done) return;
+  updateUser((u) => {
+    const prev = u.progress?.voyage || {};
+    u.progress = u.progress || {};
+    u.progress.voyage = correct
+      ? { ...prev, night: day, nightMiss: "", nightTry: "" }
+      : { ...prev, nightTry: day, nightMiss: night.miss };
+  });
+  if (correct) toast(`${night.placeName}亮了`);
+  render();
+}
+
 function bindShellNav() {
   if (app.dataset.shellNav === "1") return;
   app.dataset.shellNav = "1";
@@ -1081,6 +1099,11 @@ function bindShellNav() {
       state.museumId = museumBtn.dataset.openMuseum || "hall";
       rememberMuseumOpen(getCurrentUser()?.username, state.museumId);
       render();
+      return;
+    }
+    const nightBtn = e.target.closest("[data-night]");
+    if (nightBtn) {
+      answerNight(nightBtn.dataset.night === "1");
       return;
     }
     const go = e.target.closest("[data-goto]");

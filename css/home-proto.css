@@ -385,31 +385,6 @@ body:has(.is-home)::before {
   color: #24312e;
 }
 
-.carry-strip {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.35rem;
-  margin: 0.15rem 0 0.55rem;
-}
-
-.carry-strip span {
-  min-height: 32px;
-  padding: 0.25rem 0.7rem;
-  border-radius: 999px;
-  background: #24312e;
-  color: #f6f1e7;
-  font-size: 0.85rem;
-  font-weight: 700;
-}
-
-.carry-strip .carry-kicker {
-  min-height: 0;
-  padding: 0 0.15rem 0 0;
-  background: transparent;
-  color: #8a5a2b;
-}
-
 .night-choices {
   display: grid;
   gap: 0.45rem;

@@ -1,3 +1,5 @@
+import { filterByFormYear, normalizeFormYear } from "./formYear.js?v=rad114";
+
 /** 時間線事件（排先後）——每套題池較大，開局隨機抽若干題，打亂後由學生排成由早到晚 */
 export const TIMELINE_SETS = [
   {
@@ -216,3 +218,21 @@ export const WORDWALL_ROUNDS = [
     ],
   },
 ];
+
+function yearToken(formYear) {
+  const year = normalizeFormYear(formYear) || "中一";
+  if (year === "中四" || year === "中五") return "中三";
+  return year;
+}
+
+function timelineVisible(set, formYear) {
+  if (filterByFormYear([set], formYear).length) return true;
+  return String(set.grade || "").includes(yearToken(formYear));
+}
+
+/** 長卷指定題套，再按年級留低。標明「中一／中二」的套，中一都見得到。 */
+export function timelineSetsByIds(ids, formYear) {
+  const source = (ids || []).map((id) => TIMELINE_SETS.find((t) => t.id === id)).filter(Boolean);
+  const kept = source.filter((t) => timelineVisible(t, formYear));
+  return kept.length ? kept : source.slice(0, 1);
+}

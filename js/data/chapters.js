@@ -72,6 +72,7 @@ export const CHAPTERS = {
         goal: "把事件放回較合理的先後。",
         difficulty: "入門→進階",
         gotoGame: "timeline",
+        timelineIds: ["tl1", "tl8"],
       },
       {
         id: "source",
@@ -201,6 +202,7 @@ export const CHAPTERS = {
         goal: "用符合史實的回應，與一位古人把對話說完。",
         difficulty: "入門→進階",
         gotoGame: "dialogue",
+        dialogueIds: ["d_tang", "d_zetian", "d_kangxi", "d_sun"],
       },
       {
         id: "source",
@@ -318,6 +320,7 @@ export const CHAPTERS = {
         goal: "把事件放回較合理的先後。",
         difficulty: "入門→進階",
         gotoGame: "timeline",
+        timelineIds: ["tl2", "tl3", "tl4", "tl5", "tl9"],
       },
       {
         id: "source",
@@ -431,6 +434,7 @@ export const CHAPTERS = {
         goal: "用符合史實的理由，回答古人為何如此做。",
         difficulty: "入門→進階",
         gotoGame: "dialogue",
+        dialogueIds: ["d_qin", "d_han", "d_sui", "d_song", "d_ming"],
       },
       {
         id: "source",

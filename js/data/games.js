@@ -145,6 +145,31 @@ export const TIMELINE_SETS = [
       { id: "f", label: "孫中山就任臨時大總統", year: 1912, hint: "南京" },
     ],
   },
+  {
+    id: "tl11",
+    title: "政策先後：上古至隋唐",
+    grade: "中一",
+    pick: 5,
+    items: [
+      { id: "a", label: "西周封建開始", year: -1046, hint: "約公元前11世紀" },
+      { id: "b", label: "商鞅變法", year: -356, hint: "戰國秦國" },
+      { id: "c", label: "秦始皇行郡縣、書同文", year: -221, hint: "統一後" },
+      { id: "d", label: "漢武帝獨尊儒術", year: -134, hint: "董仲舒對策前後" },
+      { id: "e", label: "科舉制確立發展（隋唐）", year: 605, hint: "隋煬帝設進士科前後" },
+    ],
+  },
+  {
+    id: "tl12",
+    title: "政策先後：宋至清",
+    grade: "中二",
+    pick: 4,
+    items: [
+      { id: "a", label: "王安石開始變法", year: 1069, hint: "熙寧年間" },
+      { id: "b", label: "明太祖廢宰相", year: 1380, hint: "洪武年間" },
+      { id: "c", label: "洋務運動展開", year: 1861, hint: "自強運動" },
+      { id: "d", label: "戊戌維新", year: 1898, hint: "百日維新" },
+    ],
+  },
 ];
 
 /** 機緣翻牌：撳兩張有關嘅牌配對。每套題池較大，開局隨機抽若干對 */

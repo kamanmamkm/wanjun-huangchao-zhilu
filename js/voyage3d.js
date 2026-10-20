@@ -101,6 +101,7 @@ export function mountVoyageScene(opts) {
   let crossbowOn = !!opts.crossbow;
   let chariotOn = !!opts.chariot;
   let horseOn = !!opts.horse;
+  let route = opts.route === "ridge" ? "ridge" : "market";
   let soldierModel = null;
   let flagModel = null;
   let gateFolk = null;
@@ -297,14 +298,20 @@ export function mountVoyageScene(opts) {
     return { x, z, moving: len > 0.08 };
   }
 
+  function markAt(i) {
+    if (route === "ridge" && i === 0) return { x: 6.2, z: 42 };
+    return MARK[i];
+  }
+
   function placeMark() {
     if (!open || stopIndex >= MARK.length) {
       pillar.visible = false;
       return;
     }
+    const m = markAt(stopIndex);
     pillar.visible = true;
-    pillar.position.x = MARK[stopIndex].x;
-    pillar.position.z = MARK[stopIndex].z;
+    pillar.position.x = m.x;
+    pillar.position.z = m.z;
   }
 
   function aimAtMark() {
@@ -312,7 +319,7 @@ export function mountVoyageScene(opts) {
       opts.onAim?.({ show: false });
       return;
     }
-    const m = MARK[stopIndex];
+    const m = markAt(stopIndex);
     const ahead = new THREE.Vector3(m.x, 3, m.z).project(camera);
     const onScreen = ahead.z < 1 && Math.abs(ahead.x) < 0.9 && Math.abs(ahead.y) < 0.9;
     const deg = Math.atan2(ahead.x, ahead.y) * (180 / Math.PI);
@@ -320,6 +327,7 @@ export function mountVoyageScene(opts) {
   }
 
   function halfLane() {
+    if (route === "ridge" && stopIndex === 0 && open) return 8;
     if (stopIndex >= 5) return 7.4;
     if (stopIndex === 4) return open ? 7.4 : 6.2;
     if (stopIndex === 3 && open) return 7.4;
@@ -327,7 +335,10 @@ export function mountVoyageScene(opts) {
   }
 
   function reached() {
-    if (stopIndex === 0) return pos.z >= 30;
+    if (stopIndex === 0) {
+      if (route === "ridge") return pos.x >= 4.2 && pos.z >= 34;
+      return pos.z >= 30;
+    }
     if (stopIndex === 1) return pos.z >= 46;
     if (stopIndex === 2) return pos.z >= 54;
     if (stopIndex === 3) return pos.z >= 52 && pos.x <= -4.2;
@@ -499,9 +510,13 @@ export function mountVoyageScene(opts) {
     setPace(next) {
       fast = !!next;
     },
+    setRoute(next) {
+      route = next === "ridge" ? "ridge" : "market";
+      placeMark();
+    },
     skip() {
       if (!open || stopIndex >= MARK.length) return;
-      const m = MARK[stopIndex];
+      const m = markAt(stopIndex);
       pos.set(m.x, 0, m.z);
       yaw = 0;
       stopIndex += 1;

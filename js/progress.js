@@ -13,8 +13,8 @@ import {
   STARTING_IDENTITY_ID,
   IDENTITIES,
 } from "./data/identities.js?v=rad71";
-import { CHAPTERS, REMEDIALS } from "./data/chapters.js?v=rad165";
-import { relicFor, isoDay } from "./data/flavor.js?v=rad165";
+import { CHAPTERS, REMEDIALS } from "./data/chapters.js?v=rad166";
+import { relicFor, isoDay } from "./data/flavor.js?v=rad166";
 import { WHEEL_SLICES } from "./data/wheel.js?v=rad67";
 import { ARENA_RIVALS, rivalWeekScore, weekId } from "./data/arena.js?v=rad73";
 import { getTrial } from "./data/trials.js";

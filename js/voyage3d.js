@@ -31,6 +31,17 @@ const MARK = [
   { x: 0, z: 112 },
   { x: 0, z: 126 },
 ];
+const TALE_MARK = [
+  { x: 2.8, z: 54 },
+  { x: -5.2, z: 56 },
+  { x: 2.8, z: 54 },
+];
+const TALE_STAND = [
+  { x: 0.2, z: 2.2 },
+  { x: 1.2, z: 48.5 },
+  { x: -3.4, z: 54.5 },
+  { x: 1.2, z: 48.5 },
+];
 const Z_MIN = -8;
 const Z_MAX = 136;
 const ROAD_HALF = 2.15;
@@ -102,6 +113,17 @@ export function mountVoyageScene(opts) {
   let chariotOn = !!opts.chariot;
   let horseOn = !!opts.horse;
   let route = opts.route === "ridge" ? "ridge" : "market";
+  let taleOn = false;
+  let talePost = 0;
+  let taleStep = 0;
+  let cartLeft = false;
+  let cartGo = false;
+  let taleOpts = null;
+  let merchantHolder = null;
+  let merchantPlate = null;
+  let otherHolder = null;
+  let otherPlate = null;
+  let generalHolder = null;
   let soldierModel = null;
   let flagModel = null;
   let gateFolk = null;
@@ -305,6 +327,7 @@ export function mountVoyageScene(opts) {
   }
 
   function markAt(i) {
+    if (taleOn && open) return TALE_MARK[Math.max(0, Math.min(2, talePost))];
     if (route === "ridge" && i === 0) return { x: 6.2, z: 42 };
     return MARK[i];
   }
@@ -333,11 +356,17 @@ export function mountVoyageScene(opts) {
   }
 
   function halfLane() {
+    if (taleOn && open) return 9;
     if (route === "ridge" && stopIndex === 0 && open) return 8;
     if (stopIndex >= 5) return 7.4;
     if (stopIndex === 4) return open ? 7.4 : 6.2;
     if (stopIndex === 3 && open) return 7.4;
     return ROAD_HALF;
+  }
+
+  function taleReached() {
+    const m = TALE_MARK[Math.max(0, Math.min(2, talePost))];
+    return Math.hypot(pos.x - m.x, pos.z - m.z) < 3.4;
   }
 
   function reached() {
@@ -379,7 +408,11 @@ export function mountVoyageScene(opts) {
       if (cap != null && nz > cap) nz = cap;
       pos.z = Math.max(Z_MIN, Math.min(Z_MAX, nz));
       bob += dt * 10;
-      if (open && stopIndex < MARK.length && reached()) {
+      if (open && taleOn && taleReached()) {
+        open = false;
+        placeMark();
+        opts.onTaleArrive?.();
+      } else if (open && !taleOn && stopIndex < MARK.length && reached()) {
         stopIndex += 1;
         open = false;
         placeMark();
@@ -417,6 +450,11 @@ export function mountVoyageScene(opts) {
       npc.rotation.y += turn * Math.min(1, dt * 4);
     });
     mark.rotation.z += dt * 0.8;
+    if (cart && cartGo) {
+      cart.position.x += (4 - cart.position.x) * Math.min(1, dt * 0.7);
+      cart.position.z += (78 - cart.position.z) * Math.min(1, dt * 0.7);
+      if (Math.hypot(cart.position.x - 4, cart.position.z - 78) < 0.4) cartGo = false;
+    }
     if (mv.moving && !notedWalk && Math.hypot(pos.x, pos.z - SPAWN[0].z) > 2.2) {
       notedWalk = true;
       opts.onWalk?.();
@@ -589,6 +627,44 @@ export function mountVoyageScene(opts) {
       showName("");
       api.place(stopIndex);
     },
+    standTale(post) {
+      const spot = TALE_STAND[Math.max(0, Math.min(TALE_STAND.length - 1, Number(post) || 0))];
+      pos.set(spot.x, 0, spot.z);
+      yaw = spot.x < 0 ? 0.8 : 0;
+      cam.set(pos.x, 2.6, pos.z - 5.6);
+    },
+    setTale(next) {
+      taleOpts = next || {};
+      const on = !!next?.on;
+      const left = !!next?.cart;
+      const post = Math.max(0, Math.min(3, Number(next?.post) || 0));
+      const same = on === taleOn && left === cartLeft && post === taleStep && !!merchantHolder;
+      if (same) {
+        placeMark();
+        return;
+      }
+      const became = on && left && !cartLeft;
+      taleOn = on;
+      talePost = Math.min(2, post);
+      taleStep = post;
+      cartLeft = left;
+      if (cart) {
+        cart.visible = taleOn ? true : chariotOn;
+        if (!taleOn) cart.position.set(11.2, 0, 54);
+        else if (left && !became) cart.position.set(4, 0, 78);
+        else if (!left) cart.position.set(3.6, 0, 56.5);
+      }
+      if (became) cartGo = true;
+      if (merchantHolder) merchantHolder.position.set(taleOn ? 2.2 : -3.1, 0, taleOn ? 55.2 : 98);
+      if (merchantPlate) paintPlate(merchantPlate, taleOn ? "裴叔" : "商人");
+      if (otherHolder) otherHolder.position.set(taleOn ? -4.6 : -1.45, 0, taleOn ? 57.2 : 37.5);
+      if (otherPlate) paintPlate(otherPlate, taleOn ? "阿蓉" : "");
+      if (generalHolder) generalHolder.visible = !taleOn;
+      if (taleOn && !follow && !rivalVisit) showName("阿禾");
+      if (taleOn && campFolk) campFolk.visible = false;
+      if (taleOn && gateFolk) gateFolk.visible = false;
+      placeMark();
+    },
     dispose() {
       if (disposed) return;
       disposed = true;
@@ -717,7 +793,13 @@ export function mountVoyageScene(opts) {
         } else if (mode === "long") fitLongest(model, size);
         else normalize(model, size);
         if (role === "you") avatar.add(model);
-        else if (role === "other") stand(model, -1.45, 37.5);
+        else if (role === "other") {
+          otherHolder = stand(model, -1.45, 37.5);
+          otherPlate = makeNameSprite();
+          otherPlate.position.set(0, 2.02, 0);
+          otherHolder.add(otherPlate);
+          paintPlate(otherPlate, "");
+        }
         else if (role === "soldier") {
           soldierModel = model.clone(true);
           soldier = stand(model, 1.55, 4.2);
@@ -796,10 +878,10 @@ export function mountVoyageScene(opts) {
           cart.visible = chariotOn;
           scene.add(cart);
         } else if (role === "general") {
-          const holder = stand(model, 4.2, 50.6);
+          generalHolder = stand(model, 4.2, 50.6);
           const plate = makeNameSprite();
           plate.position.set(0, 2.02, 0);
-          holder.add(plate);
+          generalHolder.add(plate);
           paintPlate(plate, "將領");
         } else if (role === "states") {
           const holder = new THREE.Group();
@@ -817,11 +899,11 @@ export function mountVoyageScene(opts) {
           holder.position.set(-7.6, 0, 100);
           scene.add(holder);
         } else if (role === "merchant") {
-          const holder = stand(model, -3.1, 98);
-          const plate = makeNameSprite();
-          plate.position.set(0, 2.02, 0);
-          holder.add(plate);
-          paintPlate(plate, "商人");
+          merchantHolder = stand(model, -3.1, 98);
+          merchantPlate = makeNameSprite();
+          merchantPlate.position.set(0, 2.02, 0);
+          merchantHolder.add(merchantPlate);
+          paintPlate(merchantPlate, "商人");
         } else if (role === "horse") {
           horse = new THREE.Group();
           horse.add(model);
@@ -863,6 +945,7 @@ export function mountVoyageScene(opts) {
       riverPier = pier(-5.6, 55);
       ferryPier = pier(0, 114);
       applySettle();
+      if (taleOpts) api.setTale(taleOpts);
       if (follow && soldier) {
         soldier.position.set(pos.x + 0.95, 0, pos.z - 1.25);
         soldier.rotation.y = yaw;

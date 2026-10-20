@@ -3301,6 +3301,22 @@ button:active:not(:disabled):not(.locked),
   letter-spacing: 0.06em;
 }
 
+.voyage-doc {
+  margin: 0.28rem 0;
+  padding: 0.35rem 0.55rem;
+  border: 1px dashed rgba(226, 194, 122, 0.75);
+  border-radius: 10px;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.voyage-doc b {
+  display: block;
+  margin-bottom: 0.15rem;
+  color: #e2c27a;
+  font-size: 0.8rem;
+}
+
 .voyage-clues {
   display: flex;
   flex-wrap: wrap;

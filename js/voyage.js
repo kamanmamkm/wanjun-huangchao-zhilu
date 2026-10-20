@@ -6,7 +6,19 @@
  * 城門到松山之後，行旅「今晚未了」每日一句。有了樓閣，逢單數日由商人問。未到樓閣，仍然聽將領。答對只點亮已經屬於你的一個地方。
  */
 import { addXp, updateUser } from "./storage.js?v=rad114";
-import { mountVoyageScene } from "./voyage3d.js?v=rad170";
+import { mountVoyageScene } from "./voyage3d.js?v=rad171";
+import {
+  taleActive,
+  taleApply,
+  taleGoal,
+  taleHtml,
+  taleOffer,
+  taleOfferHtml,
+  talePath,
+  taleRow,
+  taleToast,
+  taleWalking,
+} from "./data/tale.js?v=rad171";
 
 const XP_ONCE = 8;
 
@@ -849,6 +861,7 @@ function readRow(user) {
     night: dayKey(raw?.night),
     nightTry: dayKey(raw?.nightTry),
     nightMiss: String(raw?.nightMiss || "").slice(0, 80),
+    ...taleRow(raw),
   };
 }
 
@@ -962,6 +975,8 @@ function goalText(row) {
 }
 
 function boxHtml(row, pathOpen, gender, mix, held) {
+  if (taleActive(row)) return taleHtml(row);
+  if (taleOffer(row)) return taleOfferHtml();
   if (needsRoute(row)) return routeHtml(row);
   const stop = STOPS[row.stop];
   const line = shownLine(row);
@@ -1023,11 +1038,15 @@ function boxHtml(row, pathOpen, gender, mix, held) {
   }
   const coach = coachText(row);
   const note = coach ? `<p class="voyage-coach-line">${esc(coach)}</p>` : "";
+  const taleBack =
+    row.bookSkip && !row.book && !row.bookDone && row.stop === 0 && row.line === 0
+      ? `<button type="button" class="voyage-go" data-tale="accept">接阿禾的求援信</button>`
+      : "";
   const storyHtml = atPass && row.pass ? "" : threadHtml(row, asking);
   const head = asking && quiz
     ? `<p class="voyage-who">${esc(quiz.who === "other" ? otherName(gender) : quiz.who)}</p>`
     : who;
-  return `${head}<p class="voyage-line">${esc(lineText)}</p>${storyHtml}${note}${controls}`;
+  return `${head}<p class="voyage-line">${esc(lineText)}</p>${storyHtml}${note}${taleBack}${controls}`;
 }
 
 function needsClaim(row) {
@@ -1137,15 +1156,24 @@ export function bindVoyage(user, ctx) {
     const path = document.getElementById("voyage-path");
     const box = document.getElementById("voyage-box");
     if (review && !row.camp) review = false;
-    if (path) path.innerHTML = pathHtml(row);
+    if (path) path.innerHTML = taleActive(row) ? talePath(row) : pathHtml(row);
     if (box) box.innerHTML = duel ? duelHtml(duel, mates, row, choiceMix) : review ? reviewHtml(row) : boxHtml(row, pathOpen, current?.gender, choiceMix, heldName);
-    const walking = !duel && !review && canWalk(row, duel);
-    const talking = !!duel || review || isAsking(row) || needsRoute(row);
+    const walking = taleActive(row)
+      ? taleWalking(row)
+      : taleOffer(row)
+        ? false
+        : !duel && !review && canWalk(row, duel);
+    const talking = taleActive(row) ? !walking : taleOffer(row) ? true : !!duel || review || isAsking(row) || needsRoute(row);
     pathOpen = walking;
     world?.setOpen(walking);
     world?.setHold(talking);
     world?.setPace(!!row.horse && segmentDone(row));
     world?.setRoute?.(routeOf(row));
+    world?.setTale?.({
+      on: taleActive(row),
+      post: row.post,
+      cart: !!row.cart,
+    });
     world?.settle?.({
       land: !!row.land,
       camp: !!row.camp,
@@ -1160,7 +1188,13 @@ export function bindVoyage(user, ctx) {
     root.classList.toggle("is-talk", talking);
     const goal = document.getElementById("voyage-goal");
     if (goal) {
-      const text = needsRoute(row) || walking ? goalText(row) : "";
+      const text = taleActive(row)
+        ? taleGoal(row)
+        : taleOffer(row)
+          ? "聽阿禾把求援信交托"
+          : needsRoute(row) || walking
+            ? goalText(row)
+            : "";
       goal.hidden = !text;
       goal.textContent = text;
     }
@@ -1311,6 +1345,8 @@ export function bindVoyage(user, ctx) {
       root.classList.remove("is-loading");
       const el = document.getElementById("voyage-load");
       if (el) el.hidden = true;
+      const row = readRow(ctx.getUser?.() || user);
+      if (taleActive(row) && !row.walk) world?.standTale?.(row.post);
     },
     onFail: () => {
       const el = document.getElementById("voyage-load");
@@ -1318,6 +1354,7 @@ export function bindVoyage(user, ctx) {
     },
     onArrive: (stop, keep) => {
       const row = readRow(ctx.getUser?.() || user);
+      if (taleActive(row)) return;
       pathOpen = false;
       world?.setOpen(false);
       const owned = !!keep && placeOwned({ ...row, stop });
@@ -1335,6 +1372,13 @@ export function bindVoyage(user, ctx) {
       const row = readRow(ctx.getUser?.() || user);
       if (row.guide !== 1) return;
       save({ ...row, guide: 2 });
+    },
+    onTaleArrive: () => {
+      const row = readRow(ctx.getUser?.() || user);
+      if (!taleWalking(row)) return;
+      pathOpen = false;
+      world?.setOpen(false);
+      save(taleApply(row, "arrive"));
     },
     onAim: (aim) => {
       const arrow = document.getElementById("voyage-arrow");
@@ -1434,6 +1478,17 @@ export function bindVoyage(user, ctx) {
       world?.leaveRival();
       if (pathOpen) world?.setOpen(true);
       paint();
+      return;
+    }
+    const taleBtn = e.target.closest("[data-tale]");
+    if (taleBtn) {
+      const next = taleApply(row, taleBtn.dataset.tale);
+      const note = taleToast(row, next, taleBtn.dataset.tale);
+      const pay = taleBtn.dataset.tale === "finish" && !row.bookPay && next.bookDone;
+      if (!save(next)) return;
+      if (pay) addXp(XP_ONCE);
+      if (next.bookDone) world?.place(0);
+      if (note) ctx.toast?.(pay ? `${note}經驗 +${XP_ONCE}` : note);
       return;
     }
     const routeBtn = e.target.closest("[data-voyage-route]");

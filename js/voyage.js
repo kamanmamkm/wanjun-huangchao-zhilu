@@ -6,7 +6,7 @@
  * 城門到松山之後，行旅「今晚未了」每日一句。有了樓閣，逢單數日由商人問。未到樓閣，仍然聽將領。答對只點亮已經屬於你的一個地方。
  */
 import { addXp, updateUser } from "./storage.js?v=rad114";
-import { mountVoyageScene } from "./voyage3d.js?v=rad166";
+import { mountVoyageScene } from "./voyage3d.js?v=rad167";
 
 const XP_ONCE = 8;
 
@@ -398,65 +398,95 @@ function reviewHtml(row) {
   return `<p class="voyage-who">營帳</p><p class="voyage-line">收過的線索放在這裡。</p>${body}<button type="button" class="voyage-go" data-voyage-review-back="1">返回道路</button>`;
 }
 
-function playHtml(row, gender) {
+function mixSeed(text) {
+  let h = 2166136261;
+  const s = String(text || "");
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+function choiceOrder(seed, count) {
+  const order = [];
+  for (let i = 0; i < count; i++) order.push(i);
+  let state = mixSeed(seed) || 1;
+  for (let i = count - 1; i > 0; i--) {
+    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+    const j = state % (i + 1);
+    const swap = order[i];
+    order[i] = order[j];
+    order[j] = swap;
+  }
+  return order;
+}
+
+function joinChoices(buttons, seed) {
+  return choiceOrder(seed, buttons.length).map((i) => buttons[i]).join("");
+}
+
+function choiceSeed(row, mix, play) {
+  return `${mix}|${row?.stop}|${row?.line}|${row?.spin}|${routeOf(row)}|${askForm(row)}|${play}`;
+}
+
+function playHtml(row, gender, mix) {
   const play = playOf(row.stop, row);
   const form = askForm(row);
+  const seed = choiceSeed(row, mix, play);
   const miss = row.miss ? `<p class="voyage-miss">${esc(row.miss)}</p>` : "";
+  const choices = (buttons) => `<div class="voyage-choices">${joinChoices(buttons, seed)}</div>`;
   if (play === "trail") {
     const ask = form === 0 ? "山路石上有兩句次序。邊句先可以沿住走？" : "山路石上有兩句次序。邊句會帶錯路？";
-    return `<p class="voyage-who">山路</p><p class="voyage-line">${esc(ask)}</p><div class="voyage-choices">
-      <button type="button" class="voyage-choice" data-voyage-pick="0"><b>石甲</b>夏之後是商，商之後是周。</button>
-      <button type="button" class="voyage-choice" data-voyage-pick="1"><b>石乙</b>周比夏更早。</button>
-    </div>${miss}`;
+    return `<p class="voyage-who">山路</p><p class="voyage-line">${esc(ask)}</p>${choices([
+      `<button type="button" class="voyage-choice" data-voyage-pick="0"><b>石甲</b>夏之後是商，商之後是周。</button>`,
+      `<button type="button" class="voyage-choice" data-voyage-pick="1"><b>石乙</b>周比夏更早。</button>`,
+    ])}${miss}`;
   }
   if (play === "rumor") {
     const rumor = rumorOf(row.spin);
     const ask = form === 0 ? rumor.ask : "商隊應該信邊句？";
-    const voices = rumor.voices
-      .map((voice, i) => {
-        const name = voice.who === "other" ? otherName(gender) : voice.who;
-        return `<button type="button" class="voyage-choice" data-voyage-pick="${i}"><b>${esc(name)}</b>${esc(voice.text)}</button>`;
-      })
-      .join("");
-    return `<p class="voyage-who">市集</p><p class="voyage-line">${esc(ask)}</p><div class="voyage-choices">${voices}</div>${miss}`;
+    const voices = rumor.voices.map((voice, i) => {
+      const name = voice.who === "other" ? otherName(gender) : voice.who;
+      return `<button type="button" class="voyage-choice" data-voyage-pick="${i}"><b>${esc(name)}</b>${esc(voice.text)}</button>`;
+    });
+    return `<p class="voyage-who">市集</p><p class="voyage-line">${esc(ask)}</p>${choices(voices)}${miss}`;
   }
   if (play === "task") {
     if (row.line <= 0 && form === 0) {
-      return `<p class="voyage-who">步卒</p><p class="voyage-line">營帳要核對西周點管地方。你接哪一項任務？</p><div class="voyage-choices">
-        <button type="button" class="voyage-choice" data-voyage-pick="0">查受封的是誰。</button>
-        <button type="button" class="voyage-choice" data-voyage-pick="1">當作西周已全國設郡縣。</button>
-      </div>${miss}`;
+      return `<p class="voyage-who">步卒</p><p class="voyage-line">營帳要核對西周點管地方。你接哪一項任務？</p>${choices([
+        `<button type="button" class="voyage-choice" data-voyage-pick="0">查受封的是誰。</button>`,
+        `<button type="button" class="voyage-choice" data-voyage-pick="1">當作西周已全國設郡縣。</button>`,
+      ])}${miss}`;
     }
     const ask = form === 0 ? "任務接了。兩份情報，先查哪一份？" : "營帳要回報。邊一份情報先寫得上？";
-    return `<p class="voyage-who">步卒</p><p class="voyage-line">${esc(ask)}</p><div class="voyage-choices">
-      <button type="button" class="voyage-choice" data-voyage-pick="0">周王把土地分封給諸侯。</button>
-      <button type="button" class="voyage-choice" data-voyage-pick="1">土地分封給農民。</button>
-    </div>${miss}`;
+    return `<p class="voyage-who">步卒</p><p class="voyage-line">${esc(ask)}</p>${choices([
+      `<button type="button" class="voyage-choice" data-voyage-pick="0">周王把土地分封給諸侯。</button>`,
+      `<button type="button" class="voyage-choice" data-voyage-pick="1">土地分封給農民。</button>`,
+    ])}${miss}`;
   }
   if (play === "ford") {
     const ford = fordOf(row.spin);
     const ask = form === 0 ? ford.ask : "商隊要過河。邊一處先可信？";
-    const spots = ford.spots
-      .map(
-        (spot, i) =>
-          `<button type="button" class="voyage-choice" data-voyage-pick="${i}"><b>${esc(spot.name)}</b>${esc(spot.clue)}</button>`
-      )
-      .join("");
-    return `<p class="voyage-who">步卒</p><p class="voyage-line">${esc(ask)}</p><div class="voyage-choices">${spots}</div>${miss}`;
+    const spots = ford.spots.map(
+      (spot, i) =>
+        `<button type="button" class="voyage-choice" data-voyage-pick="${i}"><b>${esc(spot.name)}</b>${esc(spot.clue)}</button>`
+    );
+    return `<p class="voyage-who">步卒</p><p class="voyage-line">${esc(ask)}</p>${choices(spots)}${miss}`;
   }
   if (play === "match") {
     const ask = form === 0 ? "這幅圖是戰國。邊一組配得上？" : "圖上要標邊一組，先唔好標成三國？";
-    return `<p class="voyage-who">步卒</p><p class="voyage-line">${esc(ask)}</p><div class="voyage-choices">
-      <button type="button" class="voyage-choice" data-voyage-pick="0"><b>七雄</b>配上這幅圖。</button>
-      <button type="button" class="voyage-choice" data-voyage-pick="1"><b>魏、蜀、吳</b>配上這幅圖。</button>
-    </div>${miss}`;
+    return `<p class="voyage-who">步卒</p><p class="voyage-line">${esc(ask)}</p>${choices([
+      `<button type="button" class="voyage-choice" data-voyage-pick="0"><b>七雄</b>配上這幅圖。</button>`,
+      `<button type="button" class="voyage-choice" data-voyage-pick="1"><b>魏、蜀、吳</b>配上這幅圖。</button>`,
+    ])}${miss}`;
   }
   if (play === "slip") {
     const ask = form === 0 ? "各國文字不一，政令送不出。邊份材料先解決溝通？" : "商人要送政令。邊份材料先讀得通？";
-    return `<p class="voyage-who">商人</p><p class="voyage-line">${esc(ask)}</p><div class="voyage-choices">
-      <button type="button" class="voyage-choice" data-voyage-pick="0"><b>材料甲</b>統一文字，方便政令傳達。</button>
-      <button type="button" class="voyage-choice" data-voyage-pick="1"><b>材料乙</b>統一文字，為了推廣文學。</button>
-    </div>${miss}`;
+    return `<p class="voyage-who">商人</p><p class="voyage-line">${esc(ask)}</p>${choices([
+      `<button type="button" class="voyage-choice" data-voyage-pick="0"><b>材料甲</b>統一文字，方便政令傳達。</button>`,
+      `<button type="button" class="voyage-choice" data-voyage-pick="1"><b>材料乙</b>統一文字，為了推廣文學。</button>`,
+    ])}${miss}`;
   }
   if (play === "seal") {
     const chips = clueChips(row)
@@ -466,10 +496,10 @@ function playHtml(row, gender) {
     const ask = form === 0
       ? "把沿路線索放在一起。這句「北宋始終以長安為都」，邊句先對？"
       : "沿路都係先對時代同地方。這句都城，邊句先接得上？";
-    return `<p class="voyage-who">步卒</p><p class="voyage-line">${esc(ask)}</p>${lead}<div class="voyage-choices">
-      <button type="button" class="voyage-choice" data-voyage-pick="0">北宋都開封。長安是漢唐舊都。</button>
-      <button type="button" class="voyage-choice" data-voyage-pick="1">長安就是開封。</button>
-    </div>${miss}`;
+    return `<p class="voyage-who">步卒</p><p class="voyage-line">${esc(ask)}</p>${lead}${choices([
+      `<button type="button" class="voyage-choice" data-voyage-pick="0">北宋都開封。長安是漢唐舊都。</button>`,
+      `<button type="button" class="voyage-choice" data-voyage-pick="1">長安就是開封。</button>`,
+    ])}${miss}`;
   }
   return "";
 }
@@ -556,7 +586,7 @@ function shownLine(row) {
 }
 
 const GOAL = [
-  "去市集搵旅人",
+  "到市集打聽消息",
   "去城樓",
   "去營帳接任務",
   "去河邊揀渡口",
@@ -762,7 +792,7 @@ function goalText(row) {
   return GOAL[row.stop] || "";
 }
 
-function boxHtml(row, pathOpen, gender) {
+function boxHtml(row, pathOpen, gender, mix) {
   if (needsRoute(row)) return routeHtml(row);
   const stop = STOPS[row.stop];
   const line = shownLine(row);
@@ -796,14 +826,15 @@ function boxHtml(row, pathOpen, gender) {
   if (asking && playOf(row.stop, row)) {
     const coach = coachText(row);
     const note = coach ? `<p class="voyage-coach-line">${esc(coach)}</p>` : "";
-    return `${playHtml(row, gender)}${note}`;
+    return `${playHtml(row, gender, mix)}${note}`;
   }
   if (asking && quiz) {
     lineText = quiz.claim;
-    controls = `<div class="voyage-choices">
-      <button type="button" class="voyage-choice" data-voyage-pick="0">${esc(quiz.ok)}</button>
-      <button type="button" class="voyage-choice" data-voyage-pick="1">${esc(quiz.bad)}</button>
-    </div>${row.miss ? `<p class="voyage-miss">${esc(row.miss)}</p>` : ""}`;
+    const quizButtons = joinChoices([
+      `<button type="button" class="voyage-choice" data-voyage-pick="0">${esc(quiz.ok)}</button>`,
+      `<button type="button" class="voyage-choice" data-voyage-pick="1">${esc(quiz.bad)}</button>`,
+    ], choiceSeed(row, mix, "quiz"));
+    controls = `<div class="voyage-choices">${quizButtons}</div>${row.miss ? `<p class="voyage-miss">${esc(row.miss)}</p>` : ""}`;
   } else if (atPass && row.pass) {
     controls = `${ledgerHtml(row)}<div class="voyage-actions">
       <button type="button" class="voyage-go" data-voyage-duel="1">去同窗</button>
@@ -866,7 +897,7 @@ function matesOf(user, board) {
     }));
 }
 
-function duelHtml(duel, mates, row) {
+function duelHtml(duel, mates, row, mix) {
   if (!duel) return "";
   if (duel.phase === "pick") {
     if (mates == null) {
@@ -892,10 +923,11 @@ function duelHtml(duel, mates, row) {
   }
   const quiz = duelQuiz(row?.spin);
   const miss = duel.miss ? `<p class="voyage-miss">${esc(duel.miss)}</p>` : "";
-  return `<p class="voyage-who">步卒 · ${esc(duel.name)}的城門</p><p class="voyage-line">你的線索：${esc(mine)}</p><p class="voyage-line">同窗留下的挑戰：${esc(quiz.claim)}</p><p class="voyage-story">兩份合起來先過關。他的城仍是他的。</p><div class="voyage-choices">
-    <button type="button" class="voyage-choice" data-voyage-flag="1">${esc(quiz.ok)}</button>
-    <button type="button" class="voyage-choice" data-voyage-flag="0">${esc(quiz.bad)}</button>
-  </div>${miss}<button type="button" class="voyage-go" data-voyage-repick="1">另揀一位</button>`;
+  const flags = joinChoices([
+    `<button type="button" class="voyage-choice" data-voyage-flag="1">${esc(quiz.ok)}</button>`,
+    `<button type="button" class="voyage-choice" data-voyage-flag="0">${esc(quiz.bad)}</button>`,
+  ], `${mix}|duel|${row?.spin}|${duel.name}`);
+  return `<p class="voyage-who">步卒 · ${esc(duel.name)}的城門</p><p class="voyage-line">你的線索：${esc(mine)}</p><p class="voyage-line">同窗留下的挑戰：${esc(quiz.claim)}</p><p class="voyage-story">兩份合起來先過關。他的城仍是他的。</p><div class="voyage-choices">${flags}</div>${miss}<button type="button" class="voyage-go" data-voyage-repick="1">另揀一位</button>`;
 }
 
 export function renderVoyage() {
@@ -927,6 +959,7 @@ export function bindVoyage(user, ctx) {
 
   let review = false;
 
+  const choiceMix = Math.floor(Math.random() * 0x7fffffff).toString(16);
   const fail = () => ctx.toast?.("這一步未寫入。請再試一次。");
 
   const paint = () => {
@@ -937,7 +970,7 @@ export function bindVoyage(user, ctx) {
     const box = document.getElementById("voyage-box");
     if (review && !row.camp) review = false;
     if (path) path.innerHTML = pathHtml(row);
-    if (box) box.innerHTML = duel ? duelHtml(duel, mates, row) : review ? reviewHtml(row) : boxHtml(row, pathOpen, current?.gender);
+    if (box) box.innerHTML = duel ? duelHtml(duel, mates, row, choiceMix) : review ? reviewHtml(row) : boxHtml(row, pathOpen, current?.gender, choiceMix);
     const walking = !duel && !review && canWalk(row, duel);
     const talking = !!duel || review || isAsking(row) || needsRoute(row);
     pathOpen = walking;

@@ -1,12 +1,12 @@
 /**
  * 上路：第三人稱自己行。城樓先有地盤，再到營帳。
  * 有了營帳，可以去榜上同窗的城門答一句。答對就在自己這邊插布旗。
- * 史實只重用已有判斷。市集聽兩個人，揀錯誤傳聞。營帳先接任務，再揀先查哪份情報。河邊睇線索揀渡口。七雄把戰國配上七雄，不要配成三國。樓閣睇兩份材料，解決商人傳達政令。關城把沿路線索放在一起，核對北宋都城。松山、海岸、渡口仍然是一句判斷。再走一程，市集傳聞同河邊渡口換下一組，松山換下一句。同窗城門用呢一程路上未出現的另一句。
+ * 史實只重用已有判斷。市集先問兩個人分辨傳聞，再判斷信邊句。答錯先出提示，再換另一個例子。營帳先接任務，再揀先查哪份情報。河邊睇線索揀渡口。七雄在圖上配方位，秦在西、楚在南，蜀屬三國。樓閣睇兩份材料，解決商人傳達政令。關城把沿路線索放在一起，核對北宋都城。松山、海岸仍然是一句判斷。渡口先讀運輸同民力，再揀。再走一程，市集傳聞同河邊渡口換下一組，松山換下一句。同窗城門用呢一程路上未出現的另一句。
  * 關城之後先再走一程。再走可以改經山路，問法會換。同窗要帶自己的線索，答佢留下的挑戰，他的城仍是他的。關城結算走過的地方、解開的事、學識的概念。
  * 城門到松山之後，行旅「今晚未了」每日一句。有了樓閣，逢單數日由商人問。未到樓閣，仍然聽將領。答對只點亮已經屬於你的一個地方。
  */
 import { addXp, updateUser } from "./storage.js?v=rad114";
-import { mountVoyageScene } from "./voyage3d.js?v=rad167";
+import { mountVoyageScene } from "./voyage3d.js?v=rad168";
 
 const XP_ONCE = 8;
 
@@ -241,7 +241,7 @@ function duelQuiz(spin) {
   return rotated(spin, 4);
 }
 
-const PLAY = { 1: "rumor", 3: "task", 4: "ford", 6: "match", 8: "slip", 10: "seal" };
+const PLAY = { 1: "rumor", 3: "task", 4: "ford", 6: "match", 8: "slip", 9: "haul", 10: "seal" };
 
 const RUMORS = [
   {
@@ -322,6 +322,38 @@ function shareClue(row) {
 function playOf(stop, row) {
   if (stop === 1 && row && routeOf(row) === "ridge") return "trail";
   return PLAY[stop] || "";
+}
+
+const HAULS = [
+  {
+    ask: "睇完運輸同民力。邊句先寫得上？",
+    ok: "溝通南北，同時徵發民力。",
+    bad: "一日建成，民力毫無消耗。",
+  },
+  {
+    ask: "換一個例子。邊句先接得上河道？",
+    ok: "轉運靠河道，工期裡征發民力。",
+    bad: "河道一日可成，不必征人。",
+  },
+];
+
+const MAP_TASKS = [
+  { name: "秦", slot: "西", ask: "這是戰國。點國名，再點到圖上。先放秦。" },
+  { name: "楚", slot: "南", ask: "換一個例子。點國名，再點到圖上。放楚。" },
+];
+
+function rumorAt(row) {
+  return rumorOf((Number(row?.spin) || 0) + (row?.drill ? 1 : 0));
+}
+
+function missRow(row, result) {
+  return {
+    ...row,
+    miss: result.miss || "再看一次。",
+    drill: result.drill ? 1 : 0,
+    hold: result.hold ? 1 : 0,
+    line: result.line != null ? result.line : row.line,
+  };
 }
 
 function rumorOf(spin) {
@@ -427,10 +459,10 @@ function joinChoices(buttons, seed) {
 }
 
 function choiceSeed(row, mix, play) {
-  return `${mix}|${row?.stop}|${row?.line}|${row?.spin}|${routeOf(row)}|${askForm(row)}|${play}`;
+  return `${mix}|${row?.stop}|${row?.line}|${row?.spin}|${row?.drill ? 1 : 0}|${routeOf(row)}|${askForm(row)}|${play}`;
 }
 
-function playHtml(row, gender, mix) {
+function playHtml(row, gender, mix, held) {
   const play = playOf(row.stop, row);
   const form = askForm(row);
   const seed = choiceSeed(row, mix, play);
@@ -444,8 +476,12 @@ function playHtml(row, gender, mix) {
     ])}${miss}`;
   }
   if (play === "rumor") {
-    const rumor = rumorOf(row.spin);
-    const ask = form === 0 ? rumor.ask : "商隊應該信邊句？";
+    if (row.hold) {
+      return `<p class="voyage-who">市集</p><p class="voyage-line">${esc(row.miss)}</p><button type="button" class="voyage-go" data-voyage-retry="1">再分辨一次</button>`;
+    }
+    const rumor = rumorAt(row);
+    const distinguishing = row.line <= 0;
+    const ask = distinguishing ? "兩個人都講過。邊句先係傳聞？" : "分辨完。商隊應該信邊句？";
     const voices = rumor.voices.map((voice, i) => {
       const name = voice.who === "other" ? otherName(gender) : voice.who;
       return `<button type="button" class="voyage-choice" data-voyage-pick="${i}"><b>${esc(name)}</b>${esc(voice.text)}</button>`;
@@ -475,10 +511,31 @@ function playHtml(row, gender, mix) {
     return `<p class="voyage-who">步卒</p><p class="voyage-line">${esc(ask)}</p>${choices(spots)}${miss}`;
   }
   if (play === "match") {
-    const ask = form === 0 ? "這幅圖是戰國。邊一組配得上？" : "圖上要標邊一組，先唔好標成三國？";
-    return `<p class="voyage-who">步卒</p><p class="voyage-line">${esc(ask)}</p>${choices([
-      `<button type="button" class="voyage-choice" data-voyage-pick="0"><b>七雄</b>配上這幅圖。</button>`,
-      `<button type="button" class="voyage-choice" data-voyage-pick="1"><b>魏、蜀、吳</b>配上這幅圖。</button>`,
+    if (row.hold) {
+      return `<p class="voyage-who">七雄</p><p class="voyage-line">${esc(row.miss)}</p><button type="button" class="voyage-go" data-voyage-retry="1">再放一次</button>`;
+    }
+    const task = MAP_TASKS[row.drill ? 1 : 0];
+    const names = ["秦", "齊", "楚", "燕", "蜀"].map((name) => {
+      const on = held === name ? " is-held" : "";
+      return `<button type="button" class="voyage-choice${on}" data-voyage-map="${name}">${name}</button>`;
+    });
+    return `<p class="voyage-who">七雄</p><p class="voyage-line">${esc(task.ask)}</p><div class="voyage-map" aria-label="戰國方位">
+      <button type="button" class="voyage-slot" data-voyage-slot="北">北</button>
+      <button type="button" class="voyage-slot" data-voyage-slot="西">西</button>
+      <span class="voyage-map-mid">中</span>
+      <button type="button" class="voyage-slot" data-voyage-slot="東">東</button>
+      <button type="button" class="voyage-slot" data-voyage-slot="南">南</button>
+    </div><div class="voyage-choices voyage-names">${joinChoices(names, seed)}</div>${miss}`;
+  }
+  if (play === "haul") {
+    if (row.hold) {
+      return `<p class="voyage-who">渡口</p><p class="voyage-line">${esc(row.miss)}</p><button type="button" class="voyage-go" data-voyage-retry="1">再判斷一次</button>`;
+    }
+    const haul = HAULS[row.drill ? 1 : 0];
+    const clues = `<div class="voyage-clues"><span class="voyage-clue">運輸：溝通南北</span><span class="voyage-clue">民力：徵發甚眾</span></div>`;
+    return `<p class="voyage-who">渡口</p><p class="voyage-line">${esc(haul.ask)}</p>${clues}${choices([
+      `<button type="button" class="voyage-choice" data-voyage-pick="0">${esc(haul.ok)}</button>`,
+      `<button type="button" class="voyage-choice" data-voyage-pick="1">${esc(haul.bad)}</button>`,
     ])}${miss}`;
   }
   if (play === "slip") {
@@ -515,11 +572,14 @@ function judgePlay(row, pick) {
     return ok ? { ok: true } : { ok: false, miss: "傳統史序是夏、商、周。" };
   }
   if (play === "rumor") {
-    const voice = rumorOf(row.spin).voices[n];
+    const voice = rumorAt(row).voices[n];
     if (!voice) return null;
-    const pickingFalse = !!voice.false;
-    const ok = form === 0 ? pickingFalse : !pickingFalse;
-    return ok ? { ok: true } : { ok: false, miss: rumorOf(row.spin).miss };
+    const distinguishing = row.line <= 0;
+    const ok = distinguishing ? !!voice.false : !voice.false;
+    if (ok) return distinguishing ? { ok: true, advance: true } : { ok: true };
+    const miss = rumorAt(row).miss;
+    if (!row.drill) return { ok: false, miss, drill: 1, line: 0, hold: 0 };
+    return { ok: false, miss, drill: 1, line: 0, hold: 1 };
   }
   if (play === "task") {
     if (row.line <= 0 && form === 0) {
@@ -537,8 +597,15 @@ function judgePlay(row, pick) {
     return spot.ok ? { ok: true } : { ok: false, miss: fordOf(row.spin).miss };
   }
   if (play === "match") {
+    return null;
+  }
+  if (play === "haul") {
+    const hint = "大運河便利南北轉運，同時徵發民力甚眾。";
     if (n === 0) return { ok: true };
-    if (n === 1) return { ok: false, miss: "戰國七雄爭霸。不要與三國混淆。魏、蜀、吳是三國。" };
+    if (n === 1) {
+      if (!row.drill) return { ok: false, miss: hint, drill: 1, line: 0, hold: 0 };
+      return { ok: false, miss: hint, drill: 1, line: 0, hold: 1 };
+    }
     return null;
   }
   if (play === "slip") {
@@ -552,6 +619,15 @@ function judgePlay(row, pick) {
     return null;
   }
   return null;
+}
+
+function judgeMap(row, name, slot) {
+  const task = MAP_TASKS[row?.drill ? 1 : 0];
+  const hint = "秦在西，齊在東。楚在南，燕在北。蜀屬三國。";
+  if (!name) return { ok: false, miss: "先點國名，再點圖上的一面。", drill: row?.drill ? 1 : 0, hold: 0, line: row?.line || 0 };
+  if (name === task.name && slot === task.slot) return { ok: true };
+  if (!row?.drill) return { ok: false, miss: hint, drill: 1, line: 0, hold: 0 };
+  return { ok: false, miss: hint, drill: 1, line: 0, hold: 1 };
 }
 
 function placeWho(stop) {
@@ -633,7 +709,7 @@ function canWalk(row, duel) {
 
 function coachText(row) {
   if (row.guide >= 3) return "";
-  if (playOf(row.stop, row) === "rumor") return "揀出錯誤傳聞。";
+  if (playOf(row.stop, row) === "rumor") return row.line > 0 ? "再判斷商隊信邊句。" : "先分辨邊句係傳聞。";
   if (playOf(row.stop, row) === "trail") return "揀出可以沿住走的次序。";
   if (isAsking(row) || row.guide >= 2) return "揀一句回應。";
   if (row.stop > 0) return "";
@@ -680,6 +756,8 @@ function readRow(user) {
     route: raw?.route === "ridge" || raw?.route === "market" ? raw.route : "",
     marketClue: !!raw?.marketClue,
     ridgeClue: !!raw?.ridgeClue,
+    drill: raw?.drill ? 1 : 0,
+    hold: raw?.hold ? 1 : 0,
     night: dayKey(raw?.night),
     nightTry: dayKey(raw?.nightTry),
     nightMiss: String(raw?.nightMiss || "").slice(0, 80),
@@ -792,7 +870,7 @@ function goalText(row) {
   return GOAL[row.stop] || "";
 }
 
-function boxHtml(row, pathOpen, gender, mix) {
+function boxHtml(row, pathOpen, gender, mix, held) {
   if (needsRoute(row)) return routeHtml(row);
   const stop = STOPS[row.stop];
   const line = shownLine(row);
@@ -826,7 +904,7 @@ function boxHtml(row, pathOpen, gender, mix) {
   if (asking && playOf(row.stop, row)) {
     const coach = coachText(row);
     const note = coach ? `<p class="voyage-coach-line">${esc(coach)}</p>` : "";
-    return `${playHtml(row, gender, mix)}${note}`;
+    return `${playHtml(row, gender, mix, held)}${note}`;
   }
   if (asking && quiz) {
     lineText = quiz.claim;
@@ -960,6 +1038,7 @@ export function bindVoyage(user, ctx) {
   let review = false;
 
   const choiceMix = Math.floor(Math.random() * 0x7fffffff).toString(16);
+  let heldName = "";
   const fail = () => ctx.toast?.("這一步未寫入。請再試一次。");
 
   const paint = () => {
@@ -970,7 +1049,7 @@ export function bindVoyage(user, ctx) {
     const box = document.getElementById("voyage-box");
     if (review && !row.camp) review = false;
     if (path) path.innerHTML = pathHtml(row);
-    if (box) box.innerHTML = duel ? duelHtml(duel, mates, row, choiceMix) : review ? reviewHtml(row) : boxHtml(row, pathOpen, current?.gender, choiceMix);
+    if (box) box.innerHTML = duel ? duelHtml(duel, mates, row, choiceMix) : review ? reviewHtml(row) : boxHtml(row, pathOpen, current?.gender, choiceMix, heldName);
     const walking = !duel && !review && canWalk(row, duel);
     const talking = !!duel || review || isAsking(row) || needsRoute(row);
     pathOpen = walking;
@@ -1148,7 +1227,7 @@ export function bindVoyage(user, ctx) {
       world?.setOpen(false);
       const owned = !!keep && placeOwned({ ...row, stop });
       const line = owned ? STOPS[stop].lines.length - 1 : 0;
-      const next = { ...row, stop, line, miss: "", done: stop === 10 && !!row.pass };
+      const next = { ...row, stop, line, miss: "", hold: 0, drill: 0, done: stop === 10 && !!row.pass };
       if (!save(next)) return;
       if (stop === 2 && !row.land) claimLand(readRow(ctx.getUser?.() || user));
     },
@@ -1178,6 +1257,67 @@ export function bindVoyage(user, ctx) {
     },
   });
   paint();
+
+  const finishStop = (row) => {
+    heldName = "";
+    const doneRow = {
+      ...row,
+      line: STOPS[row.stop].lines.length - 1,
+      miss: "",
+      hold: 0,
+      drill: 0,
+      guide: row.guide < 3 ? 3 : row.guide,
+    };
+    if (row.stop < 6) {
+      doneRow.weapon = true;
+      doneRow.soldier = true;
+    }
+    if (row.stop === 1) {
+      if (routeOf(row) === "ridge") doneRow.ridgeClue = true;
+      else doneRow.marketClue = true;
+    }
+    if (row.stop === 4) doneRow.crossbow = true;
+    if (row.stop === 5) doneRow.chariot = true;
+    if (row.stop === 3) {
+      claimCamp(doneRow);
+      return;
+    }
+    if (row.stop === 4) {
+      claimRiver(doneRow);
+      return;
+    }
+    if (row.stop === 5) {
+      claimPine(doneRow);
+      return;
+    }
+    if (row.stop === 6) {
+      claimPlace(doneRow, "states", "這幅圖是你的。向前走到海岸。");
+      return;
+    }
+    if (row.stop === 7) {
+      claimPlace(doneRow, "coast", "海岸是你的。向前走到樓閣。");
+      return;
+    }
+    if (row.stop === 8) {
+      claimPlace(doneRow, "loft", "馬跟住你。已經屬於你的路可以快跑。向前走到渡口。");
+      return;
+    }
+    if (row.stop === 9) {
+      claimPlace(doneRow, "ferry", "渡口是你的。可以抄捷徑。向前走到關城。");
+      return;
+    }
+    if (row.stop === 10) {
+      claimPlace(doneRow, "pass", "關城是你的。城門到關城是你的。");
+      return;
+    }
+    if (save(doneRow)) {
+      pathOpen = true;
+      world?.setOpen(true);
+      if (row.stop < 6) world?.grant();
+      if (row.stop === 4) world?.arm();
+      if (row.stop === 5) world?.hitch();
+    }
+  };
 
   root.addEventListener("click", (e) => {
     const home = e.target.closest("[data-voyage-home]");
@@ -1248,6 +1388,28 @@ export function bindVoyage(user, ctx) {
       }
       return;
     }
+    if (e.target.closest("[data-voyage-retry]")) {
+      heldName = "";
+      save({ ...row, hold: 0 });
+      return;
+    }
+    const mapBtn = e.target.closest("[data-voyage-map]");
+    if (mapBtn && playOf(row.stop, row) === "match" && isAsking(row)) {
+      heldName = mapBtn.dataset.voyageMap || "";
+      paint();
+      return;
+    }
+    const slotBtn = e.target.closest("[data-voyage-slot]");
+    if (slotBtn && playOf(row.stop, row) === "match" && isAsking(row)) {
+      const result = judgeMap(row, heldName, slotBtn.dataset.voyageSlot || "");
+      heldName = "";
+      if (!result.ok) {
+        save(missRow(row, result));
+        return;
+      }
+      finishStop(row);
+      return;
+    }
     const pick = e.target.closest("[data-voyage-pick]");
     if (pick) {
       const n = Number(pick.dataset.voyagePick);
@@ -1255,11 +1417,13 @@ export function bindVoyage(user, ctx) {
         const result = judgePlay(row, n);
         if (!result) return;
         if (!result.ok) {
-          save({ ...row, miss: result.miss || "再揀一次。" });
+          heldName = "";
+          save(missRow(row, result));
           return;
         }
         if (result.advance) {
-          save({ ...row, line: row.line + 1, miss: "", done: false });
+          heldName = "";
+          save({ ...row, line: row.line + 1, miss: "", hold: 0, done: false });
           return;
         }
       }
@@ -1276,61 +1440,7 @@ export function bindVoyage(user, ctx) {
           return;
         }
       }
-      const doneRow = {
-        ...row,
-        line: STOPS[row.stop].lines.length - 1,
-        miss: "",
-        guide: row.guide < 3 ? 3 : row.guide,
-      };
-      if (row.stop < 6) {
-        doneRow.weapon = true;
-        doneRow.soldier = true;
-      }
-      if (row.stop === 1) {
-        if (routeOf(row) === "ridge") doneRow.ridgeClue = true;
-        else doneRow.marketClue = true;
-      }
-      if (row.stop === 4) doneRow.crossbow = true;
-      if (row.stop === 5) doneRow.chariot = true;
-      if (row.stop === 3) {
-        claimCamp(doneRow);
-        return;
-      }
-      if (row.stop === 4) {
-        claimRiver(doneRow);
-        return;
-      }
-      if (row.stop === 5) {
-        claimPine(doneRow);
-        return;
-      }
-      if (row.stop === 6) {
-        claimPlace(doneRow, "states", "這幅圖是你的。向前走到海岸。");
-        return;
-      }
-      if (row.stop === 7) {
-        claimPlace(doneRow, "coast", "海岸是你的。向前走到樓閣。");
-        return;
-      }
-      if (row.stop === 8) {
-        claimPlace(doneRow, "loft", "馬跟住你。已經屬於你的路可以快跑。向前走到渡口。");
-        return;
-      }
-      if (row.stop === 9) {
-        claimPlace(doneRow, "ferry", "渡口是你的。可以抄捷徑。向前走到關城。");
-        return;
-      }
-      if (row.stop === 10) {
-        claimPlace(doneRow, "pass", "關城是你的。城門到關城是你的。");
-        return;
-      }
-      if (save(doneRow)) {
-        pathOpen = true;
-        world?.setOpen(true);
-        if (row.stop < 6) world?.grant();
-        if (row.stop === 4) world?.arm();
-        if (row.stop === 5) world?.hitch();
-      }
+      finishStop(row);
       return;
     }
     if (e.target.closest("[data-voyage-review]")) {
@@ -1390,7 +1500,7 @@ export function bindVoyage(user, ctx) {
     }
     if (e.target.closest("[data-voyage-replay]")) {
       world?.place(0);
-      save({ ...row, stop: 0, line: 0, miss: "", done: false, route: "", spin: (Number(row.spin) || 0) + 1 });
+      save({ ...row, stop: 0, line: 0, miss: "", hold: 0, drill: 0, done: false, route: "", spin: (Number(row.spin) || 0) + 1 });
     }
   });
 }

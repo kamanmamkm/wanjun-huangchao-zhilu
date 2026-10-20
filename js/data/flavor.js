@@ -1,7 +1,7 @@
 /**
  * 短循環趣味：答題旁白、過關信物、今日機緣、下回鉤。
  */
-import { CHAPTERS, chapterList } from "./chapters.js?v=rad167";
+import { CHAPTERS, chapterList } from "./chapters.js?v=rad168";
 import { QUESTIONS } from "./questions.js?v=rad83";
 import { filterByFormYear } from "./formYear.js?v=rad114";
 

@@ -2,11 +2,11 @@
  * 上路：第三人稱自己行。城樓先有地盤，再到營帳。
  * 有了營帳，可以去榜上同窗的城門答一句。答對就在自己這邊插布旗。
  * 史實只重用已有判斷。市集先問兩個人分辨傳聞，再判斷信邊句。答錯先出提示，再換另一個例子。營帳先接任務，再揀先查哪份情報。河邊睇線索揀渡口。七雄在圖上配方位，秦在西、楚在南，蜀屬三國。樓閣睇兩份材料，解決商人傳達政令。關城把沿路線索放在一起，核對北宋都城。松山、海岸仍然是一句判斷。渡口先讀運輸同民力，再揀。再走一程，市集傳聞同河邊渡口換下一組，松山換下一句。同窗城門用呢一程路上未出現的另一句。
- * 關城之後先再走一程。再走可以改經山路，問法會換。同窗要帶自己的線索，答佢留下的挑戰，他的城仍是他的。關城結算走過的地方、解開的事、學識的概念。
+ * 關城之後先再走一程。商隊沿歷史時空旅程行，每站解一件事再交去下一站。年代分開，唔好當成同一時的人。再走可以改經山路。同窗要帶自己的線索，答佢留下的挑戰，他的城仍是他的。關城結算走過的地方、解開的事、學識的概念。
  * 城門到松山之後，行旅「今晚未了」每日一句。有了樓閣，逢單數日由商人問。未到樓閣，仍然聽將領。答對只點亮已經屬於你的一個地方。
  */
 import { addXp, updateUser } from "./storage.js?v=rad114";
-import { mountVoyageScene } from "./voyage3d.js?v=rad168";
+import { mountVoyageScene } from "./voyage3d.js?v=rad169";
 
 const XP_ONCE = 8;
 
@@ -377,25 +377,82 @@ function clueChips(row) {
   return chips;
 }
 
-const STORIES = [
-  { brief: "查清假消息，協助商隊過關。", done: "假消息查清了。商隊過了關。" },
-  { brief: "核對分封，幫營帳收好任務。", done: "任務收好了。人過了關。" },
-  { brief: "揀對渡口，讓來的人過河。", done: "渡口揀對了。人過了關。" },
-  { brief: "配對戰國的圖，送商人出關。", done: "圖配對了。商人出了關。" },
-];
+function stopSettled(row) {
+  if (!row) return false;
+  if (row.stop === 1) return routeOf(row) === "ridge" ? !!row.ridgeClue : !!row.marketClue;
+  const key = ownedKey(row.stop);
+  if (key) return !!row[key];
+  const stop = STOPS[row.stop];
+  return !!stop && row.line >= stop.lines.length - 1;
+}
 
-const RIDGE_STORIES = [
-  { brief: "沿山路對次序，再送商隊過關。", done: "山路的次序對上了。商隊過了關。" },
-  { brief: "山路上記低三朝，再核對營帳的任務。", done: "三朝的次序對上了。人過了關。" },
-  { brief: "沿山路走到渡口，讓來的人過河。", done: "山路走到渡口。人過了關。" },
-  { brief: "山路之後配對戰國的圖，送商人出關。", done: "圖配對了。商人出了關。" },
-];
+function carryLine(row) {
+  const settled = stopSettled(row);
+  const ridge = routeOf(row) === "ridge";
+  if (row.stop === 0) return "商隊要出發。每站是不同年代，路上的人不是同一時存在。";
+  if (row.stop === 1 && ridge) {
+    return settled
+      ? "三朝次序對上了。商隊帶住這句去城樓歇。"
+      : "商隊轉入山路。這一站是夏、商、周，三朝有先後。";
+  }
+  if (row.stop === 1) {
+    return settled
+      ? "市集分清了：孔子在春秋，始皇在後。商隊帶住這句去城樓。"
+      : "商隊入市集。這一站把春秋的孔子同後來的始皇分開。";
+  }
+  if (row.stop === 2) {
+    if (settled) return "城樓歸商隊歇腳。下一站是西周的營帳，同春秋、秦都不是同一時。";
+    return ridge
+      ? "山路的次序對上了。商隊在城樓歇，這段路可以歸你。"
+      : "市集的年代分清了。商隊在城樓歇，這段路可以歸你。";
+  }
+  if (row.stop === 3) {
+    return settled
+      ? "營帳記低西周是分封。可以重溫線索。商隊帶住這句去河邊。"
+      : "城樓已是你的。商隊要核對西周：受封的是諸侯，不是秦的郡縣。";
+  }
+  if (row.stop === 4) {
+    const era = (Number(row.spin) || 0) % 2 === 0 ? "夏、商、周" : "隋唐以後的科舉";
+    return settled
+      ? "河邊揀對了。商隊帶住渡口的判斷上松山。"
+      : `營帳寫低西周是分封。這一站是${era}，同西周不是同一時。`;
+  }
+  if (row.stop === 5) {
+    return settled
+      ? "松山這一句的年代對上了。商隊去看戰國的圖，要同三國分開。"
+      : "河邊揀對了。松山這一句是另一個年代，同剛才的渡口不是同一時。";
+  }
+  if (row.stop === 6) {
+    return settled
+      ? "戰國的方位對上了。秦在西，楚在南。商隊出海岸，下一站是明朝。"
+      : "松山過了。這幅圖是戰國，不是三國。蜀唔好放到圖上。";
+  }
+  if (row.stop === 7) {
+    return settled
+      ? "海岸記低鄭和在明。商隊入樓閣，書同文是秦統一之後的事。"
+      : "戰國的圖對上了。這一站是明朝的鄭和，張騫是漢代，兩人不同世。";
+  }
+  if (row.stop === 8) {
+    return settled
+      ? "樓閣的馬跟住商隊。已經屬於你的路可以快跑。下一站是隋唐的渡口。"
+      : "海岸是明朝的事。樓閣要送政令：書同文是秦統一之後，為了政令。";
+  }
+  if (row.stop === 9) {
+    return settled
+      ? "渡口可以抄捷徑。商隊去關城，下一站是北宋。"
+      : "馬跟住商隊。這一站是隋唐的大運河：溝通南北，同時徵發民力。";
+  }
+  if (row.stop === 10) {
+    return row.pass
+      ? "商隊按年代過了關。各站的人沒有變成同時存在。"
+      : "渡口抄過路。關城核對北宋：都城是開封，長安是漢唐舊都。";
+  }
+  return "協助商隊完成旅程。";
+}
 
-function storyOf(row) {
-  const list = routeOf(row) === "ridge" ? RIDGE_STORIES : STORIES;
-  const n = list.length;
-  const i = (((Number(row?.spin) || 0) % n) + n) % n;
-  return list[i];
+function threadHtml(row, compact) {
+  const title = compact ? "" : `<p class="voyage-story">歷史時空旅程 · 協助商隊完成旅程</p>`;
+  return `${title}<p class="voyage-story">${esc(carryLine(row))}</p>`;
 }
 
 function canSprint(row) {
@@ -860,7 +917,7 @@ function ledgerHtml(row) {
   const concepts = clueChips(row);
   return `<p class="voyage-who">關城</p><p class="voyage-line">這一程結算</p>
     <p class="voyage-story">走過：${esc(walked.join("、") || "城門")}</p>
-    <p class="voyage-story">解開：${esc(storyOf(row).done)}</p>
+    <p class="voyage-story">解開：商隊按年代過了關。</p>
     <p class="voyage-story">學識：${esc(concepts.join("、") || "沿路再收")}</p>`;
 }
 
@@ -887,7 +944,7 @@ function boxHtml(row, pathOpen, gender, mix, held) {
   const atFerry = row.stop === 9 && last;
   const atPass = row.stop === 10 && last;
   let lineText = line.text || "";
-  if (atPass && row.pass) lineText = `${storyOf(row).done}馬跟住你。`;
+  if (atPass && row.pass) lineText = "商隊按年代過了關。馬跟住你。";
   else if (atFerry && row.ferry) lineText = "渡口是你的。可以抄捷徑。向前走到關城。";
   else if (atLoft && row.loft) lineText = "馬跟住你。已經屬於你的路可以快跑。向前走到渡口。";
   else if (atCoast && row.coast) lineText = "海岸是你的。向前走到樓閣。";
@@ -904,7 +961,7 @@ function boxHtml(row, pathOpen, gender, mix, held) {
   if (asking && playOf(row.stop, row)) {
     const coach = coachText(row);
     const note = coach ? `<p class="voyage-coach-line">${esc(coach)}</p>` : "";
-    return `${playHtml(row, gender, mix, held)}${note}`;
+    return `${threadHtml(row, true)}${playHtml(row, gender, mix, held)}${note}`;
   }
   if (asking && quiz) {
     lineText = quiz.claim;
@@ -932,9 +989,7 @@ function boxHtml(row, pathOpen, gender, mix, held) {
   }
   const coach = coachText(row);
   const note = coach ? `<p class="voyage-coach-line">${esc(coach)}</p>` : "";
-  const storyHtml = !asking && !(atPass && row.pass)
-    ? `<p class="voyage-story">這一程：${esc(storyOf(row).brief)}</p>`
-    : "";
+  const storyHtml = atPass && row.pass ? "" : threadHtml(row, asking);
   const head = asking && quiz
     ? `<p class="voyage-who">${esc(quiz.who === "other" ? otherName(gender) : quiz.who)}</p>`
     : who;
@@ -1061,6 +1116,9 @@ export function bindVoyage(user, ctx) {
       land: !!row.land,
       camp: !!row.camp,
       river: !!row.river,
+      states: !!row.states,
+      coast: !!row.coast,
+      loft: !!row.loft,
       ferry: !!row.ferry,
       pass: !!row.pass,
     });
@@ -1205,6 +1263,9 @@ export function bindVoyage(user, ctx) {
     land: !!readRow(user).land,
     camp: !!readRow(user).camp,
     river: !!readRow(user).river,
+    states: !!readRow(user).states,
+    coast: !!readRow(user).coast,
+    loft: !!readRow(user).loft,
     ferry: !!readRow(user).ferry,
     pass: !!readRow(user).pass,
     route: routeOf(readRow(user)),

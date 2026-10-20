@@ -111,10 +111,16 @@ export function mountVoyageScene(opts) {
   let ferryPier = null;
   let ferryFolk = null;
   let passBanner = null;
+  let statesMark = null;
+  let coastFolk = null;
+  let loftMark = null;
   let settled = {
     land: !!opts.land,
     camp: !!opts.camp,
     river: !!opts.river,
+    states: !!opts.states,
+    coast: !!opts.coast,
+    loft: !!opts.loft,
     ferry: !!opts.ferry,
     pass: !!opts.pass,
   };
@@ -669,6 +675,9 @@ export function mountVoyageScene(opts) {
     if (ferryPier) ferryPier.visible = !!settled.ferry;
     if (ferryFolk) ferryFolk.visible = !!settled.ferry;
     if (passBanner) passBanner.visible = !!settled.pass;
+    if (statesMark) statesMark.visible = !!settled.states;
+    if (coastFolk) coastFolk.visible = !!settled.coast;
+    if (loftMark) loftMark.visible = !!settled.loft;
   }
 
   function stand(model, x, z) {
@@ -843,10 +852,13 @@ export function mountVoyageScene(opts) {
         gateFolk = stand(soldierModel.clone(true), -3.2, 5);
         campFolk = stand(soldierModel.clone(true), 6.6, 53);
         ferryFolk = stand(soldierModel.clone(true), 3.3, 112);
+        coastFolk = stand(soldierModel.clone(true), 5.2, 84);
       }
       if (flagModel) {
         campBanner = plantFlag(flagModel.clone(true), 7.4, 50, 0.4);
         passBanner = plantFlag(flagModel.clone(true), 3.6, 126, Math.PI);
+        statesMark = plantFlag(flagModel.clone(true), -6.4, 68, 0.2);
+        loftMark = plantFlag(flagModel.clone(true), -10.2, 102, -0.6);
       }
       riverPier = pier(-5.6, 55);
       ferryPier = pier(0, 114);

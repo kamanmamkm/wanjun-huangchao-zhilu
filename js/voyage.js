@@ -2,11 +2,11 @@
  * 上路：第三人稱自己行。城樓先有地盤，再到營帳。
  * 有了營帳，可以去榜上同窗的城門答一句。答對就在自己這邊插布旗。
  * 史實只重用已有判斷。市集聽兩個人，揀錯誤傳聞。營帳先接任務，再揀先查哪份情報。河邊睇線索揀渡口。七雄把戰國配上七雄，不要配成三國。樓閣睇兩份材料，解決商人傳達政令。關城把沿路線索放在一起，核對北宋都城。松山、海岸、渡口仍然是一句判斷。再走一程，市集傳聞同河邊渡口換下一組，松山換下一句。同窗城門用呢一程路上未出現的另一句。
- * 松山之後向前：七雄的圖、海岸、樓閣、渡口、關城。答對只多一個已經屬於你的地方。樓閣有商人，講書同文。樓閣答對，馬跟住你。關城之後才再走一程。
+ * 松山之後向前：七雄的圖、海岸、樓閣、渡口、關城。答對只多一個已經屬於你的地方。樓閣有商人，講書同文。樓閣答對，馬跟住你，已經屬於你的路可以快跑。有了營帳可以重溫線索。有了渡口可以抄捷徑。關城之後才再走一程。
  * 城門到松山之後，行旅「今晚未了」每日一句。有了樓閣，逢單數日由商人問。未到樓閣，仍然聽將領。答對只點亮已經屬於你的一個地方。
  */
 import { addXp, updateUser } from "./storage.js?v=rad114";
-import { mountVoyageScene } from "./voyage3d.js?v=rad164";
+import { mountVoyageScene } from "./voyage3d.js?v=rad165";
 
 const XP_ONCE = 8;
 
@@ -322,6 +322,51 @@ function clueChips(row) {
   return chips;
 }
 
+const STORIES = [
+  { brief: "查清假消息，協助商隊過關。", done: "假消息查清了。商隊過了關。" },
+  { brief: "核對分封，幫營帳收好任務。", done: "任務收好了。人過了關。" },
+  { brief: "揀對渡口，讓來的人過河。", done: "渡口揀對了。人過了關。" },
+  { brief: "配對戰國的圖，送商人出關。", done: "圖配對了。商人出了關。" },
+];
+
+function storyOf(row) {
+  const n = STORIES.length;
+  const i = (((Number(row?.spin) || 0) % n) + n) % n;
+  return STORIES[i];
+}
+
+function canSprint(row) {
+  return !!row.horse && segmentDone(row);
+}
+
+function shortcutTarget(row) {
+  if (!row.ferry || !canWalk(row, false)) return -1;
+  if (row.pass && row.stop < 10) return 10;
+  if (row.stop < 9) return 9;
+  return -1;
+}
+
+function roadActions(row) {
+  if (!canWalk(row, false)) return "";
+  const buttons = [];
+  if (row.camp) buttons.push(`<button type="button" class="voyage-go" data-voyage-review="1">重溫線索</button>`);
+  if (canSprint(row)) buttons.push(`<button type="button" class="voyage-go" data-voyage-skip="1">快返</button>`);
+  const cut = shortcutTarget(row);
+  if (cut > row.stop) buttons.push(`<button type="button" class="voyage-go" data-voyage-cut="1">抄捷徑</button>`);
+  if (!buttons.length) return "";
+  return `<div class="voyage-actions">${buttons.join("")}</div>`;
+}
+
+function reviewHtml(row) {
+  const chips = clueChips(row)
+    .map((text) => `<span class="voyage-clue">${esc(text)}</span>`)
+    .join("");
+  const body = chips
+    ? `<div class="voyage-clues">${chips}</div>`
+    : `<p class="voyage-line">線索還未收齊。</p>`;
+  return `<p class="voyage-who">營帳</p><p class="voyage-line">收過的線索放在這裡。</p>${body}<button type="button" class="voyage-go" data-voyage-review-back="1">返回道路</button>`;
+}
+
 function playHtml(row, gender) {
   const play = playOf(row.stop);
   const miss = row.miss ? `<p class="voyage-miss">${esc(row.miss)}</p>` : "";
@@ -633,15 +678,15 @@ function boxHtml(row, pathOpen, gender) {
   const atFerry = row.stop === 9 && last;
   const atPass = row.stop === 10 && last;
   let lineText = line.text || "";
-  if (atPass && row.pass) lineText = "關城是你的。馬跟住你。";
-  else if (atFerry && row.ferry) lineText = "渡口是你的。向前走到關城。";
-  else if (atLoft && row.loft) lineText = "城門到樓閣是你的。馬跟住你。向前走到渡口。";
+  if (atPass && row.pass) lineText = `${storyOf(row).done}馬跟住你。`;
+  else if (atFerry && row.ferry) lineText = "渡口是你的。可以抄捷徑。向前走到關城。";
+  else if (atLoft && row.loft) lineText = "馬跟住你。已經屬於你的路可以快跑。向前走到渡口。";
   else if (atCoast && row.coast) lineText = "海岸是你的。向前走到樓閣。";
   else if (atStates && row.states) lineText = "這幅圖是你的。向前走到海岸。";
   else if (atPine && row.pine && !row.states) lineText = "城門到松山，是你的。向前，有一幅七雄的圖。";
   else if (atPine && row.pine) lineText = "城門到松山，是你的地盤。";
   else if (atRiver && row.river) lineText = "河邊是你的。向右走到松山。";
-  else if (atCamp && row.camp) lineText = "城門到營帳是你的。向左走到河邊，可以再大。";
+  else if (atCamp && row.camp) lineText = "城門到營帳是你的。可以重溫線索。向左走到河邊。";
   else if (atTower && row.land) lineText = "城門到城樓是你的。再向前，營帳也可以是你的。";
   else if (atTower) lineText = "你上了城樓。這條路可以是你的地盤。";
   let controls = "";
@@ -663,23 +708,27 @@ function boxHtml(row, pathOpen, gender) {
       <button type="button" class="voyage-go" data-voyage-duel="1">去同窗</button>
       <button type="button" class="voyage-go" data-voyage-replay="1">再走一程</button>
       <button type="button" class="voyage-go" data-voyage-home="1">回到行旅</button>
+      ${row.camp ? `<button type="button" class="voyage-go" data-voyage-review="1">重溫線索</button>` : ""}
     </div><p class="voyage-hint">${
       row.flag
-        ? `布旗下記住${esc(row.flagName || "同窗")}。馬跟住你。`
-        : "馬跟住你。"
+        ? `布旗下記住${esc(row.flagName || "同窗")}。馬跟住你。已經屬於你的路可以快跑。`
+        : "馬跟住你。已經屬於你的路可以快跑。"
     }</p>`;
   } else if (needsClaim(row)) {
     const kind = claimKind(row.stop);
     controls = `<button type="button" class="voyage-go" data-voyage-${kind}="1">收下</button>`;
-  } else if (canWalk(row, false) && segmentDone(row)) {
-    controls = `<button type="button" class="voyage-go" data-voyage-skip="1">快返</button>`;
+  } else if (canWalk(row, false)) {
+    controls = roadActions(row);
   }
   const coach = coachText(row);
   const note = coach ? `<p class="voyage-coach-line">${esc(coach)}</p>` : "";
+  const storyHtml = !asking && !(atPass && row.pass)
+    ? `<p class="voyage-story">這一程：${esc(storyOf(row).brief)}</p>`
+    : "";
   const head = asking && quiz
     ? `<p class="voyage-who">${esc(quiz.who === "other" ? otherName(gender) : quiz.who)}</p>`
     : who;
-  return `${head}<p class="voyage-line">${esc(lineText)}</p>${note}${controls}`;
+  return `${head}<p class="voyage-line">${esc(lineText)}</p>${storyHtml}${note}${controls}`;
 }
 
 function needsClaim(row) {
@@ -771,6 +820,8 @@ export function bindVoyage(user, ctx) {
   if (ctx.state) ctx.state.voyageDuel = false;
   let duel = openDuel ? { phase: "pick" } : null;
 
+  let review = false;
+
   const fail = () => ctx.toast?.("這一步未寫入。請再試一次。");
 
   const paint = () => {
@@ -779,14 +830,22 @@ export function bindVoyage(user, ctx) {
     const mates = matesOf(current, ctx.state?.cloudBoard);
     const path = document.getElementById("voyage-path");
     const box = document.getElementById("voyage-box");
+    if (review && !row.camp) review = false;
     if (path) path.innerHTML = pathHtml(row);
-    if (box) box.innerHTML = duel ? duelHtml(duel, mates, row) : boxHtml(row, pathOpen, current?.gender);
-    const walking = !duel && canWalk(row, duel);
-    const talking = !!duel || isAsking(row);
+    if (box) box.innerHTML = duel ? duelHtml(duel, mates, row) : review ? reviewHtml(row) : boxHtml(row, pathOpen, current?.gender);
+    const walking = !duel && !review && canWalk(row, duel);
+    const talking = !!duel || review || isAsking(row);
     pathOpen = walking;
     world?.setOpen(walking);
     world?.setHold(talking);
-    world?.setPace(segmentDone(row));
+    world?.setPace(!!row.horse && segmentDone(row));
+    world?.settle?.({
+      land: !!row.land,
+      camp: !!row.camp,
+      river: !!row.river,
+      ferry: !!row.ferry,
+      pass: !!row.pass,
+    });
     root.classList.toggle("is-rival", !!(duel && duel.phase !== "pick"));
     root.classList.toggle("is-talk", talking);
     const goal = document.getElementById("voyage-goal");
@@ -847,7 +906,7 @@ export function bindVoyage(user, ctx) {
     }
     pathOpen = true;
     world?.setOpen(true);
-    if (!row.camp) ctx.toast?.("地盤大了。城門到營帳是你的。向左走到河邊。");
+    if (!row.camp) ctx.toast?.("地盤大了。城門到營帳是你的。可以重溫線索。向左走到河邊。");
     paint();
   };
 
@@ -925,6 +984,11 @@ export function bindVoyage(user, ctx) {
     crossbow: !!readRow(user).crossbow,
     chariot: !!readRow(user).chariot,
     horse: !!readRow(user).horse,
+    land: !!readRow(user).land,
+    camp: !!readRow(user).camp,
+    river: !!readRow(user).river,
+    ferry: !!readRow(user).ferry,
+    pass: !!readRow(user).pass,
     onProgress: (text) => {
       const el = document.getElementById("voyage-load");
       if (el) el.textContent = text;
@@ -938,11 +1002,13 @@ export function bindVoyage(user, ctx) {
       const el = document.getElementById("voyage-load");
       if (el) el.textContent = "場景載入不到。請返回再試。";
     },
-    onArrive: (stop) => {
+    onArrive: (stop, keep) => {
       const row = readRow(ctx.getUser?.() || user);
       pathOpen = false;
       world?.setOpen(false);
-      const next = { ...row, stop, line: 0, miss: "", done: false };
+      const owned = !!keep && placeOwned({ ...row, stop });
+      const line = owned ? STOPS[stop].lines.length - 1 : 0;
+      const next = { ...row, stop, line, miss: "", done: stop === 10 && !!row.pass };
       if (!save(next)) return;
       if (stop === 2 && !row.land) claimLand(readRow(ctx.getUser?.() || user));
     },
@@ -1097,11 +1163,11 @@ export function bindVoyage(user, ctx) {
         return;
       }
       if (row.stop === 8) {
-        claimPlace(doneRow, "loft", "馬跟住你。城門到樓閣是你的。向前走到渡口。");
+        claimPlace(doneRow, "loft", "馬跟住你。已經屬於你的路可以快跑。向前走到渡口。");
         return;
       }
       if (row.stop === 9) {
-        claimPlace(doneRow, "ferry", "渡口是你的。向前走到關城。");
+        claimPlace(doneRow, "ferry", "渡口是你的。可以抄捷徑。向前走到關城。");
         return;
       }
       if (row.stop === 10) {
@@ -1115,6 +1181,21 @@ export function bindVoyage(user, ctx) {
         if (row.stop === 4) world?.arm();
         if (row.stop === 5) world?.hitch();
       }
+      return;
+    }
+    if (e.target.closest("[data-voyage-review]")) {
+      review = true;
+      paint();
+      return;
+    }
+    if (e.target.closest("[data-voyage-review-back]")) {
+      review = false;
+      paint();
+      return;
+    }
+    if (e.target.closest("[data-voyage-cut]")) {
+      const target = shortcutTarget(row);
+      if (target > row.stop) world?.skipTo(target);
       return;
     }
     if (e.target.closest("[data-voyage-skip]")) {
@@ -1146,11 +1227,11 @@ export function bindVoyage(user, ctx) {
       return;
     }
     if (e.target.closest("[data-voyage-loft]")) {
-      claimPlace(row, "loft", "馬跟住你。城門到樓閣是你的。向前走到渡口。");
+      claimPlace(row, "loft", "馬跟住你。已經屬於你的路可以快跑。向前走到渡口。");
       return;
     }
     if (e.target.closest("[data-voyage-ferry]")) {
-      claimPlace(row, "ferry", "渡口是你的。向前走到關城。");
+      claimPlace(row, "ferry", "渡口是你的。可以抄捷徑。向前走到關城。");
       return;
     }
     if (e.target.closest("[data-voyage-pass]")) {

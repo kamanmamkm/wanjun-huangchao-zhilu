@@ -2,11 +2,11 @@
  * 上路：第三人稱自己行。城樓先有地盤，再到營帳。
  * 有了營帳，可以去榜上同窗的城門答一句。答對就在自己這邊插布旗。
  * 史實只重用已有判斷。市集先問兩個人分辨傳聞，再判斷信邊句。答錯先出提示，再換另一個例子。營帳先接任務，再揀先查哪份情報。河邊睇線索揀渡口。七雄在圖上配方位，秦在西、楚在南，蜀屬三國。樓閣睇兩份材料，解決商人傳達政令。關城把沿路線索放在一起，核對北宋都城。松山、海岸仍然是一句判斷。渡口先讀運輸同民力，再揀。再走一程，市集傳聞同河邊渡口換下一組，松山換下一句。同窗城門用呢一程路上未出現的另一句。
- * 關城之後先再走一程。商隊沿歷史時空旅程行，每站解一件事再交去下一站。年代分開，唔好當成同一時的人。再走可以改經山路。同窗要帶自己的線索，答佢留下的挑戰，他的城仍是他的。關城結算走過的地方、解開的事、學識的概念。
+ * 關城之後先再走一程。商隊沿歷史時空旅程行，每站解一件事再交去下一站。年代分開，唔好當成同一時的人。再走可以改經山路，市集同山路碰到的事唔同，河邊渡口亦會換一組。同一條次序換另一種石上寫法。同窗要帶自己的線索，同佢留下的一句一齊放，他的城仍是他的。關城列出探索、進步、未發現的支線。
  * 城門到松山之後，行旅「今晚未了」每日一句。有了樓閣，逢單數日由商人問。未到樓閣，仍然聽將領。答對只點亮已經屬於你的一個地方。
  */
 import { addXp, updateUser } from "./storage.js?v=rad114";
-import { mountVoyageScene } from "./voyage3d.js?v=rad169";
+import { mountVoyageScene } from "./voyage3d.js?v=rad170";
 
 const XP_ONCE = 8;
 
@@ -360,8 +360,38 @@ function rumorOf(spin) {
   return RUMORS[((Number(spin) || 0) % RUMORS.length + RUMORS.length) % RUMORS.length];
 }
 
-function fordOf(spin) {
-  return FORDS[((Number(spin) || 0) % FORDS.length + FORDS.length) % FORDS.length];
+function fordOf(row) {
+  const spin = (Number(row?.spin) || 0) + (routeOf(row) === "ridge" ? 1 : 0);
+  return FORDS[((spin % FORDS.length) + FORDS.length) % FORDS.length];
+}
+
+function fordEra(row) {
+  return fordOf(row) === FORDS[0] ? "夏、商、周" : "隋唐以後的科舉";
+}
+
+function coopOf(row) {
+  const mine = shareClue(row);
+  const quiz = duelQuiz(row?.spin);
+  const claim = String(quiz.claim || "").replace(/。$/, "");
+  const piece = mine === "三朝有先後" ? "三朝有先後" : "孔子在春秋";
+  return {
+    mine: piece,
+    claim: quiz.claim,
+    ask: "兩份放在一起。邊種放法先係一齊解？",
+    ok: `「${piece}」放可用。「${claim}」放再核對。`,
+    bad: `「${piece}」同「${claim}」當成同一時。`,
+    miss: `${piece}。你這句可用，同窗那句要再核對。`,
+  };
+}
+
+const TRAILS = [
+  { ok: "夏之後是商，商之後是周。", bad: "周比夏更早。" },
+  { ok: "商在夏之後，周在商之後。", bad: "夏在周之後。" },
+];
+
+function trailOf(row) {
+  const spin = Number(row?.spin) || 0;
+  return TRAILS[((spin % TRAILS.length) + TRAILS.length) % TRAILS.length];
 }
 
 function clueChips(row) {
@@ -369,7 +399,7 @@ function clueChips(row) {
   if (row.marketClue) chips.push("孔子在春秋");
   if (row.ridgeClue) chips.push("三朝有先後");
   if (row.camp) chips.push("西周是分封");
-  if (row.river) chips.push("夏、商、周");
+  if (row.river) chips.push(fordOf(row) === FORDS[0] ? "夏、商、周" : "科舉不在秦代");
   if (row.states) chips.push("戰國七雄");
   if (row.coast) chips.push("鄭和在明");
   if (row.loft) chips.push("書同文為政令");
@@ -412,7 +442,7 @@ function carryLine(row) {
       : "城樓已是你的。商隊要核對西周：受封的是諸侯，不是秦的郡縣。";
   }
   if (row.stop === 4) {
-    const era = (Number(row.spin) || 0) % 2 === 0 ? "夏、商、周" : "隋唐以後的科舉";
+    const era = fordEra(row);
     return settled
       ? "河邊揀對了。商隊帶住渡口的判斷上松山。"
       : `營帳寫低西周是分封。這一站是${era}，同西周不是同一時。`;
@@ -526,10 +556,11 @@ function playHtml(row, gender, mix, held) {
   const miss = row.miss ? `<p class="voyage-miss">${esc(row.miss)}</p>` : "";
   const choices = (buttons) => `<div class="voyage-choices">${joinChoices(buttons, seed)}</div>`;
   if (play === "trail") {
+    const trail = trailOf(row);
     const ask = form === 0 ? "山路石上有兩句次序。邊句先可以沿住走？" : "山路石上有兩句次序。邊句會帶錯路？";
     return `<p class="voyage-who">山路</p><p class="voyage-line">${esc(ask)}</p>${choices([
-      `<button type="button" class="voyage-choice" data-voyage-pick="0"><b>石甲</b>夏之後是商，商之後是周。</button>`,
-      `<button type="button" class="voyage-choice" data-voyage-pick="1"><b>石乙</b>周比夏更早。</button>`,
+      `<button type="button" class="voyage-choice" data-voyage-pick="0"><b>石甲</b>${esc(trail.ok)}</button>`,
+      `<button type="button" class="voyage-choice" data-voyage-pick="1"><b>石乙</b>${esc(trail.bad)}</button>`,
     ])}${miss}`;
   }
   if (play === "rumor") {
@@ -559,7 +590,7 @@ function playHtml(row, gender, mix, held) {
     ])}${miss}`;
   }
   if (play === "ford") {
-    const ford = fordOf(row.spin);
+    const ford = fordOf(row);
     const ask = form === 0 ? ford.ask : "商隊要過河。邊一處先可信？";
     const spots = ford.spots.map(
       (spot, i) =>
@@ -649,9 +680,9 @@ function judgePlay(row, pick) {
     return null;
   }
   if (play === "ford") {
-    const spot = fordOf(row.spin).spots[n];
+    const spot = fordOf(row).spots[n];
     if (!spot) return null;
-    return spot.ok ? { ok: true } : { ok: false, miss: fordOf(row.spin).miss };
+    return spot.ok ? { ok: true } : { ok: false, miss: fordOf(row).miss };
   }
   if (play === "match") {
     return null;
@@ -891,9 +922,9 @@ function pathHtml(row) {
 function routeHtml(row) {
   const marketNote = row.marketClue ? "走過" : "未走過";
   const ridgeNote = row.ridgeClue ? "走過" : "未走過";
-  return `<p class="voyage-who">步卒</p><p class="voyage-line">這一程走邊條？故事同線索會唔同。</p><div class="voyage-choices">
-    <button type="button" class="voyage-choice" data-voyage-route="market"><b>經市集</b>${marketNote}。聽兩個人的傳聞。</button>
-    <button type="button" class="voyage-choice" data-voyage-route="ridge"><b>經山路</b>${ridgeNote}。睇石上的次序。</button>
+  return `<p class="voyage-who">步卒</p><p class="voyage-line">這一程走邊條？支線同河邊遇到的事會唔同。</p><div class="voyage-choices">
+    <button type="button" class="voyage-choice" data-voyage-route="market"><b>經市集</b>${marketNote}。聽兩個人的傳聞。河邊是另一組渡口。</button>
+    <button type="button" class="voyage-choice" data-voyage-route="ridge"><b>經山路</b>${ridgeNote}。睇石上的次序。河邊換成另一組渡口。</button>
   </div>`;
 }
 
@@ -915,10 +946,13 @@ function ledgerHtml(row) {
     if (row[key]) walked.push(name);
   });
   const concepts = clueChips(row);
+  const unseen = [];
+  if (!row.marketClue) unseen.push("市集");
+  if (!row.ridgeClue) unseen.push("山路");
   return `<p class="voyage-who">關城</p><p class="voyage-line">這一程結算</p>
-    <p class="voyage-story">走過：${esc(walked.join("、") || "城門")}</p>
-    <p class="voyage-story">解開：商隊按年代過了關。</p>
-    <p class="voyage-story">學識：${esc(concepts.join("、") || "沿路再收")}</p>`;
+    <p class="voyage-story">探索：${esc(walked.join("、") || "城門")}</p>
+    <p class="voyage-story">進步：${esc(concepts.join("、") || "沿路再收")}</p>
+    <p class="voyage-story">未發現：${esc(unseen.length ? unseen.join("、") : "市集同山路都走過")}</p>`;
 }
 
 function goalText(row) {
@@ -1042,10 +1076,10 @@ function duelHtml(duel, mates, row, mix) {
     const buttons = mates
       .map(
         (m) =>
-          `<button type="button" class="voyage-choice" data-voyage-rival="${esc(m.username)}">${esc(m.name)} · 史績 ${m.score}</button>`
+          `<button type="button" class="voyage-choice" data-voyage-rival="${esc(m.username)}">${esc(m.name)}</button>`
       )
       .join("");
-    return `<p class="voyage-who">你</p><p class="voyage-line">揀一位同窗。帶自己的線索，答佢留下的挑戰。他的城仍是他的。</p><div class="voyage-choices">${buttons}</div><button type="button" class="voyage-go" data-voyage-duel-back="1">返回</button>`;
+    return `<p class="voyage-who">你</p><p class="voyage-line">揀一位同窗。帶自己的線索，同佢留下的一句一齊解。他的城仍是他的。</p><div class="voyage-choices">${buttons}</div><button type="button" class="voyage-go" data-voyage-duel-back="1">返回</button>`;
   }
   if (duel.phase === "won") {
     return `<p class="voyage-who">你</p><p class="voyage-line">兩份放在一起。布旗插上。${esc(duel.name)}的城仍是他的。</p><button type="button" class="voyage-go" data-voyage-duel-back="1">回到自己的路</button>`;
@@ -1054,13 +1088,13 @@ function duelHtml(duel, mates, row, mix) {
   if (!mine) {
     return `<p class="voyage-who">你</p><p class="voyage-line">先經市集或山路，帶一份線索再來。</p><button type="button" class="voyage-go" data-voyage-duel-back="1">返回</button>`;
   }
-  const quiz = duelQuiz(row?.spin);
+  const puzzle = coopOf(row);
   const miss = duel.miss ? `<p class="voyage-miss">${esc(duel.miss)}</p>` : "";
   const flags = joinChoices([
-    `<button type="button" class="voyage-choice" data-voyage-flag="1">${esc(quiz.ok)}</button>`,
-    `<button type="button" class="voyage-choice" data-voyage-flag="0">${esc(quiz.bad)}</button>`,
-  ], `${mix}|duel|${row?.spin}|${duel.name}`);
-  return `<p class="voyage-who">步卒 · ${esc(duel.name)}的城門</p><p class="voyage-line">你的線索：${esc(mine)}</p><p class="voyage-line">同窗留下的挑戰：${esc(quiz.claim)}</p><p class="voyage-story">兩份合起來先過關。他的城仍是他的。</p><div class="voyage-choices">${flags}</div>${miss}<button type="button" class="voyage-go" data-voyage-repick="1">另揀一位</button>`;
+    `<button type="button" class="voyage-choice" data-voyage-flag="1">${esc(puzzle.ok)}</button>`,
+    `<button type="button" class="voyage-choice" data-voyage-flag="0">${esc(puzzle.bad)}</button>`,
+  ], `${mix}|duel|${row?.spin}|${puzzle.mine}|${duel.name}`);
+  return `<p class="voyage-who">步卒 · ${esc(duel.name)}的城門</p><p class="voyage-line">你的線索：${esc(puzzle.mine)}</p><p class="voyage-line">同窗留下：${esc(puzzle.claim)}</p><p class="voyage-story">${esc(puzzle.ask)}他的城仍是他的。</p><div class="voyage-choices">${flags}</div>${miss}<button type="button" class="voyage-go" data-voyage-repick="1">另揀一位</button>`;
 }
 
 export function renderVoyage() {
@@ -1431,7 +1465,7 @@ export function bindVoyage(user, ctx) {
     if (flagBtn && duel?.phase === "ask") {
       if (flagBtn.dataset.voyageFlag === "1") claimFlag(row, duel.name);
       else {
-        duel = { ...duel, miss: duelQuiz(row.spin).miss };
+        duel = { ...duel, miss: coopOf(row).miss };
         paint();
       }
       return;

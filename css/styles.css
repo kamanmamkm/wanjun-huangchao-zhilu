@@ -3293,6 +3293,30 @@ button:active:not(:disabled):not(.locked),
   text-align: left;
 }
 
+.voyage-choice b {
+  display: block;
+  margin-bottom: 0.12rem;
+  color: #8a5a2a;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+}
+
+.voyage-clues {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.55rem;
+}
+
+.voyage-clue {
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(244, 226, 196, 0.16);
+  color: #f4e2c4;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
 .voyage-actions {
   display: flex;
   flex-wrap: wrap;

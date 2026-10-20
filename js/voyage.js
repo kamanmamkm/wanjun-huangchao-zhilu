@@ -1,12 +1,12 @@
 /**
  * 上路：第三人稱自己行。城樓先有地盤，再到營帳。
  * 有了營帳，可以去榜上同窗的城門答一句。答對就在自己這邊插布旗。
- * 史實只重用已有判斷。再走一程，市集、營帳、河邊、松山換下一句：孔子與始皇不同世；西周是分封、受封的是諸侯；科舉不在秦代；夏商周有先後；百家爭鳴在春秋戰國；貞觀是唐太宗；《史記》是司馬遷。同窗城門用呢一程路上未出現的另一句。七雄、海岸、樓閣的句子留在原處。
+ * 史實只重用已有判斷。市集聽兩個人，揀錯誤傳聞。營帳先接任務，再揀先查哪份情報。河邊睇線索揀渡口。七雄把戰國配上七雄，不要配成三國。樓閣睇兩份材料，解決商人傳達政令。關城把沿路線索放在一起，核對北宋都城。松山、海岸、渡口仍然是一句判斷。再走一程，市集傳聞同河邊渡口換下一組，松山換下一句。同窗城門用呢一程路上未出現的另一句。
  * 松山之後向前：七雄的圖、海岸、樓閣、渡口、關城。答對只多一個已經屬於你的地方。樓閣有商人，講書同文。樓閣答對，馬跟住你。關城之後才再走一程。
  * 城門到松山之後，行旅「今晚未了」每日一句。有了樓閣，逢單數日由商人問。未到樓閣，仍然聽將領。答對只點亮已經屬於你的一個地方。
  */
 import { addXp, updateUser } from "./storage.js?v=rad114";
-import { mountVoyageScene } from "./voyage3d.js?v=rad163";
+import { mountVoyageScene } from "./voyage3d.js?v=rad164";
 
 const XP_ONCE = 8;
 
@@ -222,8 +222,8 @@ const QUIZ = [
 ];
 
 const ROTATE = [0, 1, 2, 3, 4, 5, 6, 7];
-const ROAD_SLOT = { 1: 0, 3: 1, 4: 2, 5: 3 };
-const PLACE_QUIZ = { 6: 8, 7: 9, 8: 10, 9: 11, 10: 12 };
+const ROAD_SLOT = { 5: 3 };
+const PLACE_QUIZ = { 7: 9, 9: 11 };
 
 function rotated(spin, slot) {
   const n = ROTATE.length;
@@ -239,6 +239,188 @@ function roadQuiz(spin, stop) {
 
 function duelQuiz(spin) {
   return rotated(spin, 4);
+}
+
+const PLAY = { 1: "rumor", 3: "task", 4: "ford", 6: "match", 8: "slip", 10: "seal" };
+
+const RUMORS = [
+  {
+    ask: "邊句係錯誤傳聞？",
+    voices: [
+      { who: "攤主", text: "孔子在春秋講學。" },
+      { who: "other", text: "孔子幫秦始皇統一六國。", false: true },
+    ],
+    miss: "孔子在春秋，始皇在其後。",
+  },
+  {
+    ask: "邊句係錯誤傳聞？",
+    voices: [
+      { who: "攤主", text: "貞觀之治是唐玄宗。", false: true },
+      { who: "other", text: "貞觀之治是唐太宗。" },
+    ],
+    miss: "貞觀之治是唐太宗在位的時候。",
+  },
+  {
+    ask: "邊句係錯誤傳聞？",
+    voices: [
+      { who: "攤主", text: "百家爭鳴在春秋戰國。" },
+      { who: "other", text: "百家爭鳴在秦朝。", false: true },
+    ],
+    miss: "百家爭鳴主要在春秋戰國。",
+  },
+  {
+    ask: "邊句係錯誤傳聞？",
+    voices: [
+      { who: "攤主", text: "《史記》是司馬光寫的。", false: true },
+      { who: "other", text: "《史記》是司馬遷寫的。" },
+    ],
+    miss: "《史記》是西漢司馬遷寫的。《資治通鑑》才是北宋司馬光。",
+  },
+];
+
+const FORDS = [
+  {
+    ask: "睇三處線索，揀合適的渡河位置。",
+    spots: [
+      { name: "中流", clue: "牌子寫「商周夏」。" },
+      { name: "東渡", clue: "石上是「夏、商、周」。", ok: true },
+      { name: "西灘", clue: "牌子寫「周最早」。" },
+    ],
+    miss: "傳統史序是夏、商、周。",
+  },
+  {
+    ask: "睇三處線索，揀合適的渡河位置。",
+    spots: [
+      { name: "南渡", clue: "牌子寫「始皇開科取士」。" },
+      { name: "淺灘", clue: "牌子寫「秦與科舉同一時代」。" },
+      { name: "北渡", clue: "石上是「科舉不在秦代」。", ok: true },
+    ],
+    miss: "科舉不在秦代。秦與科舉，時代不同。",
+  },
+];
+
+function playOf(stop) {
+  return PLAY[stop] || "";
+}
+
+function rumorOf(spin) {
+  return RUMORS[((Number(spin) || 0) % RUMORS.length + RUMORS.length) % RUMORS.length];
+}
+
+function fordOf(spin) {
+  return FORDS[((Number(spin) || 0) % FORDS.length + FORDS.length) % FORDS.length];
+}
+
+function clueChips(row) {
+  const chips = [];
+  if (row.camp) chips.push("西周是分封");
+  if (row.river) chips.push("夏、商、周");
+  if (row.states) chips.push("戰國七雄");
+  if (row.coast) chips.push("鄭和在明");
+  if (row.loft) chips.push("書同文為政令");
+  if (row.ferry) chips.push("運河徵發民力");
+  return chips;
+}
+
+function playHtml(row, gender) {
+  const play = playOf(row.stop);
+  const miss = row.miss ? `<p class="voyage-miss">${esc(row.miss)}</p>` : "";
+  if (play === "rumor") {
+    const rumor = rumorOf(row.spin);
+    const voices = rumor.voices
+      .map((voice, i) => {
+        const name = voice.who === "other" ? otherName(gender) : voice.who;
+        return `<button type="button" class="voyage-choice" data-voyage-pick="${i}"><b>${esc(name)}</b>${esc(voice.text)}</button>`;
+      })
+      .join("");
+    return `<p class="voyage-who">市集</p><p class="voyage-line">${esc(rumor.ask)}</p><div class="voyage-choices">${voices}</div>${miss}`;
+  }
+  if (play === "task") {
+    if (row.line <= 0) {
+      return `<p class="voyage-who">步卒</p><p class="voyage-line">營帳要核對西周點管地方。你接哪一項任務？</p><div class="voyage-choices">
+        <button type="button" class="voyage-choice" data-voyage-pick="0">查受封的是誰。</button>
+        <button type="button" class="voyage-choice" data-voyage-pick="1">當作西周已全國設郡縣。</button>
+      </div>${miss}`;
+    }
+    return `<p class="voyage-who">步卒</p><p class="voyage-line">任務接了。兩份情報，先查哪一份？</p><div class="voyage-choices">
+      <button type="button" class="voyage-choice" data-voyage-pick="0">周王把土地分封給諸侯。</button>
+      <button type="button" class="voyage-choice" data-voyage-pick="1">土地分封給農民。</button>
+    </div>${miss}`;
+  }
+  if (play === "ford") {
+    const ford = fordOf(row.spin);
+    const spots = ford.spots
+      .map(
+        (spot, i) =>
+          `<button type="button" class="voyage-choice" data-voyage-pick="${i}"><b>${esc(spot.name)}</b>${esc(spot.clue)}</button>`
+      )
+      .join("");
+    return `<p class="voyage-who">步卒</p><p class="voyage-line">${esc(ford.ask)}</p><div class="voyage-choices">${spots}</div>${miss}`;
+  }
+  if (play === "match") {
+    return `<p class="voyage-who">步卒</p><p class="voyage-line">這幅圖是戰國。邊一組配得上？</p><div class="voyage-choices">
+      <button type="button" class="voyage-choice" data-voyage-pick="0"><b>七雄</b>配上這幅圖。</button>
+      <button type="button" class="voyage-choice" data-voyage-pick="1"><b>魏、蜀、吳</b>配上這幅圖。</button>
+    </div>${miss}`;
+  }
+  if (play === "slip") {
+    return `<p class="voyage-who">商人</p><p class="voyage-line">各國文字不一，政令送不出。邊份材料先解決溝通？</p><div class="voyage-choices">
+      <button type="button" class="voyage-choice" data-voyage-pick="0"><b>材料甲</b>統一文字，方便政令傳達。</button>
+      <button type="button" class="voyage-choice" data-voyage-pick="1"><b>材料乙</b>統一文字，為了推廣文學。</button>
+    </div>${miss}`;
+  }
+  if (play === "seal") {
+    const chips = clueChips(row)
+      .map((text) => `<span class="voyage-clue">${esc(text)}</span>`)
+      .join("");
+    const lead = chips ? `<div class="voyage-clues">${chips}</div>` : "";
+    return `<p class="voyage-who">步卒</p><p class="voyage-line">把沿路線索放在一起。這句「北宋始終以長安為都」，邊句先對？</p>${lead}<div class="voyage-choices">
+      <button type="button" class="voyage-choice" data-voyage-pick="0">北宋都開封。長安是漢唐舊都。</button>
+      <button type="button" class="voyage-choice" data-voyage-pick="1">長安就是開封。</button>
+    </div>${miss}`;
+  }
+  return "";
+}
+
+function judgePlay(row, pick) {
+  const play = playOf(row.stop);
+  const n = Number(pick);
+  if (play === "rumor") {
+    const voice = rumorOf(row.spin).voices[n];
+    if (!voice) return null;
+    return voice.false ? { ok: false, miss: rumorOf(row.spin).miss } : { ok: true };
+  }
+  if (play === "task") {
+    if (row.line <= 0) {
+      if (n === 0) return { ok: true, advance: true };
+      if (n === 1) return { ok: false, miss: "西周是世襲分封。全國置郡縣、不封子弟，是秦統一之後。" };
+      return null;
+    }
+    if (n === 0) return { ok: true };
+    if (n === 1) return { ok: false, miss: "周王把土地和人民分封給親族與功臣。受封的是諸侯。" };
+    return null;
+  }
+  if (play === "ford") {
+    const spot = fordOf(row.spin).spots[n];
+    if (!spot) return null;
+    return spot.ok ? { ok: true } : { ok: false, miss: fordOf(row.spin).miss };
+  }
+  if (play === "match") {
+    if (n === 0) return { ok: true };
+    if (n === 1) return { ok: false, miss: "戰國七雄爭霸。不要與三國混淆。魏、蜀、吳是三國。" };
+    return null;
+  }
+  if (play === "slip") {
+    if (n === 0) return { ok: true };
+    if (n === 1) return { ok: false, miss: "書同文是統一文字，方便政令傳達。不是為了推廣文學。" };
+    return null;
+  }
+  if (play === "seal") {
+    if (n === 0) return { ok: true };
+    if (n === 1) return { ok: false, miss: "北宋都城是開封。長安主要是漢唐舊都。" };
+    return null;
+  }
+  return null;
 }
 
 function placeWho(stop) {
@@ -275,14 +457,14 @@ function shownLine(row) {
 const GOAL = [
   "去市集搵旅人",
   "去城樓",
-  "去營帳",
-  "去河邊",
+  "去營帳接任務",
+  "去河邊揀渡口",
   "去松山",
-  "去七雄的圖",
+  "去七雄配一組",
   "去海岸",
-  "去樓閣搵商人",
+  "去樓閣睇材料",
   "去渡口",
-  "去關城",
+  "去關城對線索",
   "",
 ];
 
@@ -303,8 +485,10 @@ function segmentDone(row) {
 }
 
 function isAsking(row) {
-  if (!roadQuiz(row.spin, row.stop)) return false;
-  return row.line < STOPS[row.stop].lines.length - 1;
+  const stop = STOPS[row.stop];
+  if (!stop || row.line >= stop.lines.length - 1) return false;
+  if (playOf(row.stop)) return true;
+  return !!roadQuiz(row.spin, row.stop);
 }
 
 function canWalk(row, duel) {
@@ -318,6 +502,7 @@ function canWalk(row, duel) {
 
 function coachText(row) {
   if (row.guide >= 3) return "";
+  if (playOf(row.stop) === "rumor") return "揀出錯誤傳聞。";
   if (isAsking(row) || row.guide >= 2) return "揀一句回應。";
   if (row.stop > 0) return "";
   if (row.guide <= 0) return "拖左下圓鈕，向前走。";
@@ -462,6 +647,11 @@ function boxHtml(row, pathOpen, gender) {
   let controls = "";
   const asking = isAsking(row);
   const quiz = asking ? roadQuiz(row.spin, row.stop) : null;
+  if (asking && playOf(row.stop)) {
+    const coach = coachText(row);
+    const note = coach ? `<p class="voyage-coach-line">${esc(coach)}</p>` : "";
+    return `${playHtml(row, gender)}${note}`;
+  }
   if (asking && quiz) {
     lineText = quiz.claim;
     controls = `<div class="voyage-choices">
@@ -848,14 +1038,31 @@ export function bindVoyage(user, ctx) {
     }
     const pick = e.target.closest("[data-voyage-pick]");
     if (pick) {
+      const n = Number(pick.dataset.voyagePick);
+      if (playOf(row.stop) && isAsking(row)) {
+        const result = judgePlay(row, n);
+        if (!result) return;
+        if (!result.ok) {
+          save({ ...row, miss: result.miss || "再揀一次。" });
+          return;
+        }
+        if (result.advance) {
+          save({ ...row, line: row.line + 1, miss: "", done: false });
+          return;
+        }
+      }
       const quiz = roadQuiz(row.spin, row.stop);
       const opt = quiz && isAsking(row)
-        ? (Number(pick.dataset.voyagePick) === 0 ? { ok: true } : { ok: false, miss: quiz.miss })
-        : shownLine(row).choice?.[Number(pick.dataset.voyagePick)];
-      if (!opt) return;
-      if (!opt.ok) {
-        save({ ...row, miss: opt.miss || "再揀一句。" });
-        return;
+        ? (n === 0 ? { ok: true } : { ok: false, miss: quiz.miss })
+        : shownLine(row).choice?.[n];
+      if (playOf(row.stop) && isAsking(row)) {
+        /* 玩法已在上面判完，落到完成這站 */
+      } else {
+        if (!opt) return;
+        if (!opt.ok) {
+          save({ ...row, miss: opt.miss || "再揀一句。" });
+          return;
+        }
       }
       const doneRow = {
         ...row,

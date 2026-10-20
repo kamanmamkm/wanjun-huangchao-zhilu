@@ -3317,6 +3317,60 @@ button:active:not(:disabled):not(.locked),
   font-weight: 700;
 }
 
+.voyage-map {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-areas:
+    ". north ."
+    "west mid east"
+    ". south .";
+  gap: 0.35rem;
+  margin-top: 0.55rem;
+}
+
+.voyage-slot,
+.voyage-map-mid {
+  min-height: 44px;
+  border-radius: 12px;
+}
+
+.voyage-slot {
+  border: 1px solid rgba(244, 226, 196, 0.75);
+  background: #f6f1e7;
+  color: #252a2d;
+  font-weight: 700;
+}
+
+.voyage-slot[data-voyage-slot="北"] { grid-area: north; }
+.voyage-slot[data-voyage-slot="西"] { grid-area: west; }
+.voyage-slot[data-voyage-slot="東"] { grid-area: east; }
+.voyage-slot[data-voyage-slot="南"] { grid-area: south; }
+
+.voyage-map-mid {
+  display: grid;
+  place-items: center;
+  grid-area: mid;
+  color: #f4e2c4;
+  font-size: 0.85rem;
+}
+
+.voyage-names {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.voyage-names .voyage-choice {
+  width: auto;
+  min-width: 3rem;
+  margin-top: 0;
+  text-align: center;
+}
+
+.voyage-choice.is-held {
+  outline: 2px solid #e2c27a;
+}
+
 .voyage-actions {
   display: flex;
   flex-wrap: wrap;

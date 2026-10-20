@@ -2,7 +2,7 @@
  * 全班史績榜＋同一學號雲端存檔（Google Apps Script）。
  */
 import { getCloudUrl } from "./data/cloud.js?v=rad80";
-import { userSnapshot, ensureArena } from "./progress.js?v=rad167";
+import { userSnapshot, ensureArena } from "./progress.js?v=rad168";
 import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad50";
 import {
   findLocalUser,
@@ -271,6 +271,8 @@ function voyagePack(raw) {
     route: raw.route === "ridge" || raw.route === "market" ? raw.route : "",
     marketClue: !!raw.marketClue,
     ridgeClue: !!raw.ridgeClue,
+    drill: raw.drill ? 1 : 0,
+    hold: raw.hold ? 1 : 0,
     flag: !!raw.flag,
     flagName: String(raw.flagName || "").slice(0, 8),
     spin: Math.max(0, Math.min(48, Number(raw.spin) || 0)),

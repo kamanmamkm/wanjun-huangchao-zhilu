@@ -5,7 +5,7 @@
  */
 import { QUESTIONS, checkFill } from "./questions.js";
 import { RIVALS } from "./characters.js";
-import { CHAPTERS } from "./chapters.js?v=rad164";
+import { CHAPTERS } from "./chapters.js?v=rad165";
 import { filterByFormYear } from "./formYear.js?v=rad114";
 
 export const SHIZHAN_MAX_HP = 4;

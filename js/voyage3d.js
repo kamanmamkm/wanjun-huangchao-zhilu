@@ -101,6 +101,22 @@ export function mountVoyageScene(opts) {
   let crossbowOn = !!opts.crossbow;
   let chariotOn = !!opts.chariot;
   let horseOn = !!opts.horse;
+  let soldierModel = null;
+  let flagModel = null;
+  let gateFolk = null;
+  let campFolk = null;
+  let campBanner = null;
+  let riverPier = null;
+  let ferryPier = null;
+  let ferryFolk = null;
+  let passBanner = null;
+  let settled = {
+    land: !!opts.land,
+    camp: !!opts.camp,
+    river: !!opts.river,
+    ferry: !!opts.ferry,
+    pass: !!opts.pass,
+  };
   let soldier = null;
   let grip = null;
   let bow = null;
@@ -493,6 +509,25 @@ export function mountVoyageScene(opts) {
       placeMark();
       opts.onArrive?.(stopIndex);
     },
+    skipTo(index) {
+      const next = Math.max(0, Math.min(SPAWN.length - 1, Number(index) || 0));
+      if (!open || next <= stopIndex) return;
+      pos.set(SPAWN[next].x, 0, SPAWN[next].z);
+      yaw = 0;
+      cam.set(pos.x, 2.6, pos.z - 5.6);
+      if (horse && horseOn) {
+        horse.position.set(pos.x - 1.55, 0, pos.z - 0.7);
+        horse.rotation.y = yaw;
+      }
+      stopIndex = next;
+      open = false;
+      placeMark();
+      opts.onArrive?.(stopIndex, true);
+    },
+    settle(flags) {
+      settled = { ...settled, ...(flags || {}) };
+      applySettle();
+    },
     grant() {
       follow = true;
       if (grip) grip.visible = true;
@@ -583,6 +618,44 @@ export function mountVoyageScene(opts) {
   ];
   let done = 0;
 
+  function plantFlag(model, x, z, rot) {
+    const holder = new THREE.Group();
+    holder.add(model);
+    holder.position.set(x, 0, z);
+    holder.rotation.y = rot || 0;
+    holder.visible = false;
+    scene.add(holder);
+    return holder;
+  }
+
+  function pier(x, z) {
+    const holder = new THREE.Group();
+    const wood = new THREE.MeshLambertMaterial({ color: 0x6b4e32 });
+    const plank = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.16, 1.35), wood);
+    plank.position.y = 0.12;
+    holder.add(plank);
+    const postMat = new THREE.MeshLambertMaterial({ color: 0x4e3824 });
+    [-1.3, 1.3].forEach((px) => {
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.7, 0.18), postMat);
+      post.position.set(px, 0.35, 0.45);
+      holder.add(post);
+    });
+    holder.position.set(x, 0, z);
+    holder.visible = false;
+    scene.add(holder);
+    return holder;
+  }
+
+  function applySettle() {
+    if (gateFolk) gateFolk.visible = !!settled.land;
+    if (campFolk) campFolk.visible = !!settled.camp;
+    if (campBanner) campBanner.visible = !!settled.camp;
+    if (riverPier) riverPier.visible = !!settled.river;
+    if (ferryPier) ferryPier.visible = !!settled.ferry;
+    if (ferryFolk) ferryFolk.visible = !!settled.ferry;
+    if (passBanner) passBanner.visible = !!settled.pass;
+  }
+
   function stand(model, x, z) {
     const holder = new THREE.Group();
     holder.add(model);
@@ -622,6 +695,7 @@ export function mountVoyageScene(opts) {
         if (role === "you") avatar.add(model);
         else if (role === "other") stand(model, -1.45, 37.5);
         else if (role === "soldier") {
+          soldierModel = model.clone(true);
           soldier = stand(model, 1.55, 4.2);
           nameSprite = makeNameSprite();
           nameSprite.position.set(0, 2.02, 0);
@@ -641,6 +715,7 @@ export function mountVoyageScene(opts) {
           avatar.add(grip);
         }
         else if (role === "flag") {
+          flagModel = model.clone(true);
           flag = model;
           const holder = new THREE.Group();
           holder.add(model);
@@ -749,6 +824,18 @@ export function mountVoyageScene(opts) {
         scene.add(prize);
       }
       if (disposed) return;
+      if (soldierModel) {
+        gateFolk = stand(soldierModel.clone(true), -3.2, 5);
+        campFolk = stand(soldierModel.clone(true), 6.6, 53);
+        ferryFolk = stand(soldierModel.clone(true), 3.3, 112);
+      }
+      if (flagModel) {
+        campBanner = plantFlag(flagModel.clone(true), 7.4, 50, 0.4);
+        passBanner = plantFlag(flagModel.clone(true), 3.6, 126, Math.PI);
+      }
+      riverPier = pier(-5.6, 55);
+      ferryPier = pier(0, 114);
+      applySettle();
       if (follow && soldier) {
         soldier.position.set(pos.x + 0.95, 0, pos.z - 1.25);
         soldier.rotation.y = yaw;

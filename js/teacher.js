@@ -2,14 +2,14 @@
  * 老師頁（本機）：指派課題、睇學生進度、常見錯誤、短答覆核
  * 無後端——同一瀏覽器內的帳號可視為班內學生。
  */
-import { chapterList, CHAPTERS } from "./data/chapters.js?v=rad170";
+import { chapterList, CHAPTERS } from "./data/chapters.js?v=rad171";
 import { identityDisplayName, getIdentity } from "./data/identities.js";
 import { getCharacter, heroDisplayName } from "./data/characters.js";
 import { levelFromXp } from "./data/levels.js";
 import { QUESTIONS } from "./data/questions.js";
 import { FORM_YEARS } from "./data/formYear.js?v=rad114";
 import { getCloudUrl, saveCloudUrl, cloudUrlHint } from "./data/cloud.js?v=rad80";
-import { pullCloudBoard, cloudHasSave } from "./cloud.js?v=rad170";
+import { pullCloudBoard, cloudHasSave } from "./cloud.js?v=rad171";
 import { TEACHER_LETTER_GUIDE } from "./data/letters.js?v=rad97";
 import { SHEETS_APPS_SCRIPT } from "./data/sheetsScript.js?v=rad80";
 import { studentPlayLink, teacherPortalLink } from "./data/portal.js?v=rad78";

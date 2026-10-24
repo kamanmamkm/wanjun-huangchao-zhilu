@@ -6,7 +6,7 @@
  * 城門到松山之後，行旅「今晚未了」每日一句。有了樓閣，逢單數日由商人問。未到樓閣，仍然聽將領。答對只點亮已經屬於你的一個地方。
  */
 import { addXp, updateUser } from "./storage.js?v=rad114";
-import { mountVoyageScene } from "./voyage3d.js?v=rad171";
+import { mountVoyageScene } from "./voyage3d.js?v=rad172";
 import {
   taleActive,
   taleApply,
@@ -18,7 +18,7 @@ import {
   taleRow,
   taleToast,
   taleWalking,
-} from "./data/tale.js?v=rad171";
+} from "./data/tale.js?v=rad172";
 
 const XP_ONCE = 8;
 
@@ -1039,7 +1039,7 @@ function boxHtml(row, pathOpen, gender, mix, held) {
   const coach = coachText(row);
   const note = coach ? `<p class="voyage-coach-line">${esc(coach)}</p>` : "";
   const taleBack =
-    row.bookSkip && !row.book && !row.bookDone && row.stop === 0 && row.line === 0
+    row.bookSkip && !row.book && !row.bookDone
       ? `<button type="button" class="voyage-go" data-tale="accept">接阿禾的求援信</button>`
       : "";
   const storyHtml = atPass && row.pass ? "" : threadHtml(row, asking);
@@ -1121,6 +1121,7 @@ export function renderVoyage() {
     <canvas class="voyage-view" id="voyage-view" aria-hidden="true"></canvas>
     <p class="voyage-load" id="voyage-load">載入中</p>
     <button type="button" class="voyage-back" data-voyage-home="1">返回</button>
+    <button type="button" class="voyage-tale" id="voyage-tale" data-tale="accept" hidden>求援信</button>
     <div class="voyage-path" id="voyage-path" aria-label="這一程"></div>
     <p class="voyage-goal" id="voyage-goal" hidden></p>
     <div class="voyage-arrow" id="voyage-arrow" hidden aria-hidden="true">↑</div>
@@ -1157,6 +1158,8 @@ export function bindVoyage(user, ctx) {
     const box = document.getElementById("voyage-box");
     if (review && !row.camp) review = false;
     if (path) path.innerHTML = taleActive(row) ? talePath(row) : pathHtml(row);
+    const taleBtn = document.getElementById("voyage-tale");
+    if (taleBtn) taleBtn.hidden = !!row.bookDone || taleActive(row) || taleOffer(row);
     if (box) box.innerHTML = duel ? duelHtml(duel, mates, row, choiceMix) : review ? reviewHtml(row) : boxHtml(row, pathOpen, current?.gender, choiceMix, heldName);
     const walking = taleActive(row)
       ? taleWalking(row)
@@ -1487,7 +1490,8 @@ export function bindVoyage(user, ctx) {
       const pay = taleBtn.dataset.tale === "finish" && !row.bookPay && next.bookDone;
       if (!save(next)) return;
       if (pay) addXp(XP_ONCE);
-      if (next.bookDone) world?.place(0);
+      if (next.book && !row.book) world?.standTale?.(0);
+      if (next.bookDone) world?.place(next.stop || 0);
       if (note) ctx.toast?.(pay ? `${note}經驗 +${XP_ONCE}` : note);
       return;
     }

@@ -42,6 +42,20 @@ const TALE_STAND = [
   { x: -3.4, z: 54.5 },
   { x: 1.2, z: 48.5 },
 ];
+const PACT_MARK = [
+  { x: 2.6, z: 63 },
+  { x: -2.4, z: 76 },
+  { x: 3.0, z: 90 },
+  { x: -2.8, z: 104 },
+  { x: 2.2, z: 124 },
+];
+const PACT_STAND = [
+  { x: 1.2, z: 57 },
+  { x: -1.2, z: 70 },
+  { x: 1.6, z: 84 },
+  { x: -1.4, z: 98 },
+  { x: 1.0, z: 118 },
+];
 const Z_MIN = -8;
 const Z_MAX = 136;
 const ROAD_HALF = 2.15;
@@ -120,6 +134,11 @@ export function mountVoyageScene(opts) {
   let cartLeft = false;
   let cartGo = false;
   let taleOpts = null;
+  let pactOn = false;
+  let pactStep = 0;
+  let pactFolk = [];
+  let pactPlaced = false;
+  let generalModel = null;
   let merchantHolder = null;
   let merchantPlate = null;
   let otherHolder = null;
@@ -331,6 +350,7 @@ export function mountVoyageScene(opts) {
   }
 
   function markAt(i) {
+    if (pactOn && open) return PACT_MARK[Math.max(0, Math.min(4, pactStep + 1))];
     if (taleOn && open) return TALE_MARK[Math.max(0, Math.min(2, talePost))];
     if (route === "ridge" && i === 0) return { x: 6.2, z: 42 };
     return MARK[i];
@@ -360,7 +380,7 @@ export function mountVoyageScene(opts) {
   }
 
   function halfLane() {
-    if (taleOn && open) return 9;
+    if ((taleOn || pactOn) && open) return 9;
     if (route === "ridge" && stopIndex === 0 && open) return 8;
     if (stopIndex >= 5) return 7.4;
     if (stopIndex === 4) return open ? 7.4 : 6.2;
@@ -369,7 +389,9 @@ export function mountVoyageScene(opts) {
   }
 
   function taleReached() {
-    const m = TALE_MARK[Math.max(0, Math.min(2, talePost))];
+    const m = pactOn
+      ? PACT_MARK[Math.max(0, Math.min(4, pactStep + 1))]
+      : TALE_MARK[Math.max(0, Math.min(2, talePost))];
     return Math.hypot(pos.x - m.x, pos.z - m.z) < 3.4;
   }
 
@@ -412,7 +434,7 @@ export function mountVoyageScene(opts) {
       if (cap != null && nz > cap) nz = cap;
       pos.z = Math.max(Z_MIN, Math.min(Z_MAX, nz));
       bob += dt * 10;
-      if (open && taleOn && taleReached()) {
+      if (open && (taleOn || pactOn) && taleReached()) {
         open = false;
         placeMark();
         opts.onTaleArrive?.();
@@ -454,7 +476,7 @@ export function mountVoyageScene(opts) {
       npc.rotation.y += turn * Math.min(1, dt * 4);
     });
     mark.rotation.z += dt * 0.8;
-    if (cart && cartGo) {
+    if (cart && cartGo && taleOn) {
       cart.position.x += (4 - cart.position.x) * Math.min(1, dt * 0.7);
       cart.position.z += (78 - cart.position.z) * Math.min(1, dt * 0.7);
       if (Math.hypot(cart.position.x - 4, cart.position.z - 78) < 0.4) cartGo = false;
@@ -645,15 +667,32 @@ export function mountVoyageScene(opts) {
       yaw = spot.x < 0 ? 0.8 : 0;
       cam.set(pos.x, 2.6, pos.z - 5.6);
     },
+    standPact(post) {
+      const spot = PACT_STAND[Math.max(0, Math.min(PACT_STAND.length - 1, Number(post) || 0))];
+      pos.set(spot.x, 0, spot.z);
+      yaw = spot.x < 0 ? 0.8 : 0;
+      cam.set(pos.x, 2.6, pos.z - 5.6);
+    },
     setTale(next) {
       taleOpts = next || {};
       const on = !!next?.on;
       const left = !!next?.cart;
       const post = Math.max(0, Math.min(3, Number(next?.post) || 0));
-      const same = on === taleOn && left === cartLeft && post === taleStep && !!merchantHolder;
+      const pact = !!next?.pact;
+      const pactPost = Math.max(0, Math.min(5, Number(next?.pactPost) || 0));
+      const ready = !!merchantHolder && pactFolk.length > 0;
+      const same =
+        ready &&
+        pactPlaced &&
+        on === taleOn &&
+        left === cartLeft &&
+        post === taleStep &&
+        pact === pactOn &&
+        pactPost === pactStep;
       if (same) {
         placeMark();
         applyTaleBodies();
+        applyPactFolk();
         return;
       }
       const became = on && left && !cartLeft;
@@ -661,6 +700,8 @@ export function mountVoyageScene(opts) {
       talePost = Math.min(2, post);
       taleStep = post;
       cartLeft = left;
+      pactOn = pact;
+      pactStep = pactPost;
       if (cart) {
         cart.visible = taleOn ? true : chariotOn;
         if (!taleOn) cart.position.set(11.2, 0, 54);
@@ -678,6 +719,8 @@ export function mountVoyageScene(opts) {
       if (taleOn && campFolk) campFolk.visible = false;
       if (taleOn && gateFolk) gateFolk.visible = false;
       applyTaleBodies();
+      applyPactFolk();
+      pactPlaced = ready;
       placeMark();
     },
     dispose() {
@@ -762,16 +805,39 @@ export function mountVoyageScene(opts) {
   }
 
   function applySettle() {
-    if (gateFolk) gateFolk.visible = !!settled.land;
-    if (campFolk) campFolk.visible = !!settled.camp;
+    if (gateFolk) gateFolk.visible = pactOn || taleOn ? false : !!settled.land;
+    if (campFolk) campFolk.visible = pactOn || taleOn ? false : !!settled.camp;
     if (campBanner) campBanner.visible = !!settled.camp;
     if (riverPier) riverPier.visible = !!settled.river;
     if (ferryPier) ferryPier.visible = !!settled.ferry;
-    if (ferryFolk) ferryFolk.visible = !!settled.ferry;
+    if (ferryFolk) ferryFolk.visible = pactOn ? false : !!settled.ferry;
     if (passBanner) passBanner.visible = !!settled.pass;
     if (statesMark) statesMark.visible = !!settled.states;
-    if (coastFolk) coastFolk.visible = !!settled.coast;
+    if (coastFolk) coastFolk.visible = pactOn ? false : !!settled.coast;
     if (loftMark) loftMark.visible = !!settled.loft;
+  }
+
+  function applyPactFolk() {
+    pactFolk.forEach((holder) => {
+      holder.visible = pactOn;
+    });
+    if (pactOn) {
+      if (merchantHolder) merchantHolder.visible = false;
+      if (otherHolder) otherHolder.visible = false;
+      if (generalHolder) generalHolder.visible = false;
+      if (campFolk) campFolk.visible = false;
+      if (gateFolk) gateFolk.visible = false;
+      if (coastFolk) coastFolk.visible = false;
+      if (ferryFolk) ferryFolk.visible = false;
+      return;
+    }
+    if (merchantHolder) merchantHolder.visible = true;
+    if (otherHolder) otherHolder.visible = true;
+    if (generalHolder) generalHolder.visible = !taleOn;
+    if (campFolk) campFolk.visible = taleOn ? false : !!settled.camp;
+    if (gateFolk) gateFolk.visible = taleOn ? false : !!settled.land;
+    if (coastFolk) coastFolk.visible = taleOn ? false : !!settled.coast;
+    if (ferryFolk) ferryFolk.visible = taleOn ? false : !!settled.ferry;
   }
 
   function stand(model, x, z) {
@@ -898,6 +964,7 @@ export function mountVoyageScene(opts) {
           cart.visible = chariotOn;
           scene.add(cart);
         } else if (role === "general") {
+          generalModel = model;
           generalHolder = stand(model, 4.2, 50.6);
           const plate = makeNameSprite();
           plate.position.set(0, 2.02, 0);
@@ -981,6 +1048,21 @@ export function mountVoyageScene(opts) {
       riverPier = pier(-5.6, 55);
       ferryPier = pier(0, 114);
       applySettle();
+      const raiseNamed = (model, x, z, label) => {
+        if (!model) return;
+        const holder = stand(model.clone(true), x, z);
+        const plate = makeNameSprite();
+        plate.position.set(0, 2.02, 0);
+        holder.add(plate);
+        paintPlate(plate, label);
+        holder.visible = false;
+        pactFolk.push(holder);
+      };
+      raiseNamed(soldierModel, 2.6, 63, "趙牧");
+      raiseNamed(merchantHolder?.userData?.base, -2.4, 76, "燕成");
+      raiseNamed(otherHolder?.userData?.base, 3, 90, "齊寅");
+      raiseNamed(generalModel, -2.8, 104, "楚簡");
+      raiseNamed(merchantHolder?.userData?.base, 2.2, 124, "秦雍");
       if (taleOpts) api.setTale(taleOpts);
       if (follow && soldier) {
         soldier.position.set(pos.x + 0.95, 0, pos.z - 1.25);

@@ -91,6 +91,7 @@ function prepare(root) {
       mat.roughness = 0.88;
       mat.metalnessMap = null;
       mat.roughnessMap = null;
+      mat.side = THREE.DoubleSide;
     });
   });
 }
@@ -125,6 +126,9 @@ export function mountVoyageScene(opts) {
   let otherPlate = null;
   let generalHolder = null;
   let soldierModel = null;
+  let courierModel = null;
+  let officerModel = null;
+  let kinModel = null;
   let flagModel = null;
   let gateFolk = null;
   let campFolk = null;
@@ -525,6 +529,14 @@ export function mountVoyageScene(opts) {
     paintPlate(nameSprite, plateLabel);
   }
 
+  function applyTaleBodies() {
+    [[soldier, courierModel], [merchantHolder, officerModel], [otherHolder, kinModel]].forEach(([holder, extra]) => {
+      if (!holder || !extra) return;
+      if (holder.userData.base) holder.userData.base.visible = !taleOn;
+      extra.visible = !!taleOn;
+    });
+  }
+
   const api = {
     place(stop) {
       stopIndex = Math.max(0, Math.min(SPAWN.length - 1, stop || 0));
@@ -641,6 +653,7 @@ export function mountVoyageScene(opts) {
       const same = on === taleOn && left === cartLeft && post === taleStep && !!merchantHolder;
       if (same) {
         placeMark();
+        applyTaleBodies();
         return;
       }
       const became = on && left && !cartLeft;
@@ -661,8 +674,10 @@ export function mountVoyageScene(opts) {
       if (otherPlate) paintPlate(otherPlate, taleOn ? "阿蓉" : "");
       if (generalHolder) generalHolder.visible = !taleOn;
       if (taleOn && !follow && !rivalVisit) showName("阿禾");
+      else if (!taleOn && !rivalVisit) showName("");
       if (taleOn && campFolk) campFolk.visible = false;
       if (taleOn && gateFolk) gateFolk.visible = false;
+      applyTaleBodies();
       placeMark();
     },
     dispose() {
@@ -712,6 +727,9 @@ export function mountVoyageScene(opts) {
     ["loft.glb", 5.2, "loft", "long"],
     ["horse.glb", 2.05, "horse", "long"],
     ["merchant.glb", 1.7, "merchant"],
+    ["courier.glb", 1.7, "courier"],
+    ["officer.glb", 1.7, "officer"],
+    ["kin.glb", 1.7, "kin"],
   ];
   let done = 0;
 
@@ -795,6 +813,7 @@ export function mountVoyageScene(opts) {
         if (role === "you") avatar.add(model);
         else if (role === "other") {
           otherHolder = stand(model, -1.45, 37.5);
+          otherHolder.userData.base = model;
           otherPlate = makeNameSprite();
           otherPlate.position.set(0, 2.02, 0);
           otherHolder.add(otherPlate);
@@ -803,6 +822,7 @@ export function mountVoyageScene(opts) {
         else if (role === "soldier") {
           soldierModel = model.clone(true);
           soldier = stand(model, 1.55, 4.2);
+          soldier.userData.base = model;
           nameSprite = makeNameSprite();
           nameSprite.position.set(0, 2.02, 0);
           nameSprite.visible = false;
@@ -900,10 +920,26 @@ export function mountVoyageScene(opts) {
           scene.add(holder);
         } else if (role === "merchant") {
           merchantHolder = stand(model, -3.1, 98);
+          merchantHolder.userData.base = model;
           merchantPlate = makeNameSprite();
           merchantPlate.position.set(0, 2.02, 0);
           merchantHolder.add(merchantPlate);
           paintPlate(merchantPlate, "商人");
+        } else if (role === "courier") {
+          courierModel = model;
+          model.visible = false;
+          if (soldier) soldier.add(model);
+          applyTaleBodies();
+        } else if (role === "officer") {
+          officerModel = model;
+          model.visible = false;
+          if (merchantHolder) merchantHolder.add(model);
+          applyTaleBodies();
+        } else if (role === "kin") {
+          kinModel = model;
+          model.visible = false;
+          if (otherHolder) otherHolder.add(model);
+          applyTaleBodies();
         } else if (role === "horse") {
           horse = new THREE.Group();
           horse.add(model);

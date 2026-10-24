@@ -3147,6 +3147,20 @@ button:active:not(:disabled):not(.locked),
   font-weight: 700;
 }
 
+.voyage-tale {
+  position: absolute;
+  top: 0.7rem;
+  right: 0.7rem;
+  z-index: 7;
+  min-height: 44px;
+  padding: 0.35rem 0.8rem;
+  border: 2px solid #e2c27a;
+  border-radius: 999px;
+  background: #f6f1e7;
+  color: #252a2d;
+  font-weight: 700;
+}
+
 .voyage-path {
   position: absolute;
   top: 0.75rem;

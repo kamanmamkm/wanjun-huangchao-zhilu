@@ -38,7 +38,7 @@ export function taleActive(row) {
 
 export function taleOffer(row) {
   if (!row || row.book || row.bookDone || row.bookSkip) return false;
-  return row.stop === 0 && row.line === 0 && !row.land && !row.weapon;
+  return true;
 }
 
 export function taleWalking(row) {

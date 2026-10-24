@@ -6,8 +6,15 @@
  * 城門到松山之後，行旅「今晚未了」每日一句。有了樓閣，逢單數日由商人問。未到樓閣，仍然聽將領。答對只點亮已經屬於你的一個地方。
  */
 import { addXp, updateUser } from "./storage.js?v=rad114";
-import { mountVoyageScene } from "./voyage3d.js?v=rad173";
+import { mountVoyageScene } from "./voyage3d.js?v=rad174";
 import {
+  pactActive,
+  pactGoal,
+  pactHtml,
+  pactOffer,
+  pactOfferHtml,
+  pactPath,
+  pactWalking,
   taleActive,
   taleApply,
   taleGoal,
@@ -18,7 +25,7 @@ import {
   taleRow,
   taleToast,
   taleWalking,
-} from "./data/tale.js?v=rad173";
+} from "./data/tale.js?v=rad174";
 
 const XP_ONCE = 8;
 
@@ -975,6 +982,8 @@ function goalText(row) {
 }
 
 function boxHtml(row, pathOpen, gender, mix, held) {
+  if (pactActive(row)) return pactHtml(row);
+  if (pactOffer(row)) return pactOfferHtml();
   if (taleActive(row)) return taleHtml(row);
   if (taleOffer(row)) return taleOfferHtml();
   if (needsRoute(row)) return routeHtml(row);
@@ -1041,7 +1050,9 @@ function boxHtml(row, pathOpen, gender, mix, held) {
   const taleBack =
     row.bookSkip && !row.book && !row.bookDone
       ? `<button type="button" class="voyage-go" data-tale="accept">接阿禾的求援信</button>`
-      : "";
+      : row.bookDone && row.pactSkip && !row.pact && !row.pactDone
+        ? `<button type="button" class="voyage-go" data-tale="pact">核對會盟草案</button>`
+        : "";
   const storyHtml = atPass && row.pass ? "" : threadHtml(row, asking);
   const head = asking && quiz
     ? `<p class="voyage-who">${esc(quiz.who === "other" ? otherName(gender) : quiz.who)}</p>`
@@ -1157,16 +1168,29 @@ export function bindVoyage(user, ctx) {
     const path = document.getElementById("voyage-path");
     const box = document.getElementById("voyage-box");
     if (review && !row.camp) review = false;
-    if (path) path.innerHTML = taleActive(row) ? talePath(row) : pathHtml(row);
+    if (path) path.innerHTML = pactActive(row) ? pactPath(row) : taleActive(row) ? talePath(row) : pathHtml(row);
     const taleBtn = document.getElementById("voyage-tale");
-    if (taleBtn) taleBtn.hidden = !!row.bookDone || taleActive(row) || taleOffer(row);
+    const showPact = !!row.bookDone && !!row.pactSkip && !row.pact && !row.pactDone;
+    if (taleBtn) {
+      taleBtn.hidden = showPact ? false : !!row.bookDone || taleActive(row) || taleOffer(row);
+      taleBtn.textContent = showPact ? "會盟草案" : "求援信";
+      taleBtn.dataset.tale = showPact ? "pact" : "accept";
+    }
     if (box) box.innerHTML = duel ? duelHtml(duel, mates, row, choiceMix) : review ? reviewHtml(row) : boxHtml(row, pathOpen, current?.gender, choiceMix, heldName);
-    const walking = taleActive(row)
-      ? taleWalking(row)
-      : taleOffer(row)
-        ? false
-        : !duel && !review && canWalk(row, duel);
-    const talking = taleActive(row) ? !walking : taleOffer(row) ? true : !!duel || review || isAsking(row) || needsRoute(row);
+    const walking = pactActive(row)
+      ? pactWalking(row)
+      : taleActive(row)
+        ? taleWalking(row)
+        : taleOffer(row) || pactOffer(row)
+          ? false
+          : !duel && !review && canWalk(row, duel);
+    const talking = pactActive(row)
+      ? !walking
+      : taleActive(row)
+        ? !walking
+        : taleOffer(row) || pactOffer(row)
+          ? true
+          : !!duel || review || isAsking(row) || needsRoute(row);
     pathOpen = walking;
     world?.setOpen(walking);
     world?.setHold(talking);
@@ -1176,6 +1200,8 @@ export function bindVoyage(user, ctx) {
       on: taleActive(row),
       post: row.post,
       cart: !!row.cart,
+      pact: pactActive(row),
+      pactPost: row.pactPost,
     });
     world?.settle?.({
       land: !!row.land,
@@ -1191,13 +1217,17 @@ export function bindVoyage(user, ctx) {
     root.classList.toggle("is-talk", talking);
     const goal = document.getElementById("voyage-goal");
     if (goal) {
-      const text = taleActive(row)
-        ? taleGoal(row)
-        : taleOffer(row)
-          ? "聽阿禾把求援信交托"
-          : needsRoute(row) || walking
-            ? goalText(row)
-            : "";
+      const text = pactActive(row)
+        ? pactGoal(row)
+        : pactOffer(row)
+          ? "沿路核對會盟草案"
+          : taleActive(row)
+            ? taleGoal(row)
+            : taleOffer(row)
+              ? "聽阿禾把求援信交托"
+              : needsRoute(row) || walking
+                ? goalText(row)
+                : "";
       goal.hidden = !text;
       goal.textContent = text;
     }
@@ -1349,7 +1379,8 @@ export function bindVoyage(user, ctx) {
       const el = document.getElementById("voyage-load");
       if (el) el.hidden = true;
       const row = readRow(ctx.getUser?.() || user);
-      if (taleActive(row) && !row.walk) world?.standTale?.(row.post);
+      if (pactActive(row) && !row.pactWalk) world?.standPact?.(row.pactPost);
+      else if (taleActive(row) && !row.walk) world?.standTale?.(row.post);
     },
     onFail: () => {
       const el = document.getElementById("voyage-load");
@@ -1357,7 +1388,7 @@ export function bindVoyage(user, ctx) {
     },
     onArrive: (stop, keep) => {
       const row = readRow(ctx.getUser?.() || user);
-      if (taleActive(row)) return;
+      if (taleActive(row) || pactActive(row)) return;
       pathOpen = false;
       world?.setOpen(false);
       const owned = !!keep && placeOwned({ ...row, stop });
@@ -1378,7 +1409,7 @@ export function bindVoyage(user, ctx) {
     },
     onTaleArrive: () => {
       const row = readRow(ctx.getUser?.() || user);
-      if (!taleWalking(row)) return;
+      if (!pactWalking(row) && !taleWalking(row)) return;
       pathOpen = false;
       world?.setOpen(false);
       save(taleApply(row, "arrive"));
@@ -1487,11 +1518,15 @@ export function bindVoyage(user, ctx) {
     if (taleBtn) {
       const next = taleApply(row, taleBtn.dataset.tale);
       const note = taleToast(row, next, taleBtn.dataset.tale);
-      const pay = taleBtn.dataset.tale === "finish" && !row.bookPay && next.bookDone;
+      const pay =
+        (taleBtn.dataset.tale === "finish" && !row.bookPay && next.bookDone) ||
+        (taleBtn.dataset.tale === "pact-finish" && !row.pactPay && next.pactDone);
       if (!save(next)) return;
       if (pay) addXp(XP_ONCE);
       if (next.book && !row.book) world?.standTale?.(0);
-      if (next.bookDone) world?.place(next.stop || 0);
+      if (next.pact && !row.pact) world?.standPact?.(0);
+      if (next.bookDone && !row.bookDone) world?.place(next.stop || 0);
+      if (next.pactDone && !row.pactDone) world?.place(next.stop || 0);
       if (note) ctx.toast?.(pay ? `${note}經驗 +${XP_ONCE}` : note);
       return;
     }

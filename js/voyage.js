@@ -6,7 +6,7 @@
  * 城門到松山之後，行旅「今晚未了」每日一句。有了樓閣，逢單數日由商人問。未到樓閣，仍然聽將領。答對只點亮已經屬於你的一個地方。
  */
 import { addXp, updateUser } from "./storage.js?v=rad114";
-import { mountVoyageScene } from "./voyage3d.js?v=rad172";
+import { mountVoyageScene } from "./voyage3d.js?v=rad173";
 import {
   taleActive,
   taleApply,
@@ -18,7 +18,7 @@ import {
   taleRow,
   taleToast,
   taleWalking,
-} from "./data/tale.js?v=rad172";
+} from "./data/tale.js?v=rad173";
 
 const XP_ONCE = 8;
 

@@ -2,17 +2,20 @@ import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad50";
 import { QUESTIONS } from "./data/questions.js?v=rad83";
 import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad66";
 import { levelFromXp } from "./data/levels.js?v=rad66";
-import { DIALOGUES, dialoguesByIds } from "./data/dialogues.js?v=rad175";
-import { TIMELINE_SETS, WORDWALL_ROUNDS, timelineSetsByIds, bagFlipRound } from "./data/games.js?v=rad175";
+import { DIALOGUES, dialoguesByIds } from "./data/dialogues.js?v=rad176";
+import { TIMELINE_SETS, WORDWALL_ROUNDS, timelineSetsByIds, bagFlipRound } from "./data/games.js?v=rad176";
 import { CHARMS } from "./data/wheel.js?v=rad67";
 import {
   getUnit,
   unitsOfGrade,
+  unitRunSteps,
   UNIT_FLIPS,
   UNIT_TIMELINES,
   unitTimeline,
   unitFlip,
-} from "./data/units.js?v=rad67";
+} from "./data/units.js?v=rad176";
+import { unitBoard, unitRelic, feelLabel } from "./data/unitBoards.js?v=rad176";
+import { renderUnitBoardSection, bindUnitBoard, renderRelicSection, bindRelic } from "./unitPlay.js?v=rad176";
 import { VIDEOS } from "./data/videos.js?v=rad50";
 import { renderAvatar } from "./avatar.js?v=rad79";
 import {
@@ -26,7 +29,7 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=rad175";
+} from "./data/shizhan.js?v=rad176";
 import {
   getCurrentUser,
   clearSession,
@@ -53,10 +56,10 @@ import {
   clearHomeRun,
   charmCount,
   consumeCharm,
-} from "./progress.js?v=rad175";
-import { renderWheelPage, bindWheel } from "./wheel.js?v=rad175";
-import { renderCase, bindCase, rememberCaseOpen, recallCaseOpen, caseSaveNoteText } from "./case.js?v=rad175";
-import { renderInquiry, bindInquiry, recallInquiryOpen, rememberInquiryOpen } from "./inquiry.js?v=rad175";
+} from "./progress.js?v=rad176";
+import { renderWheelPage, bindWheel } from "./wheel.js?v=rad176";
+import { renderCase, bindCase, rememberCaseOpen, recallCaseOpen, caseSaveNoteText } from "./case.js?v=rad176";
+import { renderInquiry, bindInquiry, recallInquiryOpen, rememberInquiryOpen } from "./inquiry.js?v=rad176";
 import { renderLiteracy, bindLiteracy, recallLiteracyOpen, rememberLiteracyOpen, prepareLiteracyOpen } from "./literacy.js?v=rad118";
 import { renderMuseum, bindMuseum, recallMuseumOpen, rememberMuseumOpen } from "./museum.js?v=rad118";
 import {
@@ -68,14 +71,14 @@ import {
   renderCuoshi,
   bindJourney,
   renderLeaderboardPage,
-} from "./journey.js?v=rad175";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad175";
+} from "./journey.js?v=rad176";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad176";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad79";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";
-import { renderVoyage, bindVoyage, nightOf } from "./voyage.js?v=rad175";
-import { clearBoardTimer } from "./stageBoards.js?v=rad175";
+import { renderVoyage, bindVoyage, nightOf } from "./voyage.js?v=rad176";
+import { clearBoardTimer, createBoardPlay } from "./stageBoards.js?v=rad176";
 import { schoolDay } from "./data/flavorSerial.js?v=rad98";
-import { flavorLine, isoDay } from "./data/flavor.js?v=rad175";
+import { flavorLine, isoDay } from "./data/flavor.js?v=rad176";
 import {
   FORM_YEARS,
   CONTENT_YEARS,
@@ -99,7 +102,7 @@ import {
   registerWithCloud,
   scheduleCloudSync,
   onCloudSync,
-} from "./cloud.js?v=rad175";
+} from "./cloud.js?v=rad176";
 import { isTeacherPortal } from "./data/portal.js?v=rad78";
 
 captureCloudFromLocation();
@@ -136,6 +139,8 @@ let state = {
   gameFromUnit: false,
   bagFlip: false,
   unitRun: null,
+  unitBoard: null,
+  relicPlay: null,
   dialogue: { id: DIALOGUES[0].id, step: 0, replied: false, good: 0 },
   shizhan: null,
   scrollChapter: "ch1_escape",
@@ -426,6 +431,11 @@ function render() {
     clearBoardTimer(state.stageBoard);
     state.stageBoard = null;
   }
+  if (state.view !== "unitboard") {
+    clearBoardTimer(state.unitBoard);
+    state.unitBoard = null;
+  }
+  if (state.view !== "relic") state.relicPlay = null;
   applyLevelUpPreview();
   let user = getCurrentUser();
   if (!user) {
@@ -442,7 +452,12 @@ function render() {
     if (state.levelUpReveal) mountLevelUpReveal();
     return;
   }
-  if (state.view === "games" || state.view === "cuoshi" || (state.view === "wordwall" && !state.bagFlip)) {
+  const unitSurface =
+    state.gameFromUnit ||
+    state.unitRun?.phase === "play" ||
+    state.unitRun?.phase === "win" ||
+    state.unitRun?.phase === "fail";
+  if (!unitSurface && (state.view === "cuoshi" || (state.view === "wordwall" && !state.bagFlip))) {
     state.view = "scroll";
     state.scrollStage = null;
     state.gamesUnit = null;
@@ -916,7 +931,11 @@ function renderShell(user) {
                                   ? renderTimeline()
                                   : state.view === "dialogue"
                                     ? renderDialogue()
-                                    : state.view === "shizhan"
+                                    : state.view === "unitboard"
+                                      ? renderUnitBoardPage()
+                                      : state.view === "relic"
+                                        ? renderRelicPage()
+                                        : state.view === "shizhan"
                                       ? renderShizhan(user, char, idn)
                                       : state.view === "museum"
                                         ? renderMuseum(user, state.museumId)
@@ -1029,6 +1048,15 @@ function bindShellNav() {
       state.gamesUnit = null;
       state.gameFromUnit = false;
       state.unitRun = null;
+      render();
+      return;
+    }
+    if (e.target.closest("[data-unit-lobby]")) {
+      if (state.unitRun?.phase === "play") persistHomeRun();
+      state.unitRun = null;
+      state.view = "games";
+      state.gamesUnit = null;
+      state.gameFromUnit = false;
       render();
       return;
     }
@@ -1164,8 +1192,7 @@ function runHudHtml() {
   const r = state.unitRun;
   if (!r || r.phase !== "play") return "";
   const unit = getUnit(r.unitId);
-  const names = { timeline: "時光長河", flip: "機緣連線", cuoshi: "錯史之戰", dialogue: "古人問答" };
-  const stepName = names[r.steps[r.step]] || "闖關";
+  const stepName = feelLabel(unit, r.steps[r.step]);
   const lamps = [0, 1, 2]
     .map((i) => `<i class="run-lamp${i < r.lives ? " on" : ""}"></i>`)
     .join("");
@@ -1176,15 +1203,6 @@ function runHudHtml() {
     <span>連擊 ${r.combo || 0}</span>
     ${charmUseButtons(["lamp"])}
   </div>`;
-}
-
-function unitRunSteps(unit) {
-  const steps = [];
-  if (unit?.timelineId) steps.push("timeline");
-  if (unit?.flipId) steps.push("flip");
-  if (unit?.cuoshi?.length) steps.push("cuoshi");
-  else if (unit?.dialogues?.length) steps.push("dialogue");
-  return steps;
 }
 
 function persistHomeRun() {
@@ -1219,6 +1237,7 @@ function startUnitRun(unitId) {
   }
   state.gamesUnit = unitId;
   state.gameFromUnit = true;
+  state.bagFlip = false;
   state.unitRun = { unitId, lives: 3, combo: 0, step: 0, steps, phase: "play" };
   persistHomeRun();
   openUnitPlay(steps[0], "", { keepRun: true });
@@ -1476,6 +1495,36 @@ function openUnitPlay(type, playId, opts = {}) {
     const id = playId || unit?.dialogues?.[0] || DIALOGUES[0].id;
     state.dialogue = { id, step: 0, replied: false, good: 0 };
     state.view = "dialogue";
+  } else if (type === "board") {
+    const board = unitBoard(unit);
+    clearBoardTimer(state.unitBoard);
+    if (!board) {
+      state.unitBoard = { error: "這一關暫時開唔到。", won: false };
+    } else {
+      const stage = {
+        ...board,
+        rounds: (board.rounds || []).map((round) => ({
+          ...round,
+          options: shuffle(round.options || []),
+        })),
+      };
+      const play = createBoardPlay(stage, { cid: "", sid: board.id, title: board.title || "" });
+      play.stage = stage;
+      state.unitBoard = play;
+    }
+    state.view = "unitboard";
+  } else if (type === "relic") {
+    const relic = unitRelic(unit);
+    state.relicPlay = relic
+      ? {
+          id: relic.id,
+          picked: [],
+          note: "",
+          won: false,
+          order: shuffle((relic.shards || []).map((shard) => shard.id)),
+        }
+      : { id: "", picked: [], note: "", won: false, error: "這一關暫時開唔到。" };
+    state.view = "relic";
   } else if (type === "shizhan") {
     state.shizhan = null;
     state.view = "shizhan";
@@ -1515,6 +1564,8 @@ function bindShell(user) {
   if (state.view === "wordwall") bindWordwall();
   if (state.view === "timeline") bindTimeline();
   if (state.view === "dialogue") bindDialogue();
+  if (state.view === "unitboard") bindUnitBoardPage();
+  if (state.view === "relic") bindRelicPage();
   if (state.view === "shizhan") bindShizhan(user, char);
   if (state.view === "case") bindCase(user, { toast, render, state, getUser: getCurrentUser });
   if (state.view === "inquiry") {
@@ -1568,6 +1619,123 @@ function renderProfile(user, char, snap) {
   </section>`;
 }
 
+function finishUnitFeel(msg) {
+  if (state.unitRun?.phase === "play") {
+    toast(msg || "這一關過了");
+    advanceUnitRun();
+    return;
+  }
+  toast(msg || "這一關完成");
+  render();
+}
+
+function renderUnitBoardPage() {
+  const unit = getUnit(state.gamesUnit || state.unitRun?.unitId);
+  const play = state.unitBoard;
+  return renderUnitBoardSection({
+    board: play?.stage || unitBoard(unit),
+    play,
+    hud: runHudHtml(),
+    back: unitBackButton(),
+  });
+}
+
+function bindUnitBoardPage() {
+  const unit = getUnit(state.gamesUnit || state.unitRun?.unitId);
+  const play = state.unitBoard;
+  bindUnitBoard(play, play?.stage || unitBoard(unit), {
+    isCurrent: () => state.unitBoard === play && state.view === "unitboard",
+    render,
+    toast,
+    onClear: () => finishUnitFeel("這一關過了"),
+  });
+}
+
+function renderRelicPage() {
+  const unit = getUnit(state.gamesUnit || state.unitRun?.unitId);
+  return renderRelicSection({
+    relic: unitRelic(unit),
+    play: state.relicPlay,
+    hud: runHudHtml(),
+    back: unitBackButton(),
+  });
+}
+
+function bindRelicPage() {
+  const unit = getUnit(state.gamesUnit || state.unitRun?.unitId);
+  const play = state.relicPlay;
+  bindRelic(play, unitRelic(unit), {
+    render,
+    onClear: () => finishUnitFeel("嵌合好了"),
+  });
+}
+
+function unitPlayCard(unit, step) {
+  if (step === "timeline" && unit.timelineId) {
+    return {
+      play: "timeline",
+      tone: "tone-indigo",
+      title: "時光長河",
+      blurb: "拖牌排時序，開船過關",
+      xp: `+${XP_REWARDS.timelineComplete}`,
+      ico: "ico-scroll",
+    };
+  }
+  if (step === "flip" && unit.flipId) {
+    return {
+      play: "flip",
+      tone: "tone-jade",
+      title: "機緣連線",
+      blurb: "左右各撳一張，配成一對",
+      xp: `+${XP_REWARDS.wordwallRound}`,
+      ico: "ico-game",
+    };
+  }
+  if (step === "cuoshi" && (unit.cuoshi || []).length) {
+    return {
+      play: "cuoshi",
+      tone: "tone-cinnabar",
+      title: "錯史之戰",
+      blurb: `搵出錯句，修復殘卷（${unit.cuoshi.length} 關）`,
+      xp: "多關",
+      ico: "ico-battle",
+    };
+  }
+  if (step === "dialogue" && (unit.dialogues || []).length) {
+    return {
+      play: "dialogue",
+      tone: "tone-cinnabar",
+      title: "古人問答",
+      blurb: "同本單元人物過招",
+      xp: `+${XP_REWARDS.dialogueGood}`,
+      ico: "ico-note",
+    };
+  }
+  if (step === "board" && unit.boardId) {
+    const board = unitBoard(unit);
+    return {
+      play: "board",
+      tone: "tone-gold",
+      title: board?.title || "互動",
+      blurb: board?.blurb || "長卷同一種互動",
+      xp: "練習",
+      ico: "ico-scroll",
+    };
+  }
+  if (step === "relic" && unit.relicId) {
+    const relic = unitRelic(unit);
+    return {
+      play: "relic",
+      tone: "tone-jade",
+      title: "遺物拼圖",
+      blurb: relic?.blurb || "揀碎片再嵌合",
+      xp: "練習",
+      ico: "ico-note",
+    };
+  }
+  return null;
+}
+
 /* ========== Games ========== */
 function renderRunResult() {
   const r = state.unitRun;
@@ -1606,47 +1774,15 @@ function renderGamesHub() {
   }).join("");
 
   if (unit && unit.grade === year) {
-    const games = [];
-    if (unit.timelineId) {
-      games.push({
-        play: "timeline",
-        tone: "tone-indigo",
-        title: "時光長河",
-        blurb: "拖牌排時序，開船過關",
-        xp: `+${XP_REWARDS.timelineComplete}`,
-        ico: "ico-scroll",
-      });
+    const steps = unitRunSteps(unit);
+    const games = steps.map((step) => unitPlayCard(unit, step)).filter(Boolean);
+    for (const step of ["dialogue", "cuoshi"]) {
+      if (!steps.includes(step)) {
+        const extra = unitPlayCard(unit, step);
+        if (extra) games.push(extra);
+      }
     }
-    if (unit.flipId) {
-      games.push({
-        play: "flip",
-        tone: "tone-jade",
-        title: "機緣連線",
-        blurb: "左右各撳一張，配成一對",
-        xp: `+${XP_REWARDS.wordwallRound}`,
-        ico: "ico-game",
-      });
-    }
-    if ((unit.cuoshi || []).length) {
-      games.push({
-        play: "cuoshi",
-        tone: "tone-cinnabar",
-        title: "錯史之戰",
-        blurb: `搵出錯句，修復殘卷（${unit.cuoshi.length} 關）`,
-        xp: "多關",
-        ico: "ico-battle",
-      });
-    }
-    if ((unit.dialogues || []).length) {
-      games.push({
-        play: "dialogue",
-        tone: "tone-cinnabar",
-        title: "古人問答",
-        blurb: "同本單元人物過招",
-        xp: `+${XP_REWARDS.dialogueGood}`,
-        ico: "ico-note",
-      });
-    }
+    const seq = steps.map((step) => feelLabel(unit, step)).join(" → ");
     const cards = games
       .map(
         (g, i) => `
@@ -1662,7 +1798,8 @@ function renderGamesHub() {
     <section class="panel panel-paper">
       <p class="eyebrow ink-gold">${unit.grade} · 單元${unit.no}</p>
       <h2>${unit.era}</h2>
-      <p class="lead">${unit.title}。三盞燈火連闖本單元。</p>
+      <p class="lead">${unit.title}</p>
+      <p class="muted">三盞燈火。今次：${seq}。</p>
       <div class="toolbar">${yearTabs}</div>
       ${canRun ? `<div class="row-actions" style="margin-bottom:.85rem"><button type="button" class="btn" data-unit-run="${unit.id}">闖本單元</button></div>` : ""}
       <div class="quest-grid games-quest">${cards}</div>
@@ -1689,8 +1826,13 @@ function renderGamesHub() {
     .join("");
   return `
   <section class="panel panel-paper">
-    <h2>趣味關卡</h2>
-    <p class="lead">揀一個時代，撳闖關。</p>
+    <h2>單元闖關</h2>
+    <p class="lead">揀一個時代，撳闖關。每個單元的順序都唔同。</p>
+    ${
+      getHomeRun(user)
+        ? `<div class="row-actions" style="margin-bottom:.85rem"><button type="button" class="btn ghost" data-resume-run="1">繼續未完的闖關</button></div>`
+        : ""
+    }
     <article class="quest-card tone-gold shizhan-feature" data-unit-play="shizhan">
       <div class="quest-icon"><span class="ico ico-seal" style="width:1.4em;height:1.4em"></span></div>
       <div class="quest-body"><h3>史戰風雲</h3><p>出牌對戰</p></div>

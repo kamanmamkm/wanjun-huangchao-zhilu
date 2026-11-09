@@ -15,6 +15,9 @@ export const CURRICULUM_UNITS = [
     flipId: "ww_s1u1",
     cuoshi: ["cs11_kongzi_fenshu"],
     dialogues: [],
+    boardId: "ub_s1u1",
+    relicId: "rl_s1u1",
+    run: ["timeline", "board", "flip", "cuoshi", "relic"],
   },
   {
     id: "s1u2",
@@ -27,6 +30,9 @@ export const CURRICULUM_UNITS = [
     flipId: "ww_s1u2",
     cuoshi: ["cs2_keju_qin", "cs9_qin_election", "cs4_policy_cost"],
     dialogues: ["d_qin", "d_han"],
+    boardId: "ub_s1u2",
+    relicId: "rl_s1u2",
+    run: ["flip", "board", "timeline", "relic", "cuoshi"],
   },
   {
     id: "s1u3",
@@ -39,6 +45,9 @@ export const CURRICULUM_UNITS = [
     flipId: "ww_s1u3",
     cuoshi: [],
     dialogues: [],
+    boardId: "ub_s1u3",
+    relicId: "rl_s1u3",
+    run: ["board", "relic", "timeline", "flip"],
   },
   {
     id: "s1u4",
@@ -51,6 +60,9 @@ export const CURRICULUM_UNITS = [
     flipId: "ww_s1u4",
     cuoshi: ["cs1_opium_tang", "cs12_sui_canal_day"],
     dialogues: ["d_sui", "d_tang", "d_zetian"],
+    boardId: "ub_s1u4",
+    relicId: "rl_s1u4",
+    run: ["timeline", "relic", "flip", "board", "cuoshi"],
   },
   {
     id: "s2u1",
@@ -63,6 +75,9 @@ export const CURRICULUM_UNITS = [
     flipId: "ww_s2u1",
     cuoshi: ["cs7_song_changan", "cs5_linked_errors"],
     dialogues: ["d_song"],
+    boardId: "ub_s2u1",
+    relicId: "rl_s2u1",
+    run: ["board", "timeline", "flip", "relic", "cuoshi"],
   },
   {
     id: "s2u2",
@@ -75,6 +90,9 @@ export const CURRICULUM_UNITS = [
     flipId: "ww_s2u2",
     cuoshi: ["cs6_zhenghe_zhangqian"],
     dialogues: ["d_ming"],
+    boardId: "ub_s2u2",
+    relicId: "rl_s2u2",
+    run: ["timeline", "flip", "board", "cuoshi", "relic"],
   },
   {
     id: "s2u3",
@@ -87,6 +105,9 @@ export const CURRICULUM_UNITS = [
     flipId: "ww_s2u3",
     cuoshi: ["cs8_qing_one_cause", "cs10_nanjing_taiwan"],
     dialogues: ["d_kangxi"],
+    boardId: "ub_s2u3",
+    relicId: "rl_s2u3",
+    run: ["relic", "flip", "timeline", "board", "cuoshi"],
   },
   {
     id: "s3u1",
@@ -99,6 +120,9 @@ export const CURRICULUM_UNITS = [
     flipId: "ww_s3u1",
     cuoshi: [],
     dialogues: ["d_sun"],
+    boardId: "ub_s3u1",
+    relicId: "rl_s3u1",
+    run: ["dialogue", "board", "timeline", "flip", "relic"],
   },
   {
     id: "s3u2",
@@ -111,6 +135,9 @@ export const CURRICULUM_UNITS = [
     flipId: "ww_s3u2",
     cuoshi: ["cs3_two_sources"],
     dialogues: [],
+    boardId: "ub_s3u2",
+    relicId: "rl_s3u2",
+    run: ["board", "timeline", "relic", "flip", "cuoshi"],
   },
 ];
 
@@ -123,12 +150,33 @@ export function unitsOfGrade(grade) {
 }
 
 export function unitGameCount(u) {
-  let n = 0;
-  if (u.timelineId) n += 1;
-  if (u.flipId) n += 1;
-  if ((u.cuoshi || []).length) n += 1;
-  if ((u.dialogues || []).length) n += 1;
-  return n;
+  return unitRunSteps(u).length;
+}
+
+const RUN_READY = {
+  timeline: (u) => !!u?.timelineId,
+  flip: (u) => !!u?.flipId,
+  cuoshi: (u) => !!(u?.cuoshi || []).length,
+  dialogue: (u) => !!(u?.dialogues || []).length,
+  board: (u) => !!u?.boardId,
+  relic: (u) => !!u?.relicId,
+};
+
+/** 闖關順序。有 run 就跟 run；缺內容嘅步會跳過，避免空關。 */
+export function unitRunSteps(unit) {
+  const raw =
+    Array.isArray(unit?.run) && unit.run.length
+      ? unit.run
+      : ["timeline", "flip", "cuoshi", "dialogue", "board", "relic"];
+  const steps = [];
+  for (const step of raw) {
+    const ready = RUN_READY[step];
+    if (!ready || !ready(unit) || steps.includes(step)) continue;
+    if (step === "dialogue" && steps.includes("cuoshi")) continue;
+    if (step === "cuoshi" && steps.includes("dialogue")) continue;
+    steps.push(step);
+  }
+  return steps;
 }
 
 export const UNIT_TIMELINES = [

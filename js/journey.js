@@ -1,7 +1,7 @@
 /**
  * 《任平生》主介面：行旅首頁、歷史長卷、待考札記、史冊
  */
-import { CHAPTERS, chapterList } from "./data/chapters.js?v=rad175";
+import { CHAPTERS, chapterList } from "./data/chapters.js?v=rad176";
 import {
   isBoardGame,
   interactCopy,
@@ -9,19 +9,19 @@ import {
   renderBoard,
   bindBoard,
   clearBoardTimer,
-} from "./stageBoards.js?v=rad175";
+} from "./stageBoards.js?v=rad176";
 import { XP_REWARDS } from "./data/levels.js?v=rad66";
-import { CUOSHI_BATTLES, getCuoshi, bossPack, nextBossId, wrongLineOf } from "./data/cuoshi.js?v=rad175";
+import { CUOSHI_BATTLES, getCuoshi, bossPack, nextBossId, wrongLineOf } from "./data/cuoshi.js?v=rad176";
 import { IDENTITIES } from "./data/identities.js?v=rad71";
 import { getStageVisual, SKILL_BARS, skillFill, realmLabel } from "./data/stageVisuals.js";
 import { heroDisplayName, normalizeHeroName } from "./data/characters.js";
 import { pickRandomHeroName, HERO_NAME_COUNT } from "./data/heroNames.js";
 import { renderAvatar } from "./avatar.js?v=rad79";
 import { renderHeroStage, renderStudyCompanion, renderPromoteReveal } from "./heroStage.js?v=rad79";
-import { nextHook, nextStageAfter, todayEncounter, dailyStageQuestions, hydrateStageQuestions, flavorDoneToday, flavorHitsToday, DAILY_FLAVOR_HITS } from "./data/flavor.js?v=rad175";
-import { renderFlavorSerial, renderSerialAside, bindFlavorSerial, serialLeadsFlavor, serialHookDetail, serialGoalChip } from "./flavorSerial.js?v=rad175";
+import { nextHook, nextStageAfter, todayEncounter, dailyStageQuestions, hydrateStageQuestions, flavorDoneToday, flavorHitsToday, DAILY_FLAVOR_HITS } from "./data/flavor.js?v=rad176";
+import { renderFlavorSerial, renderSerialAside, bindFlavorSerial, serialLeadsFlavor, serialHookDetail, serialGoalChip } from "./flavorSerial.js?v=rad176";
 import { schoolDay } from "./data/flavorSerial.js?v=rad98";
-import { nightOf } from "./voyage.js?v=rad175";
+import { nightOf } from "./voyage.js?v=rad176";
 import {
   userSnapshot,
   wheelStatus,
@@ -51,11 +51,11 @@ import {
   arenaStandings,
   levelBandLines,
   stageIdForUser,
-} from "./progress.js?v=rad175";
+} from "./progress.js?v=rad176";
 import { getCloudUrl } from "./data/cloud.js?v=rad80";
 import { updateUser, addXp, pushRecent } from "./storage.js?v=rad114";
 import { renderCaseEntry } from "./case.js?v=rad118";
-import { renderInquiryEntry } from "./inquiry.js?v=rad175";
+import { renderInquiryEntry } from "./inquiry.js?v=rad176";
 import { renderLiteracyEntry } from "./literacy.js?v=rad118";
 import { renderMuseumCard } from "./museum.js?v=rad118";
 import { getTrial } from "./data/trials.js";
@@ -568,6 +568,11 @@ export function renderJourneyHome(user, char, ui = {}) {
         <span class="play-door-kicker">同窗</span>
         <span class="play-door-title">同窗</span>
         <span class="play-door-go">同窗</span>
+      </button>
+      <button type="button" class="play-door" data-unit-lobby="1">
+        <span class="play-door-kicker">闖關</span>
+        <span class="play-door-title">單元闖關</span>
+        <span class="play-door-go">揀單元</span>
       </button>
     </section>
     <section class="home-challenge" id="home-challenge" tabindex="-1" aria-label="拆一句">

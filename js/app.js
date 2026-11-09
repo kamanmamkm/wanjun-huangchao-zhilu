@@ -2,8 +2,8 @@ import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad50";
 import { QUESTIONS } from "./data/questions.js?v=rad83";
 import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad66";
 import { levelFromXp } from "./data/levels.js?v=rad66";
-import { DIALOGUES, dialoguesByIds } from "./data/dialogues.js?v=rad174";
-import { TIMELINE_SETS, WORDWALL_ROUNDS, timelineSetsByIds, bagFlipRound } from "./data/games.js?v=rad174";
+import { DIALOGUES, dialoguesByIds } from "./data/dialogues.js?v=rad175";
+import { TIMELINE_SETS, WORDWALL_ROUNDS, timelineSetsByIds, bagFlipRound } from "./data/games.js?v=rad175";
 import { CHARMS } from "./data/wheel.js?v=rad67";
 import {
   getUnit,
@@ -26,7 +26,7 @@ import {
   resolveEnemyTurn,
   resolveGuardQuiz,
   hearts,
-} from "./data/shizhan.js?v=rad174";
+} from "./data/shizhan.js?v=rad175";
 import {
   getCurrentUser,
   clearSession,
@@ -53,10 +53,10 @@ import {
   clearHomeRun,
   charmCount,
   consumeCharm,
-} from "./progress.js?v=rad174";
-import { renderWheelPage, bindWheel } from "./wheel.js?v=rad174";
-import { renderCase, bindCase, rememberCaseOpen, recallCaseOpen, caseSaveNoteText } from "./case.js?v=rad174";
-import { renderInquiry, bindInquiry, recallInquiryOpen, rememberInquiryOpen } from "./inquiry.js?v=rad174";
+} from "./progress.js?v=rad175";
+import { renderWheelPage, bindWheel } from "./wheel.js?v=rad175";
+import { renderCase, bindCase, rememberCaseOpen, recallCaseOpen, caseSaveNoteText } from "./case.js?v=rad175";
+import { renderInquiry, bindInquiry, recallInquiryOpen, rememberInquiryOpen } from "./inquiry.js?v=rad175";
 import { renderLiteracy, bindLiteracy, recallLiteracyOpen, rememberLiteracyOpen, prepareLiteracyOpen } from "./literacy.js?v=rad118";
 import { renderMuseum, bindMuseum, recallMuseumOpen, rememberMuseumOpen } from "./museum.js?v=rad118";
 import {
@@ -68,13 +68,14 @@ import {
   renderCuoshi,
   bindJourney,
   renderLeaderboardPage,
-} from "./journey.js?v=rad174";
-import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad174";
+} from "./journey.js?v=rad175";
+import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad175";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad79";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";
-import { renderVoyage, bindVoyage, nightOf } from "./voyage.js?v=rad174";
+import { renderVoyage, bindVoyage, nightOf } from "./voyage.js?v=rad175";
+import { clearBoardTimer } from "./stageBoards.js?v=rad175";
 import { schoolDay } from "./data/flavorSerial.js?v=rad98";
-import { flavorLine, isoDay } from "./data/flavor.js?v=rad174";
+import { flavorLine, isoDay } from "./data/flavor.js?v=rad175";
 import {
   FORM_YEARS,
   CONTENT_YEARS,
@@ -98,7 +99,7 @@ import {
   registerWithCloud,
   scheduleCloudSync,
   onCloudSync,
-} from "./cloud.js?v=rad174";
+} from "./cloud.js?v=rad175";
 import { isTeacherPortal } from "./data/portal.js?v=rad78";
 
 captureCloudFromLocation();
@@ -421,6 +422,10 @@ function journeyCtx() {
 function render() {
   clearTimeout(levelUpTimer);
   levelUpTimer = null;
+  if (state.view !== "chapter") {
+    clearBoardTimer(state.stageBoard);
+    state.stageBoard = null;
+  }
   applyLevelUpPreview();
   let user = getCurrentUser();
   if (!user) {
@@ -888,7 +893,7 @@ function renderShell(user) {
         : state.view === "scroll"
         ? renderScroll(user)
         : state.view === "chapter"
-          ? renderChapterDetail(user, state.scrollChapter, state.scrollStage)
+          ? renderChapterDetail(user, state.scrollChapter, state.scrollStage, state)
           : state.view === "notes"
             ? renderNotes(user)
             : state.view === "chronicle"

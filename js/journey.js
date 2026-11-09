@@ -1,19 +1,27 @@
 /**
  * 《任平生》主介面：行旅首頁、歷史長卷、待考札記、史冊
  */
-import { CHAPTERS, chapterList } from "./data/chapters.js?v=rad174";
+import { CHAPTERS, chapterList } from "./data/chapters.js?v=rad175";
+import {
+  isBoardGame,
+  interactCopy,
+  createBoardPlay,
+  renderBoard,
+  bindBoard,
+  clearBoardTimer,
+} from "./stageBoards.js?v=rad175";
 import { XP_REWARDS } from "./data/levels.js?v=rad66";
-import { CUOSHI_BATTLES, getCuoshi, bossPack, nextBossId, wrongLineOf } from "./data/cuoshi.js?v=rad174";
+import { CUOSHI_BATTLES, getCuoshi, bossPack, nextBossId, wrongLineOf } from "./data/cuoshi.js?v=rad175";
 import { IDENTITIES } from "./data/identities.js?v=rad71";
 import { getStageVisual, SKILL_BARS, skillFill, realmLabel } from "./data/stageVisuals.js";
 import { heroDisplayName, normalizeHeroName } from "./data/characters.js";
 import { pickRandomHeroName, HERO_NAME_COUNT } from "./data/heroNames.js";
 import { renderAvatar } from "./avatar.js?v=rad79";
 import { renderHeroStage, renderStudyCompanion, renderPromoteReveal } from "./heroStage.js?v=rad79";
-import { nextHook, nextStageAfter, todayEncounter, dailyStageQuestions, hydrateStageQuestions, flavorDoneToday, flavorHitsToday, DAILY_FLAVOR_HITS } from "./data/flavor.js?v=rad174";
-import { renderFlavorSerial, renderSerialAside, bindFlavorSerial, serialLeadsFlavor, serialHookDetail, serialGoalChip } from "./flavorSerial.js?v=rad174";
+import { nextHook, nextStageAfter, todayEncounter, dailyStageQuestions, hydrateStageQuestions, flavorDoneToday, flavorHitsToday, DAILY_FLAVOR_HITS } from "./data/flavor.js?v=rad175";
+import { renderFlavorSerial, renderSerialAside, bindFlavorSerial, serialLeadsFlavor, serialHookDetail, serialGoalChip } from "./flavorSerial.js?v=rad175";
 import { schoolDay } from "./data/flavorSerial.js?v=rad98";
-import { nightOf } from "./voyage.js?v=rad174";
+import { nightOf } from "./voyage.js?v=rad175";
 import {
   userSnapshot,
   wheelStatus,
@@ -43,11 +51,11 @@ import {
   arenaStandings,
   levelBandLines,
   stageIdForUser,
-} from "./progress.js?v=rad174";
+} from "./progress.js?v=rad175";
 import { getCloudUrl } from "./data/cloud.js?v=rad80";
 import { updateUser, addXp, pushRecent } from "./storage.js?v=rad114";
 import { renderCaseEntry } from "./case.js?v=rad118";
-import { renderInquiryEntry } from "./inquiry.js?v=rad174";
+import { renderInquiryEntry } from "./inquiry.js?v=rad175";
 import { renderLiteracyEntry } from "./literacy.js?v=rad118";
 import { renderMuseumCard } from "./museum.js?v=rad118";
 import { getTrial } from "./data/trials.js";
@@ -692,7 +700,7 @@ export function renderScroll(user) {
   </section>`;
 }
 
-export function renderChapterDetail(user, chapterId, stageId) {
+export function renderChapterDetail(user, chapterId, stageId, ui = {}) {
   const ch = CHAPTERS[chapterId];
   if (!ch) {
     return `<section class="play-sheet">
@@ -745,8 +753,8 @@ export function renderChapterDetail(user, chapterId, stageId) {
     </section>`;
   }
   const stage = (ch.stages || []).find((s) => s.id === stageId);
-  if (!stage) return renderChapterDetail(user, chapterId, null);
-  return renderStagePlay(user, ch, stage);
+  if (!stage) return renderChapterDetail(user, chapterId, null, ui);
+  return renderStagePlay(user, ch, stage, ui);
 }
 
 function questionsOfStage(user, ch, stage) {
@@ -791,7 +799,7 @@ function bumpStageDraw(ch, stage) {
   return qs;
 }
 
-function renderStagePlay(user, ch, stage) {
+function renderStagePlay(user, ch, stage, ui = {}) {
   const companionSlot = `<div id="study-companion-slot" data-identity="${stageIdForUser(user)}"></div>`;
   if (stage.kind === "story") {
     return `
@@ -805,8 +813,26 @@ function renderStagePlay(user, ch, stage) {
     </section>`;
   }
   if (stage.kind === "interact" && stage.gotoGame) {
+    const play = ui.stageBoard;
+    const boardOn =
+      isBoardGame(stage.gotoGame) &&
+      play &&
+      play.cid === ch.id &&
+      play.sid === stage.id &&
+      play.game === stage.gotoGame;
+    if (boardOn) {
+      return `
+      <section class="panel-paper stage-play study-mode board-play" data-board-game="${stage.gotoGame}">
+        ${companionSlot}
+        <div class="q-top"><span>${ch.title}</span><span>${stage.title}</span></div>
+        ${renderBoard(stage, play)}
+        <div class="row-actions">
+          <button type="button" class="btn ghost" data-board-back="1">返回說明</button>
+        </div>
+      </section>`;
+    }
     const done = isStageCompleted(user.progress?.chapters?.[ch.id]?.stages?.[stage.id]);
-    const copy = INTERACT_COPY[stage.gotoGame] || INTERACT_COPY.timeline;
+    const copy = interactCopy(stage) || INTERACT_COPY[stage.gotoGame] || INTERACT_COPY.timeline;
     return `
     <section class="panel-paper stage-play study-mode">
       ${companionSlot}
@@ -1070,11 +1096,74 @@ function bindFlavor(user, ctx) {
   });
 }
 
+const BOARD_SKILL = {
+  pair: "recall",
+  cause: "cause",
+  ledger: "argue",
+  confront: "source",
+  route: "recall",
+  verdict: "argue",
+};
+
+function boardAnswerMeta(play, meta = {}, correct) {
+  return {
+    correct: !!correct,
+    wrong: !correct,
+    game: true,
+    skill: BOARD_SKILL[play.game] || "recall",
+    topic: CHAPTERS[play.cid]?.topics?.[0] || "",
+    chapterId: play.cid,
+    qid: `board-${play.cid}-${play.sid}-${play.game === "pair" ? "pair" : meta.index ?? 0}`,
+    qText: String(meta.qText || play.title || "互動關").slice(0, 160),
+    source: "長卷",
+    keepView: true,
+  };
+}
+
+function finishBoardStage(ctx) {
+  const play = ctx.state.stageBoard;
+  if (!play || play._saved) return;
+  play._saved = true;
+  const user = ctx.getUser?.();
+  const already = isStageCompleted(user?.progress?.chapters?.[play.cid]?.stages?.[play.sid]);
+  const total = Number(play.total) || 0;
+  const correct = play.misses ? Math.max(0, total - play.misses) : total;
+  if (!already && total > 0) {
+    if (play.game === "pair") {
+      ctx.submitAnswer?.(XP_REWARDS.wordwallRound, boardAnswerMeta(play, { qText: play.title }, true));
+    }
+    let dropped = null;
+    updateUser((u) => {
+      dropped = completeStage(u, play.cid, play.sid, {
+        mastered: masteryFromScore(correct, total),
+        firstCorrect: correct,
+        firstTotal: total,
+        correct,
+        total,
+      });
+    });
+    pushRecent(`完成互動關：${play.title || play.sid}`);
+    addXp(XP_REWARDS.chapterBonus || 20, { correct: true });
+    ctx.queueRelic?.(dropped);
+    ctx.toast?.(dropped ? `偶得「${dropped.name}」。本關已記入長卷` : "本關已記入長卷");
+  } else {
+    ctx.toast?.("本關早已完成");
+  }
+  clearBoardTimer(play);
+  ctx.state.stageBoard = null;
+  ctx.state.view = "chapter";
+  ctx.state.scrollChapter = play.cid;
+  ctx.state.scrollStage = play.sid;
+  ctx.render?.();
+}
+
 export function bindJourney(user, ctx) {
   const { render, toast, state, reward } = ctx;
 
   appClick("[data-open-chapter]", (btn) => {
     const cid = btn.dataset.openChapter;
+    clearBoardTimer(state.stageBoard);
+    state.stageBoard = null;
     const ch = CHAPTERS[cid];
     if (!(ch?.stages || []).length) {
       toast("本章關卡製作中。");
@@ -1100,6 +1189,15 @@ export function bindJourney(user, ctx) {
     const game = stage?.gotoGame || "timeline";
     state.scrollChapter = cid;
     state.scrollStage = sid;
+    clearBoardTimer(state.stageBoard);
+    state.stageBoard = null;
+    if (isBoardGame(game)) {
+      state.stageInteract = { cid, sid, game, title: stage?.title || "" };
+      state.stageBoard = createBoardPlay(stage, { cid, sid, title: stage?.title || "" });
+      state.view = "chapter";
+      render();
+      return;
+    }
     state.stageInteract = {
       cid,
       sid,
@@ -1174,6 +1272,8 @@ export function bindJourney(user, ctx) {
   });
 
   appClick("[data-leave-quiz]", () => {
+    clearBoardTimer(state.stageBoard);
+    state.stageBoard = null;
     state.scrollStage = null;
     state.stageQuiz = blankStageQuiz();
     state.view = "chapter";
@@ -1185,6 +1285,10 @@ export function bindJourney(user, ctx) {
     if (!isChapterEnterable(user, cid)) {
       toast("先完成上一章，再入本章。");
       return;
+    }
+    if (state.stageBoard && (state.stageBoard.cid !== cid || state.stageBoard.sid !== sid)) {
+      clearBoardTimer(state.stageBoard);
+      state.stageBoard = null;
     }
     state.scrollChapter = cid;
     state.scrollStage = sid;
@@ -1250,6 +1354,29 @@ export function bindJourney(user, ctx) {
     const char = ctx.getCharacter();
     const id = Number(slot.dataset.identity || 0);
     slot.outerHTML = renderStudyCompanion(char, id, "行囊已備。答題時我會在旁點一句。");
+  }
+
+  const play = state.stageBoard;
+  if (play && state.view === "chapter" && document.querySelector(".board-play")) {
+    const stage = CHAPTERS[play.cid]?.stages?.find((s) => s.id === play.sid);
+    bindBoard(play, stage, {
+      isCurrent: () => state.stageBoard === play,
+      render,
+      toast,
+      onBack: () => {
+        clearBoardTimer(state.stageBoard);
+        state.stageBoard = null;
+        render();
+      },
+      onHit: (meta) => {
+        if (play.game === "pair") return;
+        ctx.submitAnswer?.(XP_REWARDS.mcCorrect || 4, boardAnswerMeta(play, meta, true));
+      },
+      onMiss: (meta) => {
+        ctx.submitAnswer?.(0, boardAnswerMeta(play, meta, false));
+      },
+      onClear: () => finishBoardStage(ctx),
+    });
   }
 }
 

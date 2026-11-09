@@ -66,13 +66,14 @@ export const CHAPTERS = {
       {
         id: "interact",
         kind: "interact",
-        icon: "🔍",
-        title: "互動關：時序長廊",
+        icon: "🧩",
+        title: "互動關：制度配對",
         minutes: "5",
-        goal: "把事件放回較合理的先後。",
+        goal: "把制度名稱配上它的意思。",
         difficulty: "入門→進階",
-        gotoGame: "timeline",
-        timelineIds: ["tl1", "tl8"],
+        gotoGame: "pair",
+        pairRoundId: "ww3",
+        pairPick: 4,
       },
       {
         id: "source",
@@ -428,13 +429,77 @@ export const CHAPTERS = {
       {
         id: "interact",
         kind: "interact",
-        icon: "🔍",
-        title: "互動關：問一句為何",
+        icon: "🧵",
+        title: "互動關：因果連結",
         minutes: "5",
-        goal: "用符合史實的理由，回答古人為何如此做。",
+        goal: "看見結果之後，揀一個講得較穩的原因。",
         difficulty: "入門→進階",
-        gotoGame: "dialogue",
-        dialogueIds: ["d_qin", "d_han", "d_sui", "d_song", "d_ming"],
+        gotoGame: "cause",
+        rounds: [
+          {
+            result: "秦統一之後，政令可以傳到遠方。",
+            prompt: "哪一個原因講得較穩？",
+            options: [
+              {
+                text: "書同文、車同軌，方便朝廷把命令傳開。",
+                ok: true,
+                note: "統一文字和度量，是為了政令相通。這不是後來的科舉。",
+              },
+              {
+                text: "因為隋唐已經有科舉，所以秦的政令傳得到。",
+                ok: false,
+                note: "科舉在隋唐以後才發展，不能用來解釋秦。",
+              },
+              {
+                text: "因為辛亥革命推翻清朝，秦才統一文字。",
+                ok: false,
+                note: "兩件事相隔約兩千年，不能倒因為果。",
+              },
+            ],
+          },
+          {
+            result: "安史之亂爆發。",
+            prompt: "哪一個原因講得較穩？",
+            options: [
+              {
+                text: "邊鎮長期掌握重兵，是重要條件；不能只寫皇帝一年不勤政。",
+                ok: true,
+                note: "邊鎮兵力要寫進去。一句怠政不足以解釋起兵。",
+              },
+              {
+                text: "完全只因為唐玄宗那年不勤政。",
+                ok: false,
+                note: "把起兵收成皇帝一個人，範圍講得太窄。",
+              },
+              {
+                text: "因為商鞅變法直接導致安史之亂。",
+                ok: false,
+                note: "中間隔了約一千年，不宜寫成直接因果。",
+              },
+            ],
+          },
+          {
+            result: "清朝滅亡。",
+            prompt: "哪一個原因講得較穩？",
+            options: [
+              {
+                text: "鴉片戰爭是近代變局的開端，清朝之亡還有其後多種因素。",
+                ok: true,
+                note: "可以寫開端，不可以寫成只有這一件事。",
+              },
+              {
+                text: "完全只因為一場鴉片戰爭。",
+                ok: false,
+                note: "「只因為一件事」通常講得太盡。",
+              },
+              {
+                text: "因為秦始皇焚書，所以清朝滅亡。",
+                ok: false,
+                note: "時代對不上，也不能這樣串成因果。",
+              },
+            ],
+          },
+        ],
       },
       {
         id: "source",
@@ -537,13 +602,92 @@ export const CHAPTERS = {
       {
         id: "interact",
         kind: "interact",
-        icon: "🔍",
-        title: "互動關：政策時序",
+        icon: "⚖️",
+        title: "互動關：成效與代價",
         minutes: "5",
-        goal: "把政策放回較合理的先後。",
+        goal: "打開一項措施的賬，同時看見成效同代價。",
         difficulty: "入門→進階",
-        gotoGame: "timeline",
-        timelineIds: ["tl11", "tl12"],
+        gotoGame: "ledger",
+        rounds: [
+          {
+            situation: "隋煬帝開鑿大運河，要你寫一句評語。",
+            options: [
+              {
+                text: "溝通南北，同時徵發民力甚眾。",
+                effect: "南北轉運較方便。",
+                cost: "工程浩大，民力消耗多。",
+                ok: true,
+                note: "有功仍要寫代價。這份賬可以採納。",
+              },
+              {
+                text: "一日建成，只有好處。",
+                effect: "評語寫成立刻完工。",
+                cost: "寫成毫無消耗。",
+                ok: false,
+                note: "運河不是一日建成，也不能寫成毫無代價。",
+              },
+              {
+                text: "大運河從未存在，不必討論。",
+                effect: "連功用一起否認。",
+                cost: "沒有討論負擔。",
+                ok: false,
+                note: "運河是有的。要評的是功和代價，不是否認它。",
+              },
+            ],
+          },
+          {
+            situation: "宋太祖杯酒釋兵權之後，朝中要一句評語。",
+            options: [
+              {
+                text: "有助防藩鎮，但重文輕武仍要分開討論。",
+                effect: "兵權收回中央，減少武將割據。",
+                cost: "不能因此寫成戰無不勝。",
+                ok: true,
+                note: "好處同後來的戰局要分開寫。",
+              },
+              {
+                text: "從此戰無不勝。",
+                effect: "只寫打勝仗。",
+                cost: "評語沒有留下任何負擔。",
+                ok: false,
+                note: "收兵權的好處，不能代替後來的戰局。",
+              },
+              {
+                text: "這是明朝的事，宋代不用管。",
+                effect: "把朝代寫錯。",
+                cost: "沒有評到宋代國策。",
+                ok: false,
+                note: "杯酒釋兵權是北宋的事。",
+              },
+            ],
+          },
+          {
+            situation: "要向國君說明商鞅變法。",
+            options: [
+              {
+                text: "使秦國富強，亦以嚴刑督耕戰。",
+                effect: "國力增強，後來有助統一。",
+                cost: "刑罰重，百姓負擔大。",
+                ok: true,
+                note: "富強和嚴刑要寫在同一句裡。",
+              },
+              {
+                text: "只有富強，百姓毫無負擔。",
+                effect: "只寫富強。",
+                cost: "寫成沒有代價。",
+                ok: false,
+                note: "嚴刑也是這項變法的代價。",
+              },
+              {
+                text: "變法是為了推廣文學。",
+                effect: "把目的寫成文學。",
+                cost: "沒有提到耕戰。",
+                ok: false,
+                note: "商鞅變法重耕戰，不是為了推廣文學。",
+              },
+            ],
+          },
+        ],
       },
       {
         id: "source",
@@ -757,13 +901,58 @@ export const CHAPTERS = {
       {
         id: "interact",
         kind: "interact",
-        icon: "🔍",
-        title: "互動關：材料何年",
+        icon: "🔎",
+        title: "互動關：兩則對質",
         minutes: "5",
-        goal: "把材料放回較合理的先後，再拿來對讀。",
+        goal: "並排讀兩則材料，判斷哪句超出了它們的範圍。",
         difficulty: "入門→進階",
-        gotoGame: "timeline",
-        timelineIds: ["tl13", "tl14"],
+        gotoGame: "confront",
+        rounds: [
+          {
+            left: { tag: "材料甲", text: "郡守上奏：本年本郡倉廩稍實。" },
+            right: { tag: "材料乙", text: "同郡仍有饑民上告。" },
+            claim: "因此全國人人豐收，無人例外。",
+            options: [
+              {
+                text: "兩則都保留。它們只講到本郡，不能合成全國人人豐收。",
+                ok: true,
+                note: "對讀先看範圍。一郡的話不能推成全國、無人例外。",
+              },
+              {
+                text: "只留官員那則，因為官員等於全國統計。",
+                ok: false,
+                note: "一郡上奏不是全國統計。",
+              },
+              {
+                text: "兩則對不上，所以寫成全國既大豐收又大饑荒。",
+                ok: false,
+                note: "對不上就要分開讀，不是合成一句更大的話。",
+              },
+            ],
+          },
+          {
+            left: { tag: "材料甲", text: "官方史書歌頌某次開拓。" },
+            right: { tag: "材料乙", text: "同一時期有人記下民力負擔。" },
+            claim: "全中國每一個人都擁護，無人例外。",
+            options: [
+              {
+                text: "由有限材料推成全國人人如此，是講得太盡。",
+                ok: true,
+                note: "歌頌和負擔都可以留。兩則都沒有說到每一個人。",
+              },
+              {
+                text: "官方寫了，就等於全民統計。",
+                ok: false,
+                note: "歌頌不是人數統計。",
+              },
+              {
+                text: "必須改成全國都反對，才算對讀。",
+                ok: false,
+                note: "對讀不是改成相反的絕對句。",
+              },
+            ],
+          },
+        ],
       },
       {
         id: "source",
@@ -878,13 +1067,95 @@ export const CHAPTERS = {
       {
         id: "interact",
         kind: "interact",
-        icon: "🔍",
-        title: "互動關：跨章時序",
+        icon: "🗺️",
+        title: "互動關：路線抉擇",
         minutes: "5",
-        goal: "把不同章的事放回同一條由早到晚的線。",
+        goal: "按這次使命揀下一站，不要把別的時代的路拿來用。",
         difficulty: "入門→進階",
-        gotoGame: "timeline",
-        timelineIds: ["tl15", "tl16", "tl17"],
+        gotoGame: "route",
+        rounds: [
+          {
+            mission: "漢武帝要聯絡西域、夾擊匈奴。",
+            from: "長安",
+            options: [
+              {
+                place: "河西走廊",
+                detail: "通往西域",
+                text: "河西走廊，通往西域",
+                ok: true,
+                note: "張騫走陸路西域。鄭和的海路、清朝的條約口岸都幫不到這次使命。",
+              },
+              {
+                place: "南洋",
+                detail: "沿鄭和的航路出海",
+                text: "南洋，沿鄭和的航路出海",
+                ok: false,
+                note: "下西洋是明朝的事。",
+              },
+              {
+                place: "五口",
+                detail: "去對《南京條約》的口岸",
+                text: "五口，去對《南京條約》",
+                ok: false,
+                note: "《南京條約》是清朝的事，幫不到漢武帝聯絡西域。",
+              },
+            ],
+          },
+          {
+            mission: "明成祖派船隊宣揚國威。",
+            from: "南京",
+            options: [
+              {
+                place: "西洋航路",
+                detail: "船隊出海南下",
+                text: "西洋航路，船隊出海南下",
+                ok: true,
+                note: "鄭和走海路，不是張騫那條西域路。",
+              },
+              {
+                place: "西域沙漠",
+                detail: "只為夾擊匈奴",
+                text: "西域沙漠，只為夾擊匈奴",
+                ok: false,
+                note: "夾擊匈奴是漢代通西域的目的。",
+              },
+              {
+                place: "咸陽",
+                detail: "回去看秦的郡縣",
+                text: "咸陽，回去看秦的郡縣",
+                ok: false,
+                note: "郡縣解釋不了這次航海。",
+              },
+            ],
+          },
+          {
+            mission: "鴉片戰爭之後，要核對割地寫在哪一份約。",
+            from: "廣州附近",
+            options: [
+              {
+                place: "香港島",
+                detail: "對《南京條約》",
+                text: "香港島，對《南京條約》",
+                ok: true,
+                note: "《南京條約》割讓香港島。台灣見於後來的《馬關條約》。",
+              },
+              {
+                place: "台灣",
+                detail: "把《馬關條約》當成這場戰爭的約",
+                text: "台灣，把《馬關條約》當成這場戰爭的約",
+                ok: false,
+                note: "割台灣不是《南京條約》的條款。",
+              },
+              {
+                place: "西域",
+                detail: "拿張騫的路來解釋條款",
+                text: "西域，拿張騫的路來解釋條款",
+                ok: false,
+                note: "人物、航路、條約要各自歸位。",
+              },
+            ],
+          },
+        ],
       },
       {
         id: "source",
@@ -997,13 +1268,55 @@ export const CHAPTERS = {
       {
         id: "interact",
         kind: "interact",
-        icon: "🔍",
-        title: "互動關：治策何年",
+        icon: "⏳",
+        title: "互動關：限時朝議",
         minutes: "5",
-        goal: "把制度放回較合理的先後，再拿來比較。",
+        goal: "在時限內下一道旨，邊防同民生都不能刪走。",
         difficulty: "入門→進階",
-        gotoGame: "timeline",
-        timelineIds: ["tl18", "tl19", "tl20"],
+        gotoGame: "verdict",
+        seconds: 45,
+        rounds: [
+          {
+            prompt: "邊關告急，國庫亦緊。你要下一道旨。",
+            options: [
+              {
+                text: "邊防要顧，民力同國庫也要顧，兩邊都不能刪走。",
+                ok: true,
+                note: "沒有一句可以同時刪去安全同民生。",
+              },
+              {
+                text: "傾盡國庫遠征，民生不用考慮。",
+                ok: false,
+                note: "遠征不是沒有代價。",
+              },
+              {
+                text: "完全放棄邊防，只顧減稅。",
+                ok: false,
+                note: "不理邊防，另一邊又有風險。",
+              },
+            ],
+          },
+          {
+            prompt: "有人說：漢武帝用推恩令恢復西周分封，用兵從此毫無負擔。你如何批？",
+            options: [
+              {
+                text: "推恩是削弱王國、加強中央；用兵仍有軍費同民力。",
+                ok: true,
+                note: "加強中央，不等於邊防毫無代價。",
+              },
+              {
+                text: "批準：恢復封建，而且沒有軍費。",
+                ok: false,
+                note: "推恩不是恢復分封。",
+              },
+              {
+                text: "刪去「中央」二字即可。",
+                ok: false,
+                note: "刪字不能代替判斷。",
+              },
+            ],
+          },
+        ],
       },
       {
         id: "source",

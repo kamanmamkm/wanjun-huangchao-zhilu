@@ -13,7 +13,7 @@ import {
 } from "./data/letters.js?v=rad97";
 import { XP_REWARDS } from "./data/levels.js?v=rad97";
 import { updateUser, addXp } from "./storage.js?v=rad114";
-import { logCaseEvent, researchOn } from "./case.js?v=rad118";
+import { logCaseEvent, researchOn } from "./case.js?v=rad177";
 
 const OPEN_KEY = "huangchao_museum_open";
 const drafts = new Map();

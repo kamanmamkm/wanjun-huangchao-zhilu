@@ -12,6 +12,9 @@ const DIALOGUE_GRADE = {
   d_ming: "中二",
   d_kangxi: "中二",
   d_sun: "中三",
+  d_zhang: "中三",
+  d_deng: "中三",
+  d_sar: "中三",
 };
 
 function yearToken(formYear) {
@@ -241,6 +244,81 @@ export const DIALOGUES = [
           { text: "推翻帝制，建立共和", good: true, reply: "正是。中國歷史從此進入新階段。" },
           { text: "立即實現全民富裕", good: false, reply: "民生尚需長期建設，非一蹴而就。" },
           { text: "恢復封建分封", good: false, reply: "革命正是為了結束帝制與舊秩序。" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "d_zhang",
+    character: "張學良",
+    era: "民國／抗戰",
+    avatar: "🌉",
+    intro: "東北已經失陷。你若問西安那一步，先分清它改變了什麼、沒有改變什麼。",
+    steps: [
+      {
+        prompt: "西安事變之後，最要緊的歷史意義是什麼？",
+        choices: [
+          { text: "促使停止內戰、國共再度合作抗日", good: true, reply: "對。事變緩和了內戰，抗日統一戰線較有條件。戰爭本身還沒有結束。" },
+          { text: "事變當日抗戰已經勝利", good: false, reply: "沒有。日本投降是 1945 年。西安事變不是勝利。" },
+          { text: "把九一八改寫成全面抗戰的開始", good: false, reply: "九一八是東北淪陷的開端。全面抗戰要另外看 1937 年。" },
+        ],
+      },
+      {
+        prompt: "全面抗戰從哪一件事算起？",
+        choices: [
+          { text: "1937 年七七盧溝橋事變", good: true, reply: "正是。七七之後，戰爭不再限於東北一地。" },
+          { text: "1931 年九一八已經是全面抗戰", good: false, reply: "九一八要記，但它是局部侵華的開端，不是全面抗戰的標誌。" },
+          { text: "1936 年西安事變當日戰爭結束", good: false, reply: "西安事變沒有結束戰爭，也不是全面抗戰的開始。" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "d_deng",
+    character: "鄧小平",
+    era: "當代",
+    avatar: "🌿",
+    intro: "一九七八年之後，要把重心放到建設上。你說說，這條路該怎樣講才準。",
+    steps: [
+      {
+        prompt: "改革開放的核心方向是？",
+        choices: [
+          { text: "對內改革、對外開放", good: true, reply: "對。不是把國家再關起來，也不是恢復人民公社作為唯一辦法。" },
+          { text: "閉關鎖國，不再跟外面來往", good: false, reply: "開放和閉關是相反方向，不能合成一句。" },
+          { text: "恢復人民公社，取消對外貿易", good: false, reply: "這不是 1978 年後的方向。" },
+        ],
+      },
+      {
+        prompt: "1949 年和 1978 年可以併成同一件事嗎？",
+        choices: [
+          { text: "不可以。1949 年是建國，改革開放是 1978 年後的轉向", good: true, reply: "兩個年份都要留住。建國不是改革開放的開始。" },
+          { text: "可以，建國就是改革開放", good: false, reply: "材料把兩年分開。不能對調。" },
+          { text: "開放的意思是恢復閉關", good: false, reply: "方向說反了。開放不是閉關。" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "d_sar",
+    character: "鄧小平",
+    era: "當代",
+    avatar: "🏙️",
+    intro: "香港和澳門的回歸，年份不能併成一年。你先把兩地分開說。",
+    steps: [
+      {
+        prompt: "香港和澳門分別在哪一年回歸？",
+        choices: [
+          { text: "香港 1997 年，澳門 1999 年", good: true, reply: "對。兩個年份都要留住，不能合成同一年。" },
+          { text: "兩地都在 1997 年同一日回歸", good: false, reply: "澳門不是 1997 年。併成年份就錯了。" },
+          { text: "兩地都在 1842 年回歸", good: false, reply: "1842 年是《南京條約》的時代，不是回歸。" },
+        ],
+      },
+      {
+        prompt: "「一國兩制」最早主要為了解決哪一問題，其後用在哪裡？",
+        choices: [
+          { text: "最早主要為台灣問題提出，其後用於港澳回歸", good: true, reply: "對。構想和後來的實踐要分開說，不能寫成只跟某一場戰爭有關。" },
+          { text: "為了解決鴉片戰爭而提出", good: false, reply: "鴉片戰爭在清朝。一國兩制不是那份條約的內容。" },
+          { text: "為了恢復科舉和封建", good: false, reply: "跟選官、封建無關。" },
         ],
       },
     ],

@@ -2,7 +2,8 @@
  * 歷史查案介面。題目內容見 js/data/cases.js。
  * 研究紀錄只在這部裝置，而且要學生自己開啟。
  */
-import { CASES, getCase } from "./data/cases.js?v=rad105";
+import { CASES, getCase } from "./data/cases.js?v=rad177";
+import { isGradeAllowed } from "./data/formYear.js?v=rad114";
 import { XP_REWARDS } from "./data/levels.js?v=rad90";
 import { updateUser, addXp } from "./storage.js?v=rad114";
 import { cloudSyncStatus } from "./cloud.js?v=rad176";
@@ -255,8 +256,23 @@ function failSave(toast) {
   toast("進度未儲存，查案可以繼續。請再試一次。");
 }
 
+function caseLine(task, key) {
+  return task?.lines?.[key] || "";
+}
+
+function clueReviewLabel(opt) {
+  const text = String(opt?.text || "");
+  const cut = text.split(/[　\s]/)[0];
+  return cut || "線索";
+}
+
+function okId(options, fallback) {
+  return options?.find((o) => o.ok)?.id || fallback;
+}
+
 export function renderCaseEntry(user) {
   return CASES.filter((task) => {
+    if (task.grade && !isGradeAllowed(task.grade, user?.formYear)) return false;
     const run = readRun(user, task);
     return !(run?.done || run?.completedOnce);
   }).map((task) => {
@@ -461,10 +477,10 @@ function renderPair(user, task, run) {
     <p class="case-claim">你標過的句子：${esc(marked.map((s) => s.text).join("／") || task.record.text)}</p>
     <p>${esc(ev.prompt)}</p>
     <div class="case-choices">${optionButtons("pair", ev.options, clue?.ok ? run.evidenceClue : "")}</div>
-    ${bad ? feedbackHtml(false, clue.feedback, "線索①") : ""}
+    ${bad ? feedbackHtml(false, clue.feedback, clueReviewLabel(ev.options.find((o) => o.ok))) : ""}
     ${clue?.ok ? feedbackHtml(true, clue.feedback) : ""}
-    ${clue?.ok ? clerkLine(task, "邊鎮有自己的兵，所以「只因皇帝不勤」蓋不住。范陽起兵仍是史實，不是標完它就沒發生。") : ""}
-    ${bad ? clerkLine(task, "這張不是最直接的。回到你標過的那句，看它缺的是軍隊，不是另一個宮廷故事。") : ""}
+    ${clue?.ok ? clerkLine(task, caseLine(task, "pairOk")) : ""}
+    ${bad ? clerkLine(task, caseLine(task, "pairBad")) : ""}
     ${notesHtml(run)}
     ${hypothesisHtml(run)}
     ${clueTray(task, run)}
@@ -479,7 +495,7 @@ function renderConduct(user, task, run) {
   const options = task.conduct?.options || [];
   return `
     <p>${esc(task.conduct?.prompt || "")}</p>
-    <p class="muted">歷史判斷不變：不能只把安史之亂收成皇帝怠政。最直接的反證仍是邊鎮已有軍隊。</p>
+    ${caseLine(task, "hold") ? `<p class="muted">${esc(caseLine(task, "hold"))}</p>` : ""}
     <div class="case-actions">
       ${options
         .map((o) => `<button type="button" class="btn case-go" data-conduct="${esc(o.id)}">${esc(o.text)}</button>`)
@@ -634,7 +650,7 @@ export function bindCase(user, ctx) {
       const hypothesis = sentence.suspect
         ? cur.hypothesis && String(cur.hypothesis).startsWith("推翻")
           ? cur.hypothesis
-          : "保留：記錄把起兵收成皇帝怠政。還沒有用證據核對。"
+          : caseLine(task, "holdHypothesis")
         : cur.hypothesis || "";
       commit(
         { ...cur, marks, notes, hypothesis, lastMark: id },
@@ -653,10 +669,10 @@ export function bindCase(user, ctx) {
       if (!cur || !opt || pairReady(task, cur)) return;
       const next = { ...cur, evidenceClue: id };
       if (opt.ok) {
-        next.judgment = "b";
+        next.judgment = okId(task.judgment?.options, "b");
         next.judgmentOk = true;
-        next.hypothesis = "推翻「只因怠政」。最直接的反證是邊鎮節度使已握軍隊。";
-        next.notes = addNote(next, "線索①反駁「主要因為皇帝不再勤政」。");
+        next.hypothesis = caseLine(task, "solvedHypothesis");
+        next.notes = addNote(next, caseLine(task, "solvedNote"));
       }
       commit(next, "answer", { step: 3, itemId: "clue:" + id, ok: !!opt.ok });
       paint(`[data-pair="${id}"]`);
@@ -695,9 +711,9 @@ export function bindCase(user, ctx) {
         done: true,
         completedOnce: true,
         step: 5,
-        check: cur.checkOk ? cur.check : "a",
+        check: cur.checkOk ? cur.check : okId(task.check?.options, "a"),
         checkOk: true,
-        judgment: cur.judgmentOk ? cur.judgment : "b",
+        judgment: cur.judgmentOk ? cur.judgment : okId(task.judgment?.options, "b"),
         judgmentOk: true,
       };
       const saved = commit(next, "choice", { step: 4, itemId: id });

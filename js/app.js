@@ -2,7 +2,7 @@ import { getCharacter, heroDisplayName } from "./data/characters.js?v=rad50";
 import { QUESTIONS } from "./data/questions.js?v=rad83";
 import { XP_REWARDS, outfitOf } from "./data/ranks.js?v=rad66";
 import { levelFromXp } from "./data/levels.js?v=rad66";
-import { DIALOGUES, dialoguesByIds } from "./data/dialogues.js?v=rad176";
+import { DIALOGUES, dialoguesByIds } from "./data/dialogues.js?v=rad177";
 import { TIMELINE_SETS, WORDWALL_ROUNDS, timelineSetsByIds, bagFlipRound } from "./data/games.js?v=rad176";
 import { CHARMS } from "./data/wheel.js?v=rad67";
 import {
@@ -13,8 +13,8 @@ import {
   UNIT_TIMELINES,
   unitTimeline,
   unitFlip,
-} from "./data/units.js?v=rad176";
-import { unitBoard, unitRelic, feelLabel } from "./data/unitBoards.js?v=rad176";
+} from "./data/units.js?v=rad177";
+import { unitBoard, unitRelic, feelLabel } from "./data/unitBoards.js?v=rad177";
 import { renderUnitBoardSection, bindUnitBoard, renderRelicSection, bindRelic } from "./unitPlay.js?v=rad176";
 import { VIDEOS } from "./data/videos.js?v=rad50";
 import { renderAvatar } from "./avatar.js?v=rad79";
@@ -58,10 +58,10 @@ import {
   consumeCharm,
 } from "./progress.js?v=rad176";
 import { renderWheelPage, bindWheel } from "./wheel.js?v=rad176";
-import { renderCase, bindCase, rememberCaseOpen, recallCaseOpen, caseSaveNoteText } from "./case.js?v=rad176";
-import { renderInquiry, bindInquiry, recallInquiryOpen, rememberInquiryOpen } from "./inquiry.js?v=rad176";
+import { renderCase, bindCase, rememberCaseOpen, recallCaseOpen, caseSaveNoteText } from "./case.js?v=rad177";
+import { renderInquiry, bindInquiry, recallInquiryOpen, rememberInquiryOpen } from "./inquiry.js?v=rad177";
 import { renderLiteracy, bindLiteracy, recallLiteracyOpen, rememberLiteracyOpen, prepareLiteracyOpen } from "./literacy.js?v=rad118";
-import { renderMuseum, bindMuseum, recallMuseumOpen, rememberMuseumOpen } from "./museum.js?v=rad118";
+import { renderMuseum, bindMuseum, recallMuseumOpen, rememberMuseumOpen } from "./museum.js?v=rad177";
 import {
   renderJourneyHome,
   renderScroll,
@@ -71,7 +71,7 @@ import {
   renderCuoshi,
   bindJourney,
   renderLeaderboardPage,
-} from "./journey.js?v=rad176";
+} from "./journey.js?v=rad177";
 import { renderTeacherPage, bindTeacher } from "./teacher.js?v=rad176";
 import { renderPromoteReveal, renderLevelUpReveal, renderRelicReveal } from "./heroStage.js?v=rad79";
 import { getStageVisual } from "./data/stageVisuals.js?v=rad50";
@@ -942,7 +942,7 @@ function renderShell(user) {
                                         : state.view === "case"
                                           ? renderCase(user, state.caseId)
                                           : state.view === "inquiry"
-                                            ? renderInquiry(user, state.inquiryGranted)
+                                            ? renderInquiry(user, state.inquiryGranted, state.inquiryId)
                                             : state.view === "literacy"
                                               ? renderLiteracy(user, state.literacyGranted)
                                               : state.view === "voyage"
@@ -1106,7 +1106,7 @@ function bindShellNav() {
       state.view = "inquiry";
       state.inquiryId = inquiryBtn.dataset.openInquiry || "";
       state.inquiryGranted = false;
-      rememberInquiryOpen(getCurrentUser()?.username, true);
+      rememberInquiryOpen(getCurrentUser()?.username, state.inquiryId);
       render();
       return;
     }

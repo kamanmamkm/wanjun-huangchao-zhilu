@@ -1,14 +1,15 @@
 /**
- * 「榜上多了一行」：先查線索，再判斷，最後的處事選擇會寫進存檔。
- * 經驗只在第一次結案發一次，不加史績。保存失敗不顯示成功。
+ * 探究：先查線索，再判斷，最後的處事選擇會寫進存檔。
+ * 經驗只在每一題第一次結案發一次，不加史績。保存失敗不顯示成功。
+ * 舊存檔若仍是單一課題，讀取時會當成該題的紀錄，不會清掉。
  */
-import { INQUIRY } from "./data/inquiry.js?v=rad103";
+import { INQUIRIES, INQUIRY, getInquiry } from "./data/inquiry.js?v=rad177";
+import { isGradeAllowed } from "./data/formYear.js?v=rad114";
 import { XP_REWARDS } from "./data/levels.js?v=rad103";
 import { updateUser } from "./storage.js?v=rad114";
 import { grantNamedRelic } from "./progress.js?v=rad176";
 
 const OPEN_KEY = "huangchao_inquiry_open";
-const RELIC_ID = "inquiry_keju_notice";
 
 const ORDER = {
   notice: ["notice", "han", "lu", "compare", "judge", "choice", "end"],
@@ -23,10 +24,24 @@ function esc(s) {
     .replace(/"/g, "&quot;");
 }
 
-export function blankInquiry(prev) {
+function packOf(id) {
+  return getInquiry(id) || INQUIRY;
+}
+
+function inquiryMap(raw) {
+  if (!raw || typeof raw !== "object") return {};
+  if (raw.id && (raw.phase || raw.version)) return { [raw.id]: raw };
+  const map = {};
+  for (const value of Object.values(raw)) {
+    if (value && typeof value === "object" && value.id) map[value.id] = value;
+  }
+  return map;
+}
+
+export function blankInquiry(prev, pack = INQUIRY) {
   return {
-    id: INQUIRY.id,
-    version: INQUIRY.version,
+    id: pack.id,
+    version: pack.version,
     phase: "open",
     route: "",
     noticeDetail: false,
@@ -39,22 +54,23 @@ export function blankInquiry(prev) {
   };
 }
 
-export function readInquiry(user) {
-  const row = user?.progress?.inquiry;
-  if (!row || row.id !== INQUIRY.id) return null;
+export function readInquiry(user, id) {
+  const pack = packOf(id || INQUIRY.id);
+  const row = inquiryMap(user?.progress?.inquiry)[pack.id];
+  if (!row || row.id !== pack.id) return null;
   return row;
 }
 
-export function rememberInquiryOpen(username, active) {
+export function rememberInquiryOpen(username, inquiryId) {
   try {
-    if (!active) {
+    if (!inquiryId) {
       sessionStorage.removeItem(OPEN_KEY);
       if (sessionStorage.getItem("huangchao_resume_kind") === "inquiry") {
         sessionStorage.removeItem("huangchao_resume_kind");
       }
       return;
     }
-    sessionStorage.setItem(OPEN_KEY, `${String(username || "").toUpperCase()}|${INQUIRY.id}`);
+    sessionStorage.setItem(OPEN_KEY, `${String(username || "").toUpperCase()}|${inquiryId}`);
     sessionStorage.setItem("huangchao_resume_kind", "inquiry");
   } catch {
     /* 分頁狀態寫唔到時，仍可從首頁繼續 */
@@ -78,13 +94,14 @@ function see(row, id) {
   return seen.includes(id) ? seen : [...seen, id];
 }
 
-function commit(user, next, grant) {
+function commit(user, pack, next, grant) {
   let granted = false;
   try {
     const saved = updateUser((u) => {
       if (String(u.username || "").toUpperCase() !== String(user.username || "").toUpperCase()) return;
       u.progress = u.progress || {};
-      const prev = u.progress.inquiry;
+      const map = inquiryMap(u.progress.inquiry);
+      const prev = map[pack.id];
       const already = !!prev?.rewarded;
       if (grant && !already) {
         u.xp = Math.max(0, (Number(u.xp) || 0) + (XP_REWARDS.inquiryOnce || 8));
@@ -93,13 +110,14 @@ function commit(user, next, grant) {
       } else {
         next.rewarded = already || !!next.rewarded;
       }
-      u.progress.inquiry = next;
-      if (next.phase === "end" && next.choice && INQUIRY.endings[next.choice]) {
-        const end = INQUIRY.endings[next.choice];
-        const spec = { id: RELIC_ID, name: end.relic, hint: end.relicHint };
+      map[pack.id] = next;
+      u.progress.inquiry = map;
+      if (next.phase === "end" && next.choice && pack.endings[next.choice]) {
+        const end = pack.endings[next.choice];
+        const spec = { id: pack.relicId, name: end.relic, hint: end.relicHint };
         if (!grantNamedRelic(u, spec)) {
           const list = u.progress.relics || [];
-          const found = list.find((r) => r.id === RELIC_ID);
+          const found = list.find((r) => r.id === pack.relicId);
           if (found) {
             found.name = spec.name;
             found.hint = spec.hint;
@@ -120,15 +138,22 @@ function advance(row, route) {
   return { ...row, phase, miss: "", route };
 }
 
-function clueButtons(row) {
+function clueButtons(pack, row) {
+  const scene = pack.scene;
   const bits = [];
   if ((row.seen || []).includes("notice")) {
-    bits.push(`<details class="inquiry-clue"><summary>再看榜文</summary><p>${esc(INQUIRY.notice.surface)}</p>${row.noticeDetail ? `<p>${esc(INQUIRY.notice.detail)}</p>` : ""}</details>`);
+    bits.push(
+      `<details class="inquiry-clue"><summary>${esc(scene.noticeClue)}</summary><p>${esc(pack.notice.surface)}</p>${row.noticeDetail ? `<p>${esc(pack.notice.detail)}</p>` : ""}</details>`
+    );
   }
   if ((row.seen || []).includes("rolls")) {
-    bits.push(`<details class="inquiry-clue"><summary>再看兩份名冊</summary><p>${esc(INQUIRY.examRoll)}</p><p>${esc(INQUIRY.clanRoll)}</p></details>`);
+    bits.push(
+      `<details class="inquiry-clue"><summary>${esc(scene.rollsClue)}</summary><p>${esc(pack.examRoll)}</p><p>${esc(pack.clanRoll)}</p></details>`
+    );
   }
-  bits.push(`<details class="inquiry-clue"><summary>課業：${esc(INQUIRY.knowledge.title)}</summary><p>${esc(INQUIRY.knowledge.text)}</p></details>`);
+  bits.push(
+    `<details class="inquiry-clue"><summary>課業：${esc(pack.knowledge.title)}</summary><p>${esc(pack.knowledge.text)}</p></details>`
+  );
   return bits.join("");
 }
 
@@ -141,12 +166,12 @@ function options(list, attr) {
     .join("");
 }
 
-function shell(title, body) {
-  return `<section class="inquiry play-sheet" id="inquiry-root">
+function shell(pack, title, body) {
+  return `<section class="inquiry play-sheet" id="inquiry-root" data-inquiry="${esc(pack.id)}">
     <header class="play-bar">
       <button type="button" class="play-back" data-inquiry-home="1">返回首頁</button>
       <div class="play-bar-copy">
-        <p class="play-kicker">${esc(INQUIRY.title)}</p>
+        <p class="play-kicker">${esc(pack.title)}</p>
         <h1 class="inquiry-title">${esc(title)}</h1>
       </div>
     </header>
@@ -154,176 +179,202 @@ function shell(title, body) {
   </section>`;
 }
 
-function renderOpen() {
+function renderOpen(pack) {
+  const scene = pack.scene;
   return shell(
-    "關門之前",
-    `<p class="inquiry-fiction">${esc(INQUIRY.fiction)}</p>
-    <p class="inquiry-line">縣廨牆上的榜，有一行墨色特別深。</p>
-    <p class="inquiry-say"><strong>韓石</strong>（虛構吏目）說：這缺向來按門第補。</p>
-    <p class="inquiry-say"><strong>盧小榆</strong>（虛構考生）說：我的考試錄還在，榜是後來改的。</p>
-    <p class="inquiry-goal">${esc(INQUIRY.hook)}</p>
+    pack,
+    scene.openTitle,
+    `<p class="inquiry-fiction">${esc(pack.fiction)}</p>
+    <p class="inquiry-line">${esc(scene.openLine)}</p>
+    <p class="inquiry-say"><strong>${esc(scene.openA.name)}</strong>（${esc(scene.openA.role)}）說：${esc(scene.openA.text)}</p>
+    <p class="inquiry-say"><strong>${esc(scene.openB.name)}</strong>（${esc(scene.openB.role)}）說：${esc(scene.openB.text)}</p>
+    <p class="inquiry-goal">${esc(pack.hook)}</p>
     <div class="inquiry-actions">
-      <button type="button" class="btn play-go" data-inquiry-route="notice">先看榜文</button>
-      <button type="button" class="btn play-quiet" data-inquiry-route="lu">先問盧小榆</button>
+      <button type="button" class="btn play-go" data-inquiry-route="notice">${esc(scene.routeA)}</button>
+      <button type="button" class="btn play-quiet" data-inquiry-route="lu">${esc(scene.routeB)}</button>
     </div>`
   );
 }
 
-function renderNotice(row) {
+function renderNotice(pack, row) {
+  const scene = pack.scene;
   const known = row.route === "lu";
   const body = row.noticeDetail
-    ? `<p>${esc(INQUIRY.notice.detail)}</p><p class="inquiry-note">這是虛構榜文上的改動，不是出土文書。</p>
-       <button type="button" class="btn play-go" data-inquiry-next="1">帶着這個去問人</button>`
-    : `<p>${esc(INQUIRY.notice.surface)}</p>
-       ${known ? `<p class="inquiry-note">盧小榆要你核對深墨下面還有沒有字。</p>` : ""}
-       <button type="button" class="btn play-go" data-inquiry-look="1">對着光看</button>`;
-  return shell("榜文", body);
+    ? `<p>${esc(pack.notice.detail)}</p><p class="inquiry-note">${esc(scene.noticeNote)}</p>
+       <button type="button" class="btn play-go" data-inquiry-next="1">${esc(scene.noticeNext)}</button>`
+    : `<p>${esc(pack.notice.surface)}</p>
+       ${known ? `<p class="inquiry-note">${esc(scene.noticeKnown)}</p>` : ""}
+       <button type="button" class="btn play-go" data-inquiry-look="1">${esc(scene.noticeLook)}</button>`;
+  return shell(pack, scene.noticeTitle, body);
 }
 
-function renderHan(row) {
-  const saw = !!row.noticeDetail;
-  const line = saw
-    ? "你看見了。深墨是我加的，族裡的薦牘不能白寫。任官向來看門第，考試改不了這個。"
-    : "榜我改過，改完才清楚。你若要核，看薦牘，不要只聽考生。考試從來改不了任官。";
+function renderHan(pack, row) {
+  const scene = pack.scene;
+  const line = row.noticeDetail ? scene.hanSaw : scene.hanBlind;
   return shell(
-    "韓石",
-    `<p class="inquiry-say"><strong>韓石</strong>：${esc(line)}</p>
+    pack,
+    scene.hanTitle,
+    `<p class="inquiry-say"><strong>${esc(scene.hanTitle)}</strong>：${esc(line)}</p>
      <button type="button" class="btn play-go" data-inquiry-next="1">繼續</button>`
   );
 }
 
-function renderLu(row) {
-  const saw = !!row.noticeDetail;
-  const line = saw
-    ? "你已看見淡字。考試錄可以對上「依考試名次」那一行。薦牘寫的是他的族子，不是我。"
-    : "先別信牆上那行深墨。考試錄寫我合格，薦牘寫的是韓氏族子。你先對名冊，再去看榜。";
+function renderLu(pack, row) {
+  const scene = pack.scene;
+  const line = row.noticeDetail ? scene.luSaw : scene.luBlind;
   return shell(
-    "盧小榆",
-    `<p class="inquiry-say"><strong>盧小榆</strong>：${esc(line)}</p>
+    pack,
+    scene.luTitle,
+    `<p class="inquiry-say"><strong>${esc(scene.luTitle)}</strong>：${esc(line)}</p>
      <button type="button" class="btn play-go" data-inquiry-next="1">繼續</button>`
   );
 }
 
-function renderCompare(row) {
+function renderCompare(pack, row) {
+  const scene = pack.scene;
   const miss = row.miss ? `<p class="inquiry-miss" role="status">${esc(row.miss)}</p>` : "";
   const next = row.compareOk
     ? `<button type="button" class="btn play-go" data-inquiry-next="1">用這個去判斷</button>`
-    : options(INQUIRY.compare.options, "inquiry-compare");
+    : options(pack.compare.options, "inquiry-compare");
   return shell(
-    "對照名冊",
-    `<p>${esc(INQUIRY.examRoll)}</p>
-     <p>${esc(INQUIRY.clanRoll)}</p>
-     <p class="inquiry-ask">${esc(INQUIRY.compare.prompt)}</p>
+    pack,
+    scene.compareTitle,
+    `<p>${esc(pack.examRoll)}</p>
+     <p>${esc(pack.clanRoll)}</p>
+     <p class="inquiry-ask">${esc(pack.compare.prompt)}</p>
      ${miss}
      <div class="inquiry-actions">${next}</div>
-     ${clueButtons(row)}`
+     ${clueButtons(pack, row)}`
   );
 }
 
-function renderJudge(row) {
+function renderJudge(pack, row) {
   const miss = row.miss ? `<p class="inquiry-miss" role="status">${esc(row.miss)}</p>` : "";
   const next = row.judgeOk
-    ? `<p>${esc(INQUIRY.judge.options.find((o) => o.ok)?.feedback || "")}</p>
+    ? `<p>${esc(pack.judge.options.find((o) => o.ok)?.feedback || "")}</p>
        <button type="button" class="btn play-go" data-inquiry-next="1">作出決定</button>`
-    : options(INQUIRY.judge.options, "inquiry-judge");
+    : options(pack.judge.options, "inquiry-judge");
   return shell(
-    "哪句站得住",
-    `<p class="inquiry-ask">${esc(INQUIRY.judge.prompt)}</p>
+    pack,
+    pack.scene.judgeTitle,
+    `<p class="inquiry-ask">${esc(pack.judge.prompt)}</p>
      ${miss}
      <div class="inquiry-actions">${next}</div>
-     ${clueButtons(row)}`
+     ${clueButtons(pack, row)}`
   );
 }
 
-function renderChoice() {
+function renderChoice(pack) {
+  const scene = pack.scene;
   return shell(
-    "這一缺今天怎麼辦",
-    `<p>證據已經夠用。剩下的是你怎麼處理這張榜。兩條路都會留下不同的話，也都會寫進這個學號的存檔。</p>
+    pack,
+    scene.choiceTitle,
+    `<p>${esc(scene.choiceLead)}</p>
      <div class="inquiry-actions">
-       <button type="button" class="btn play-go" data-inquiry-choice="restore">當着兩人把榜改回考試名次</button>
-       <button type="button" class="btn play-quiet" data-inquiry-choice="report">先不改榜，把兩份名冊送上去</button>
+       <button type="button" class="btn play-go" data-inquiry-choice="restore">${esc(scene.choiceRestore)}</button>
+       <button type="button" class="btn play-quiet" data-inquiry-choice="report">${esc(scene.choiceReport)}</button>
      </div>`
   );
 }
 
-function renderEnd(row, granted) {
-  const end = INQUIRY.endings[row.choice] || INQUIRY.endings.restore;
+function renderEnd(pack, row, granted) {
+  const scene = pack.scene;
+  const end = pack.endings[row.choice] || pack.endings.restore;
   const xp = granted
-    ? "經驗 +8。史績沒有加。"
+    ? `經驗 +${XP_REWARDS.inquiryOnce || 8}。史績沒有加。`
     : row.rewarded
       ? "經驗已在第一次結案時發過，這次不再發。"
       : "";
+  const decision = row.choice === "report" ? scene.decisionReport : scene.decisionRestore;
   return shell(
-    "這一案到此",
+    pack,
+    scene.endTitle,
     `<p class="inquiry-k">你的決定</p>
-     <p>${row.choice === "report" ? "先不改牆上的榜，把兩份名冊送上去。" : "當着兩人把榜改回考試名次。"}</p>
+     <p>${esc(decision)}</p>
      <p class="inquiry-k">結果</p>
      <p>${esc(end.result)}</p>
-     <p class="inquiry-say"><strong>韓石</strong>：${esc(end.han)}</p>
-     <p class="inquiry-say"><strong>盧小榆</strong>：${esc(end.lu)}</p>
+     <p class="inquiry-say"><strong>${esc(scene.openA.name)}</strong>：${esc(end.han)}</p>
+     <p class="inquiry-say"><strong>${esc(scene.openB.name)}</strong>：${esc(end.lu)}</p>
      <p class="inquiry-k">你用到的知識</p>
-     <p>${esc(INQUIRY.knowledge.text)}</p>
+     <p>${esc(pack.knowledge.text)}</p>
      <p class="inquiry-k">紀念物</p>
      <p>${esc(end.relic)}。${esc(end.relicHint)}</p>
      ${xp ? `<p class="inquiry-note">${esc(xp)}</p>` : ""}
-     <details class="inquiry-clue"><summary>出處（教師可查）</summary><p>${esc(INQUIRY.knowledge.source)}</p></details>
+     <details class="inquiry-clue"><summary>出處（教師可查）</summary><p>${esc(pack.knowledge.source)}</p></details>
      <div class="inquiry-actions">
-       <button type="button" class="btn play-quiet" data-inquiry-replay="1">再查一次</button>
+       <button type="button" class="btn play-quiet" data-inquiry-replay="1">${esc(scene.replay)}</button>
        <button type="button" class="btn play-go" data-inquiry-home="1">返回首頁</button>
      </div>`
   );
 }
 
-export function renderInquiryEntry(user) {
-  const row = readInquiry(user);
-  if (row?.phase === "end") return "";
-  const ongoing = row && row.phase && row.phase !== "open" && row.phase !== "end";
-  const label = ongoing ? "繼續" : "查榜";
-  return `<article class="case-entry">
-    <h3>${esc(INQUIRY.title)}</h3>
-    <button type="button" class="btn" data-open-inquiry="${esc(INQUIRY.id)}">${label}</button>
-  </article>`;
+function allowedPack(pack, user) {
+  return !pack?.grade || isGradeAllowed(pack.grade, user?.formYear);
 }
 
-export function renderInquiry(user, granted) {
-  const row = readInquiry(user) || blankInquiry();
-  if (row.phase === "notice") return renderNotice(row);
-  if (row.phase === "han") return renderHan(row);
-  if (row.phase === "lu") return renderLu(row);
-  if (row.phase === "compare") return renderCompare(row);
-  if (row.phase === "judge") return renderJudge(row);
-  if (row.phase === "choice") return renderChoice();
-  if (row.phase === "end") return renderEnd(row, granted);
-  return renderOpen();
+export function renderInquiryEntry(user) {
+  return INQUIRIES.filter((pack) => allowedPack(pack, user))
+    .map((pack) => {
+      const row = readInquiry(user, pack.id);
+      if (row?.phase === "end") return "";
+      const ongoing = row && row.phase && row.phase !== "open" && row.phase !== "end";
+      const label = ongoing ? "繼續" : pack.scene.entryLabel;
+      return `<article class="case-entry">
+    <h3>${esc(pack.title)}</h3>
+    <button type="button" class="btn" data-open-inquiry="${esc(pack.id)}">${esc(label)}</button>
+  </article>`;
+    })
+    .join("");
+}
+
+export function renderInquiry(user, granted, inquiryId) {
+  const pack = packOf(inquiryId);
+  if (!allowedPack(pack, user)) {
+    return shell(
+      pack,
+      "不在本年級",
+      `<p>這題不在本年級範圍。</p><button type="button" class="btn play-go" data-inquiry-home="1">返回首頁</button>`
+    );
+  }
+  const row = readInquiry(user, pack.id) || blankInquiry(null, pack);
+  if (row.phase === "notice") return renderNotice(pack, row);
+  if (row.phase === "han") return renderHan(pack, row);
+  if (row.phase === "lu") return renderLu(pack, row);
+  if (row.phase === "compare") return renderCompare(pack, row);
+  if (row.phase === "judge") return renderJudge(pack, row);
+  if (row.phase === "choice") return renderChoice(pack);
+  if (row.phase === "end") return renderEnd(pack, row, granted);
+  return renderOpen(pack);
 }
 
 export function bindInquiry(user, ctx) {
   const { render, toast, state } = ctx;
   const root = document.getElementById("inquiry-root");
   if (!root) return;
+  const pack = packOf(root.dataset.inquiry);
   const heading = root.querySelector(".inquiry-title");
   if (heading) {
     heading.tabIndex = -1;
     heading.focus({ preventScroll: true });
   }
-  const current = () => readInquiry(ctx.getUser?.() || user) || blankInquiry();
+  const current = () => readInquiry(ctx.getUser?.() || user, pack.id) || blankInquiry(null, pack);
 
   const fail = () => toast?.("這一步未寫入。請再試一次。");
 
   const go = (next, grant) => {
-    const saved = commit(ctx.getUser?.() || user, next, grant);
+    const saved = commit(ctx.getUser?.() || user, pack, next, grant);
     if (!saved.ok) {
       fail();
       return;
     }
     state.inquiryGranted = !!saved.granted;
-    rememberInquiryOpen((ctx.getUser?.() || user).username, next.phase !== "end");
+    rememberInquiryOpen((ctx.getUser?.() || user).username, next.phase !== "end" ? pack.id : "");
     render();
   };
 
   root.querySelectorAll("[data-inquiry-home]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      rememberInquiryOpen(user.username, false);
+      rememberInquiryOpen(user.username, "");
       state.view = "home";
       render();
     });
@@ -335,7 +386,7 @@ export function bindInquiry(user, ctx) {
       const phase = ORDER[route][0];
       const row = current();
       go({
-        ...blankInquiry(row),
+        ...blankInquiry(row, pack),
         rewarded: row.rewarded,
         phase,
         route,
@@ -363,7 +414,7 @@ export function bindInquiry(user, ctx) {
   root.querySelectorAll("[data-inquiry-compare]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const row = current();
-      const opt = INQUIRY.compare.options.find((o) => o.id === btn.dataset.inquiryCompare);
+      const opt = pack.compare.options.find((o) => o.id === btn.dataset.inquiryCompare);
       if (!opt) return;
       if (!opt.ok) {
         go({ ...row, compareOk: false, miss: opt.miss, seen: see(row, "rolls") });
@@ -376,7 +427,7 @@ export function bindInquiry(user, ctx) {
   root.querySelectorAll("[data-inquiry-judge]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const row = current();
-      const opt = INQUIRY.judge.options.find((o) => o.id === btn.dataset.inquiryJudge);
+      const opt = pack.judge.options.find((o) => o.id === btn.dataset.inquiryJudge);
       if (!opt) return;
       if (!opt.ok) {
         go({ ...row, judgeOk: false, miss: opt.miss });
@@ -397,6 +448,6 @@ export function bindInquiry(user, ctx) {
 
   root.querySelector("[data-inquiry-replay]")?.addEventListener("click", () => {
     const row = current();
-    go(blankInquiry(row));
+    go(blankInquiry(row, pack));
   });
 }

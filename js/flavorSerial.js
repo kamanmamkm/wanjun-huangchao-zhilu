@@ -14,7 +14,7 @@ import { XP_REWARDS } from "./data/levels.js?v=rad98";
 import { isoDay, DAILY_FLAVOR_HITS } from "./data/flavor.js?v=rad176";
 import { updateUser, addXp } from "./storage.js?v=rad114";
 import { grantNamedRelic } from "./progress.js?v=rad176";
-import { logCaseEvent, researchOn } from "./case.js?v=rad118";
+import { logCaseEvent, researchOn } from "./case.js?v=rad177";
 
 function esc(s) {
   return String(s || "")

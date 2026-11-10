@@ -3347,6 +3347,67 @@ button:active:not(:disabled):not(.locked),
   font-weight: 700;
 }
 
+.voyage-kit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
+}
+
+.voyage-kit span {
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(169, 50, 38, 0.88);
+  color: #f6f1e7;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.voyage-kicker {
+  margin: 0 0 0.2rem;
+  color: #f4e2c4;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.voyage-stake {
+  display: block;
+  margin-top: 0.18rem;
+  color: #8a5a2a;
+  font-style: normal;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.voyage-after {
+  margin: 0.45rem 0 0;
+  padding: 0.4rem 0.55rem;
+  border-left: 3px solid #e2c27a;
+  color: #f6f1e7;
+  font-weight: 700;
+}
+
+.voyage-after b {
+  display: block;
+  margin-bottom: 0.12rem;
+  color: #e2c27a;
+  font-size: 0.78rem;
+}
+
+.voyage.is-talk .voyage-box {
+  max-height: min(72vh, 40rem);
+}
+
+.voyage.is-event .voyage-choice {
+  min-height: 0;
+  padding: 0.42rem 0.75rem;
+}
+
+.voyage.is-event .voyage-line {
+  font-size: 1.05rem;
+}
+
 .voyage-map {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

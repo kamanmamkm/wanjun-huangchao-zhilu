@@ -2,7 +2,7 @@
  * 長卷互動關：配對沿用機緣連線題池；其餘係章內輕量板。
  * 完成時由 journey 寫入原本的 completeStage／XP，唔經單元闖關。
  */
-import { WORDWALL_ROUNDS } from "./data/games.js?v=rad176";
+import { WORDWALL_ROUNDS } from "./data/games.js?v=rad177";
 
 const BOARD_GAMES = ["pair", "cause", "ledger", "confront", "route", "verdict"];
 

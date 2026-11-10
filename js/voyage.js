@@ -1,12 +1,14 @@
 /**
  * 上路：第三人稱自己行。城樓先有地盤，再到營帳。
- * 有了營帳，可以去榜上同窗的城門答一句。答對就在自己這邊插布旗。
- * 史實只重用已有判斷。市集先問兩個人分辨傳聞，再判斷信邊句。答錯先出提示，再換另一個例子。營帳先接任務，再揀先查哪份情報。河邊睇線索揀渡口。七雄在圖上配方位，秦在西、楚在南，蜀屬三國。樓閣睇兩份材料，解決商人傳達政令。關城把沿路線索放在一起，核對北宋都城。松山、海岸仍然是一句判斷。渡口先讀運輸同民力，再揀。再走一程，市集傳聞同河邊渡口換下一組，松山換下一句。同窗城門用呢一程路上未出現的另一句。
- * 關城之後先再走一程。商隊沿歷史時空旅程行，每站解一件事再交去下一站。年代分開，唔好當成同一時的人。再走可以改經山路，市集同山路碰到的事唔同，河邊渡口亦會換一組。同一條次序換另一種石上寫法。同窗要帶自己的線索，同佢留下的一句一齊放，他的城仍是他的。關城列出探索、進步、未發現的支線。
+ * 早段係課堂入門：市集分辨傳聞，山路對三朝次序，營帳核對西周分封。
+ * 中後段係事件卡：花糧、絲、錢或民力，或冒一個寫明的險，再看歷史後果。時代對不上就不扣資源，也不能過站。
+ * 七雄仍在圖上配方位，秦在西、楚在南，蜀屬三國。同窗要帶自己的線索，同佢留下的一句一齊放，他的城仍是他的。
+ * 再走一程可以改經山路。市集同山路碰到的事唔同，河邊、松山、海岸、樓閣、渡口、關城會換一張事件卡。
+ * 關城列出探索、進步、資源同未發現的支線。
  * 城門到松山之後，行旅「今晚未了」每日一句。有了樓閣，逢單數日由商人問。未到樓閣，仍然聽將領。答對只點亮已經屬於你的一個地方。
  */
 import { addXp, updateUser } from "./storage.js?v=rad114";
-import { mountVoyageScene } from "./voyage3d.js?v=rad176";
+import { mountVoyageScene } from "./voyage3d.js?v=rad177";
 import {
   pactActive,
   pactGoal,
@@ -25,7 +27,20 @@ import {
   taleRow,
   taleToast,
   taleWalking,
-} from "./data/tale.js?v=rad176";
+} from "./data/tale.js?v=rad177";
+import {
+  eventFor,
+  isEventStop,
+  judgeEvent,
+  kitLine,
+  pushAfter,
+  pushUnique,
+  readKit,
+  readList,
+  stakeText,
+  KIT_KEYS,
+  KIT_LABEL,
+} from "./data/voyageEvents.js?v=rad177";
 
 const XP_ONCE = 8;
 
@@ -241,8 +256,8 @@ const QUIZ = [
 ];
 
 const ROTATE = [0, 1, 2, 3, 4, 5, 6, 7];
-const ROAD_SLOT = { 5: 3 };
-const PLACE_QUIZ = { 7: 9, 9: 11 };
+const ROAD_SLOT = {};
+const PLACE_QUIZ = {};
 
 function rotated(spin, slot) {
   const n = ROTATE.length;
@@ -260,7 +275,9 @@ function duelQuiz(spin) {
   return rotated(spin, 4);
 }
 
-const PLAY = { 1: "rumor", 3: "task", 4: "ford", 6: "match", 8: "slip", 9: "haul", 10: "seal" };
+const PLAY = { 1: "rumor", 3: "task", 6: "match" };
+
+const EVENT_KIND = { risk: "風險", trade: "貨殖", route: "路線", aftermath: "後果" };
 
 const RUMORS = [
   {
@@ -297,27 +314,6 @@ const RUMORS = [
   },
 ];
 
-const FORDS = [
-  {
-    ask: "睇三處線索，揀合適的渡河位置。",
-    spots: [
-      { name: "中流", clue: "牌子寫「商周夏」。" },
-      { name: "東渡", clue: "石上是「夏、商、周」。", ok: true },
-      { name: "西灘", clue: "牌子寫「周最早」。" },
-    ],
-    miss: "傳統史序是夏、商、周。",
-  },
-  {
-    ask: "睇三處線索，揀合適的渡河位置。",
-    spots: [
-      { name: "南渡", clue: "牌子寫「始皇開科取士」。" },
-      { name: "淺灘", clue: "牌子寫「秦與科舉同一時代」。" },
-      { name: "北渡", clue: "石上是「科舉不在秦代」。", ok: true },
-    ],
-    miss: "科舉不在秦代。秦與科舉，時代不同。",
-  },
-];
-
 function routeOf(row) {
   return row?.route === "ridge" ? "ridge" : "market";
 }
@@ -340,21 +336,9 @@ function shareClue(row) {
 
 function playOf(stop, row) {
   if (stop === 1 && row && routeOf(row) === "ridge") return "trail";
+  if (isEventStop(stop)) return "event";
   return PLAY[stop] || "";
 }
-
-const HAULS = [
-  {
-    ask: "睇完運輸同民力。邊句先寫得上？",
-    ok: "溝通南北，同時徵發民力。",
-    bad: "一日建成，民力毫無消耗。",
-  },
-  {
-    ask: "換一個例子。邊句先接得上河道？",
-    ok: "轉運靠河道，工期裡征發民力。",
-    bad: "河道一日可成，不必征人。",
-  },
-];
 
 const MAP_TASKS = [
   { name: "秦", slot: "西", ask: "這是戰國。點國名，再點到圖上。先放秦。" },
@@ -377,15 +361,6 @@ function missRow(row, result) {
 
 function rumorOf(spin) {
   return RUMORS[((Number(spin) || 0) % RUMORS.length + RUMORS.length) % RUMORS.length];
-}
-
-function fordOf(row) {
-  const spin = (Number(row?.spin) || 0) + (routeOf(row) === "ridge" ? 1 : 0);
-  return FORDS[((spin % FORDS.length) + FORDS.length) % FORDS.length];
-}
-
-function fordEra(row) {
-  return fordOf(row) === FORDS[0] ? "夏、商、周" : "隋唐以後的科舉";
 }
 
 function coopOf(row) {
@@ -418,12 +393,21 @@ function clueChips(row) {
   if (row.marketClue) chips.push("孔子在春秋");
   if (row.ridgeClue) chips.push("三朝有先後");
   if (row.camp) chips.push("西周是分封");
-  if (row.river) chips.push(fordOf(row) === FORDS[0] ? "夏、商、周" : "科舉不在秦代");
   if (row.states) chips.push("戰國七雄");
-  if (row.coast) chips.push("鄭和在明");
-  if (row.loft) chips.push("書同文為政令");
-  if (row.ferry) chips.push("運河徵發民力");
+  (row.marks || []).forEach((text) => {
+    if (text && !chips.includes(text)) chips.push(text);
+  });
   return chips;
+}
+
+function kitHtml(kit) {
+  const src = kit || readKit(null);
+  const bits = KIT_KEYS.map((key) => `<span>${esc(KIT_LABEL[key])} ${src[key]}</span>`).join("");
+  return `<div class="voyage-kit" aria-label="商隊資源">${bits}</div>`;
+}
+
+function kindLabel(kind) {
+  return EVENT_KIND[kind] || "事件";
 }
 
 function stopSettled(row) {
@@ -457,19 +441,18 @@ function carryLine(row) {
   }
   if (row.stop === 3) {
     return settled
-      ? "營帳記低西周是分封。可以重溫線索。商隊帶住這句去河邊。"
+      ? "營帳記低西周是分封。可以重溫線索。下一站起是事件卡：要花資源，再看後果。"
       : "城樓已是你的。商隊要核對西周：受封的是諸侯，不是秦的郡縣。";
   }
   if (row.stop === 4) {
-    const era = fordEra(row);
     return settled
-      ? "河邊揀對了。商隊帶住渡口的判斷上松山。"
-      : `營帳寫低西周是分封。這一站是${era}，同西周不是同一時。`;
+      ? "河邊的取捨記低了。商隊帶住這次的後果上松山。"
+      : "營帳寫低西周是分封。這一站要看水勢：可以耗糧等，也可以搶渡，貨可能受損。";
   }
   if (row.stop === 5) {
     return settled
-      ? "松山這一句的年代對上了。商隊去看戰國的圖，要同三國分開。"
-      : "河邊揀對了。松山這一句是另一個年代，同剛才的渡口不是同一時。";
+      ? "松山這單貨結了。商隊去看戰國的圖，要同三國分開。"
+      : "河邊過了。松山是絲貨同過關：交絲走直路，或自己扛，消耗在糧同民力。";
   }
   if (row.stop === 6) {
     return settled
@@ -478,23 +461,23 @@ function carryLine(row) {
   }
   if (row.stop === 7) {
     return settled
-      ? "海岸記低鄭和在明。商隊入樓閣，書同文是秦統一之後的事。"
-      : "戰國的圖對上了。這一站是明朝的鄭和，張騫是漢代，兩人不同世。";
+      ? "海岸的路揀了。商隊入樓閣。下一站是秦的文字同度量，同明朝出海不是同一時。"
+      : "戰國的圖對上了。這一站揀海路：明朝出海要補給，張騫是漢代陸路。";
   }
   if (row.stop === 8) {
     return settled
-      ? "樓閣的馬跟住商隊。已經屬於你的路可以快跑。下一站是隋唐的渡口。"
-      : "海岸是明朝的事。樓閣要送政令：書同文是秦統一之後，為了政令。";
+      ? "樓閣的文書或斗斛處理好了。馬跟住商隊。下一站是隋唐的渡口。"
+      : "海岸是明朝的事。樓閣要處理秦的書同文或度量衡：可以出錢，也可以先不花。";
   }
   if (row.stop === 9) {
     return settled
-      ? "渡口可以抄捷徑。商隊去關城，下一站是北宋。"
-      : "馬跟住商隊。這一站是隋唐的大運河：溝通南北，同時徵發民力。";
+      ? "渡口的漕運取捨記低了。可以抄捷徑。商隊去關城，下一站核對北宋的都。"
+      : "馬跟住商隊。這一站是隋唐運河：溝通南北，同時要面對民力同河工。";
   }
   if (row.stop === 10) {
     return row.pass
-      ? "商隊按年代過了關。各站的人沒有變成同時存在。"
-      : "渡口抄過路。關城核對北宋：都城是開封，長安是漢唐舊都。";
+      ? "商隊在開封這段結了算。各站的人沒有變成同時存在。"
+      : "渡口過了。關城要結算：北宋的都在開封，長安是漢唐舊都。";
   }
   return "協助商隊完成旅程。";
 }
@@ -533,7 +516,10 @@ function reviewHtml(row) {
   const body = chips
     ? `<div class="voyage-clues">${chips}</div>`
     : `<p class="voyage-line">線索還未收齊。</p>`;
-  return `<p class="voyage-who">營帳</p><p class="voyage-line">收過的線索放在這裡。</p>${body}<button type="button" class="voyage-go" data-voyage-review-back="1">返回道路</button>`;
+  const afters = (row.afters || [])
+    .map((text) => `<p class="voyage-story">${esc(text)}</p>`)
+    .join("");
+  return `<p class="voyage-who">營帳</p><p class="voyage-line">收過的線索同資源放在這裡。</p>${kitHtml(row.kit)}${body}${afters}<button type="button" class="voyage-go" data-voyage-review-back="1">返回道路</button>`;
 }
 
 function mixSeed(text) {
@@ -608,14 +594,14 @@ function playHtml(row, gender, mix, held) {
       `<button type="button" class="voyage-choice" data-voyage-pick="1">土地分封給農民。</button>`,
     ])}${miss}`;
   }
-  if (play === "ford") {
-    const ford = fordOf(row);
-    const ask = form === 0 ? ford.ask : "商隊要過河。邊一處先可信？";
-    const spots = ford.spots.map(
-      (spot, i) =>
-        `<button type="button" class="voyage-choice" data-voyage-pick="${i}"><b>${esc(spot.name)}</b>${esc(spot.clue)}</button>`
-    );
-    return `<p class="voyage-who">步卒</p><p class="voyage-line">${esc(ask)}</p>${choices(spots)}${miss}`;
+  if (play === "event") {
+    const ev = eventFor(row.stop, row);
+    if (!ev) return "";
+    const buttons = ev.choices.map((choice, i) => {
+      const tag = choice.ok ? stakeText(choice) : "時代對不上";
+      return `<button type="button" class="voyage-choice" data-voyage-pick="${i}"><b>${esc(choice.title)}</b>${esc(choice.text)}<i class="voyage-stake">${esc(tag)}</i></button>`;
+    });
+    return `<p class="voyage-who">${esc(ev.who)}</p><p class="voyage-kicker">${esc(ev.era)} · ${esc(kindLabel(ev.kind))}</p><p class="voyage-line">${esc(ev.ask)}</p><p class="voyage-story">${esc(ev.body)}</p>${kitHtml(row.kit)}${choices(buttons)}${miss}`;
   }
   if (play === "match") {
     if (row.hold) {
@@ -633,37 +619,6 @@ function playHtml(row, gender, mix, held) {
       <button type="button" class="voyage-slot" data-voyage-slot="東">東</button>
       <button type="button" class="voyage-slot" data-voyage-slot="南">南</button>
     </div><div class="voyage-choices voyage-names">${joinChoices(names, seed)}</div>${miss}`;
-  }
-  if (play === "haul") {
-    if (row.hold) {
-      return `<p class="voyage-who">渡口</p><p class="voyage-line">${esc(row.miss)}</p><button type="button" class="voyage-go" data-voyage-retry="1">再判斷一次</button>`;
-    }
-    const haul = HAULS[row.drill ? 1 : 0];
-    const clues = `<div class="voyage-clues"><span class="voyage-clue">運輸：溝通南北</span><span class="voyage-clue">民力：徵發甚眾</span></div>`;
-    return `<p class="voyage-who">渡口</p><p class="voyage-line">${esc(haul.ask)}</p>${clues}${choices([
-      `<button type="button" class="voyage-choice" data-voyage-pick="0">${esc(haul.ok)}</button>`,
-      `<button type="button" class="voyage-choice" data-voyage-pick="1">${esc(haul.bad)}</button>`,
-    ])}${miss}`;
-  }
-  if (play === "slip") {
-    const ask = form === 0 ? "各國文字不一，政令送不出。邊份材料先解決溝通？" : "商人要送政令。邊份材料先讀得通？";
-    return `<p class="voyage-who">商人</p><p class="voyage-line">${esc(ask)}</p>${choices([
-      `<button type="button" class="voyage-choice" data-voyage-pick="0"><b>材料甲</b>統一文字，方便政令傳達。</button>`,
-      `<button type="button" class="voyage-choice" data-voyage-pick="1"><b>材料乙</b>統一文字，為了推廣文學。</button>`,
-    ])}${miss}`;
-  }
-  if (play === "seal") {
-    const chips = clueChips(row)
-      .map((text) => `<span class="voyage-clue">${esc(text)}</span>`)
-      .join("");
-    const lead = chips ? `<div class="voyage-clues">${chips}</div>` : "";
-    const ask = form === 0
-      ? "把沿路線索放在一起。這句「北宋始終以長安為都」，邊句先對？"
-      : "沿路都係先對時代同地方。這句都城，邊句先接得上？";
-    return `<p class="voyage-who">步卒</p><p class="voyage-line">${esc(ask)}</p>${lead}${choices([
-      `<button type="button" class="voyage-choice" data-voyage-pick="0">北宋都開封。長安是漢唐舊都。</button>`,
-      `<button type="button" class="voyage-choice" data-voyage-pick="1">長安就是開封。</button>`,
-    ])}${miss}`;
   }
   return "";
 }
@@ -698,34 +653,21 @@ function judgePlay(row, pick) {
     if (n === 1) return { ok: false, miss: "周王把土地和人民分封給親族與功臣。受封的是諸侯。" };
     return null;
   }
-  if (play === "ford") {
-    const spot = fordOf(row).spots[n];
-    if (!spot) return null;
-    return spot.ok ? { ok: true } : { ok: false, miss: fordOf(row).miss };
-  }
-  if (play === "match") {
-    return null;
-  }
-  if (play === "haul") {
-    const hint = "大運河便利南北轉運，同時徵發民力甚眾。";
-    if (n === 0) return { ok: true };
-    if (n === 1) {
-      if (!row.drill) return { ok: false, miss: hint, drill: 1, line: 0, hold: 0 };
-      return { ok: false, miss: hint, drill: 1, line: 0, hold: 1 };
-    }
-    return null;
-  }
-  if (play === "slip") {
-    if (n === 0) return { ok: true };
-    if (n === 1) return { ok: false, miss: "書同文是統一文字，方便政令傳達。不是為了推廣文學。" };
-    return null;
-  }
-  if (play === "seal") {
-    if (n === 0) return { ok: true };
-    if (n === 1) return { ok: false, miss: "北宋都城是開封。長安主要是漢唐舊都。" };
-    return null;
-  }
+  if (play === "event") return judgeEvent(row.kit, eventFor(row.stop, row), n);
+  if (play === "match") return null;
   return null;
+}
+
+function paidRow(row, result) {
+  if (!result?.kit) return row;
+  const echo = String(result.echo || "").slice(0, 140);
+  return {
+    ...row,
+    kit: result.kit,
+    echo,
+    marks: pushUnique(row.marks, result.mark, 8),
+    afters: pushAfter(row.afters, echo),
+  };
 }
 
 function judgeMap(row, name, slot) {
@@ -772,13 +714,13 @@ const GOAL = [
   "到市集打聽消息",
   "去城樓",
   "去營帳接任務",
-  "去河邊揀渡口",
-  "去松山",
+  "去河邊看水勢",
+  "去松山做一單貨",
   "去七雄配一組",
-  "去海岸",
-  "去樓閣睇材料",
-  "去渡口",
-  "去關城對線索",
+  "去海岸揀路",
+  "去樓閣處理文書",
+  "去渡口決定漕運",
+  "去關城結算",
   "",
 ];
 
@@ -818,6 +760,7 @@ function coachText(row) {
   if (row.guide >= 3) return "";
   if (playOf(row.stop, row) === "rumor") return row.line > 0 ? "再判斷商隊信邊句。" : "先分辨邊句係傳聞。";
   if (playOf(row.stop, row) === "trail") return "揀出可以沿住走的次序。";
+  if (playOf(row.stop, row) === "event") return "睇資源夠不夠。揀一個做法，再看後果。";
   if (isAsking(row) || row.guide >= 2) return "揀一句回應。";
   if (row.stop > 0) return "";
   if (row.guide <= 0) return "拖左下圓鈕，向前走。";
@@ -869,6 +812,10 @@ function readRow(user) {
     nightTry: dayKey(raw?.nightTry),
     nightMiss: String(raw?.nightMiss || "").slice(0, 80),
     ...taleRow(raw),
+    kit: readKit(raw?.kit),
+    echo: String(raw?.echo || "").slice(0, 140),
+    marks: readList(raw?.marks, 8, 24),
+    afters: readList(raw?.afters, 6, 80),
   };
 }
 
@@ -942,9 +889,9 @@ function pathHtml(row) {
 function routeHtml(row) {
   const marketNote = row.marketClue ? "走過" : "未走過";
   const ridgeNote = row.ridgeClue ? "走過" : "未走過";
-  return `<p class="voyage-who">步卒</p><p class="voyage-line">這一程走邊條？支線同河邊遇到的事會唔同。</p><div class="voyage-choices">
-    <button type="button" class="voyage-choice" data-voyage-route="market"><b>經市集</b>${marketNote}。聽兩個人的傳聞。河邊是另一組渡口。</button>
-    <button type="button" class="voyage-choice" data-voyage-route="ridge"><b>經山路</b>${ridgeNote}。睇石上的次序。河邊換成另一組渡口。</button>
+  return `<p class="voyage-who">步卒</p><p class="voyage-line">這一程走邊條？支線同後面的事件卡會唔同。</p><div class="voyage-choices">
+    <button type="button" class="voyage-choice" data-voyage-route="market"><b>經市集</b>${marketNote}。聽兩個人的傳聞。事件卡用第一組。</button>
+    <button type="button" class="voyage-choice" data-voyage-route="ridge"><b>經山路</b>${ridgeNote}。睇石上的次序。事件卡換成另一組。</button>
   </div>`;
 }
 
@@ -972,6 +919,7 @@ function ledgerHtml(row) {
   return `<p class="voyage-who">關城</p><p class="voyage-line">這一程結算</p>
     <p class="voyage-story">探索：${esc(walked.join("、") || "城門")}</p>
     <p class="voyage-story">進步：${esc(concepts.join("、") || "沿路再收")}</p>
+    <p class="voyage-story">資源：${esc(kitLine(row.kit))}</p>
     <p class="voyage-story">未發現：${esc(unseen.length ? unseen.join("、") : "市集同山路都走過")}</p>`;
 }
 
@@ -1019,7 +967,8 @@ function boxHtml(row, pathOpen, gender, mix, held) {
   if (asking && playOf(row.stop, row)) {
     const coach = coachText(row);
     const note = coach ? `<p class="voyage-coach-line">${esc(coach)}</p>` : "";
-    return `${threadHtml(row, true)}${playHtml(row, gender, mix, held)}${note}`;
+    const story = playOf(row.stop, row) === "event" ? "" : threadHtml(row, true);
+    return `${story}${playHtml(row, gender, mix, held)}${note}`;
   }
   if (asking && quiz) {
     lineText = quiz.claim;
@@ -1057,7 +1006,11 @@ function boxHtml(row, pathOpen, gender, mix, held) {
   const head = asking && quiz
     ? `<p class="voyage-who">${esc(quiz.who === "other" ? otherName(gender) : quiz.who)}</p>`
     : who;
-  return `${head}<p class="voyage-line">${esc(lineText)}</p>${storyHtml}${note}${taleBack}${controls}`;
+  const settledNote = !asking && row.echo
+    ? `<p class="voyage-after"><b>這一站的後果</b>${esc(row.echo)}</p>`
+    : "";
+  const kitNote = !asking && row.stop >= 3 && row.stop < 10 ? kitHtml(row.kit) : "";
+  return `${head}<p class="voyage-line">${esc(lineText)}</p>${storyHtml}${settledNote}${kitNote}${note}${taleBack}${controls}`;
 }
 
 function needsClaim(row) {
@@ -1215,6 +1168,7 @@ export function bindVoyage(user, ctx) {
     });
     root.classList.toggle("is-rival", !!(duel && duel.phase !== "pick"));
     root.classList.toggle("is-talk", talking);
+    root.classList.toggle("is-event", !duel && !review && playOf(row.stop, row) === "event" && isAsking(row));
     const goal = document.getElementById("voyage-goal");
     if (goal) {
       const text = pactActive(row)
@@ -1393,7 +1347,7 @@ export function bindVoyage(user, ctx) {
       world?.setOpen(false);
       const owned = !!keep && placeOwned({ ...row, stop });
       const line = owned ? STOPS[stop].lines.length - 1 : 0;
-      const next = { ...row, stop, line, miss: "", hold: 0, drill: 0, done: stop === 10 && !!row.pass };
+      const next = { ...row, stop, line, miss: "", echo: "", hold: 0, drill: 0, done: stop === 10 && !!row.pass };
       if (!save(next)) return;
       if (stop === 2 && !row.land) claimLand(readRow(ctx.getUser?.() || user));
     },
@@ -1615,6 +1569,11 @@ export function bindVoyage(user, ctx) {
           save({ ...row, line: row.line + 1, miss: "", hold: 0, done: false });
           return;
         }
+        if (result.kit) {
+          heldName = "";
+          finishStop(paidRow(row, result));
+          return;
+        }
       }
       const quiz = roadQuiz(row.spin, row.stop);
       const opt = quiz && isAsking(row)
@@ -1689,7 +1648,7 @@ export function bindVoyage(user, ctx) {
     }
     if (e.target.closest("[data-voyage-replay]")) {
       world?.place(0);
-      save({ ...row, stop: 0, line: 0, miss: "", hold: 0, drill: 0, done: false, route: "", spin: (Number(row.spin) || 0) + 1 });
+      save({ ...row, stop: 0, line: 0, miss: "", echo: "", hold: 0, drill: 0, done: false, route: "", spin: (Number(row.spin) || 0) + 1 });
     }
   });
 }

@@ -2,7 +2,7 @@
  * 單元闖關裡的長卷互動板同遺物拼圖。
  * 完成唔寫長卷進度，亦唔另加經驗；闖關成功仍然用原來的單元獎勵。
  */
-import { renderBoard, bindBoard } from "./stageBoards.js?v=rad176";
+import { renderBoard, bindBoard } from "./stageBoards.js?v=rad177";
 
 const UNIT_HOW = {
   cause: "先看結果，再揀講得較穩的原因。{n} 條都揀中就過這一關。",
